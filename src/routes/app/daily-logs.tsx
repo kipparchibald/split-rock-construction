@@ -31,8 +31,7 @@ function DailyLogsPage() {
   const [hours, setHours] = useState("32");
   const [photo, setPhoto] = useState("none");
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function postLog() {
     if (!projectId || !workDone.trim()) return;
     addDailyLog({
       projectId,
@@ -49,6 +48,11 @@ function DailyLogsPage() {
     setBlockers("");
     setPhoto("none");
     toast.success("Daily log posted");
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    postLog();
   }
 
   return (
@@ -70,8 +74,14 @@ function DailyLogsPage() {
             <div><Label>Crew</Label><Input className="mt-1" value={crewCount} onChange={(e) => setCrewCount(e.target.value)} /></div>
             <div><Label>Hours</Label><Input className="mt-1" value={hours} onChange={(e) => setHours(e.target.value)} /></div>
           </div>
-          <div><Label>Work completed</Label><Textarea className="mt-1" value={workDone} onChange={(e) => setWorkDone(e.target.value)} required /></div>
-          <div><Label>Blockers (optional)</Label><Textarea className="mt-1" value={blockers} onChange={(e) => setBlockers(e.target.value)} /></div>
+          <div>
+            <Label htmlFor="work-done">Work completed</Label>
+            <Textarea id="work-done" className="mt-1" value={workDone} onChange={(e) => setWorkDone(e.target.value)} required />
+          </div>
+          <div>
+            <Label htmlFor="blockers">Blockers (optional)</Label>
+            <Textarea id="blockers" className="mt-1" value={blockers} onChange={(e) => setBlockers(e.target.value)} />
+          </div>
           <div>
             <Label>Site photo</Label>
             <Select value={photo} onValueChange={setPhoto}>
@@ -86,7 +96,7 @@ function DailyLogsPage() {
           {photo !== "none" ? (
             <img src={photo} alt="" className="h-24 w-full border border-border object-cover" />
           ) : null}
-          <Button type="submit" className="w-full">Post log</Button>
+          <Button type="button" className="w-full" onClick={postLog}>Post log</Button>
         </form>
         <div className="space-y-2">
           {dailyLogs.map((l) => {
