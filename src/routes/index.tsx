@@ -29,6 +29,7 @@ function LandingPage() {
             <a href="#services" className="hover:text-fg">Services</a>
             <a href="#process" className="hover:text-fg">Process</a>
             <a href="#work" className="hover:text-fg">Work</a>
+            <a href="#product" className="hover:text-fg">Product</a>
             <a href="#contact" className="hover:text-fg">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
@@ -134,6 +135,53 @@ function LandingPage() {
                 <p className="mt-2 text-[11px] tabular-nums text-fg-subtle">{job.pct}%</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+
+      <section id="product" className="border-b border-border bg-bg-elevated">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps">Field system · mobile</p>
+          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+            Built for the truck seat and the job trailer.
+          </h2>
+          <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-fg-muted">
+            Command center, job hub, draws, pricing, and owner portal — captured on a phone viewport.
+          </p>
+          <div className="mt-8 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+            {[
+              { src: "/mobile/02-command-center.png", label: "Command center" },
+              { src: "/mobile/04-job-hub.png", label: "Job hub" },
+              { src: "/mobile/06-draws.png", label: "Progress draws" },
+              { src: "/mobile/05-pricing.png", label: "Bid & price" },
+              { src: "/mobile/07-portal.png", label: "Owner portal" },
+              { src: "/mobile/09-nav-drawer.png", label: "Navigation" },
+              { src: "/mobile/08-daily-logs.png", label: "Daily logs" },
+              { src: "/mobile/01-marketing.png", label: "Marketing" },
+            ].map((s) => (
+              <figure key={s.src} className="w-[220px] shrink-0 snap-start sm:w-[240px]">
+                <div className="overflow-hidden rounded-[1.25rem] border border-border bg-bg shadow-[0_12px_40px_-20px_rgba(0,0,0,0.35)]">
+                  <div className="flex items-center justify-center border-b border-border bg-bg-subtle py-1.5">
+                    <span className="h-1 w-10 rounded-full bg-border-strong" />
+                  </div>
+                  <img
+                    src={s.src}
+                    alt={`Split Rock mobile — ${s.label}`}
+                    className="h-[420px] w-full object-cover object-top sm:h-[460px]"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption className="mt-2 text-center text-[11px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                  {s.label}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <div className="mt-8">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app">Open the suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
+            </Button>
           </div>
         </div>
       </section>

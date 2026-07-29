@@ -16,3 +16,20 @@ npm run dev   # 0.0.0.0:8080
 ```
 
 Inspired by strengths of Buildertrend (client + residential), CoConstruct (custom homes), and Procore (document/job cost spine) — simplified for a small GC.
+
+
+## Mobile screenshots
+
+Phone viewport captures (390×844) live under `public/mobile/`:
+
+| Screen | File |
+| --- | --- |
+| Marketing | `01-marketing.png` |
+| Command center | `02-command-center.png` |
+| Jobs list | `03-jobs.png` |
+| Job hub | `04-job-hub.png` |
+| Bid & price | `05-pricing.png` |
+| Progress draws | `06-draws.png` |
+| Owner portal | `07-portal.png` |
+| Daily logs | `08-daily-logs.png` |
+| Nav drawer | `09-nav-drawer.png` |
