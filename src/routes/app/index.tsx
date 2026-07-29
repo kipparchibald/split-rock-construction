@@ -13,7 +13,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
 function Dashboard() {
-  const { projects, draws, changeOrders, documents, safety, selections, dailyLogs, activity, clients, payApplications, subcontracts } =
+  const { projects, draws, changeOrders, documents, safety, selections, dailyLogs, activity, clients, payApplications, subcontracts, closeoutPackages, realtyDeals } =
     useAppStore();
 
   const active = projects.filter((p) => !["complete", "on_hold"].includes(p.status));
@@ -27,6 +27,15 @@ function Dashboard() {
   const openPayApps = payApplications.filter((a) => a.status === "submitted" || a.status === "draft");
   const biddingSubs = subcontracts.filter((s) => s.status === "bidding");
   const commercialCount = projects.filter((p) => p.type === "commercial" && !["complete", "on_hold"].includes(p.status)).length;
+  const dualBlocked = realtyDeals.filter((d) => {
+    if (d.status === "n_a" || d.status === "closed" || d.status === "withdrawn") return false;
+    if (d.dualCapacity === "pending_disclosure") return true;
+    const pkg = closeoutPackages.find((c) => c.projectId === d.projectId);
+    if (!pkg) return d.status === "pending_close";
+    const punch = pkg.punchOpen > 0;
+    const liens = pkg.items.find((i) => i.key === "lien_waivers");
+    return d.status === "pending_close" && (punch || liens?.status !== "complete");
+  });
 
   type Attention = { severity: "high" | "med"; title: string; detail: string; to: string };
   const attention: Attention[] = [];
@@ -88,6 +97,15 @@ function Dashboard() {
       title: `Sub buyout open · ${s.trade}`,
       detail: s.company,
       to: "/app/commercial",
+    });
+  });
+  dualBlocked.forEach((d) => {
+    const p = projects.find((x) => x.id === d.projectId);
+    attention.push({
+      severity: "high",
+      title: d.dualCapacity === "pending_disclosure" ? "Dual-capacity disclosure pending" : "Closing gates blocked",
+      detail: p?.name ?? "Deal",
+      to: "/app/closing",
     });
   });
 

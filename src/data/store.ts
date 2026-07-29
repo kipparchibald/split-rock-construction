@@ -1,16 +1,18 @@
 import { create } from "zustand";
 import {
   activity as seedActivity, bids as seedBids, budgetLines as seedBudget,
-  changeOrders as seedCOs, clients as seedClients, commercialMeta as seedCommercialMeta,
-  crews as seedCrews, dailyLogs as seedLogs, documents as seedDocs,
-  equipment as seedEquipment, members as seedMembers, payApplications as seedPayApps,
-  progressDraws as seedDraws, projects as seedProjects, safetyIncidents as seedSafety,
+  changeOrders as seedCOs, clients as seedClients, closeoutPackages as seedCloseout,
+  commercialMeta as seedCommercialMeta, crews as seedCrews, dailyLogs as seedLogs,
+  documents as seedDocs, dualRolePolicy as seedDualPolicy, equipment as seedEquipment,
+  members as seedMembers, payApplications as seedPayApps, progressDraws as seedDraws,
+  projects as seedProjects, realtyDeals as seedRealty, safetyIncidents as seedSafety,
   selections as seedSelections, subcontracts as seedSubs,
 } from "./seed";
 import type {
-  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CommercialMeta, Crew, CrewMember,
-  DailyLog, DocumentItem, Equipment, PayApplication, ProgressDraw, Project, ProjectStatus,
-  SafetyIncident, SelectionItem, SubStatus, Subcontract,
+  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
+  CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
+  PayApplication, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
+  RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
 } from "./types";
 
 function uid(prefix: string) {
@@ -24,6 +26,7 @@ interface AppState {
   draws: ProgressDraw[]; changeOrders: ChangeOrder[]; selections: SelectionItem[];
   dailyLogs: DailyLog[];
   subcontracts: Subcontract[]; payApplications: PayApplication[]; commercialMeta: CommercialMeta[];
+  closeoutPackages: CloseoutPackage[]; realtyDeals: RealtyDeal[]; dualRolePolicy: DualRolePolicy;
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
   addDailyLog: (log: Omit<DailyLog, "id">) => void;
   submitDraw: (id: string) => void;
@@ -39,6 +42,10 @@ interface AppState {
   submitPayApp: (id: string) => void;
   certifyPayApp: (id: string) => void;
   markPayAppPaid: (id: string) => void;
+  setCloseoutItemStatus: (packageId: string, key: string, status: CloseoutItemStatus) => void;
+  setRealtyItemStatus: (dealId: string, key: string, status: RealtyItemStatus) => void;
+  setRealtyDealStatus: (dealId: string, status: RealtyDealStatus) => void;
+  acknowledgeDualCapacity: (dealId: string, by: string) => void;
 }
 
 function createAppStore() {
@@ -48,6 +55,7 @@ function createAppStore() {
     budgetLines: seedBudget, activity: seedActivity, draws: seedDraws,
     changeOrders: seedCOs, selections: seedSelections, dailyLogs: seedLogs,
     subcontracts: seedSubs, payApplications: seedPayApps, commercialMeta: seedCommercialMeta,
+    closeoutPackages: seedCloseout, realtyDeals: seedRealty, dualRolePolicy: seedDualPolicy,
 
     updateProjectStatus: (id, status) =>
       set((s) => ({
@@ -141,6 +149,79 @@ function createAppStore() {
             ? { ...pa, status: "paid" as const, paidAt: new Date().toISOString().slice(0, 10) }
             : pa,
         ),
+      })),
+
+    setCloseoutItemStatus: (packageId, key, status) =>
+      set((s) => ({
+        closeoutPackages: s.closeoutPackages.map((pkg) =>
+          pkg.id !== packageId
+            ? pkg
+            : {
+                ...pkg,
+                items: pkg.items.map((it) =>
+                  it.key !== key
+                    ? it
+                    : {
+                        ...it,
+                        status,
+                        completedAt: status === "complete" ? new Date().toISOString().slice(0, 10) : it.completedAt,
+                      },
+                ),
+              },
+        ),
+      })),
+
+    setRealtyItemStatus: (dealId, key, status) =>
+      set((s) => ({
+        realtyDeals: s.realtyDeals.map((d) =>
+          d.id !== dealId
+            ? d
+            : {
+                ...d,
+                items: d.items.map((it) =>
+                  it.key !== key
+                    ? it
+                    : {
+                        ...it,
+                        status,
+                        completedAt: status === "complete" ? new Date().toISOString().slice(0, 10) : it.completedAt,
+                      },
+                ),
+              },
+        ),
+      })),
+
+    setRealtyDealStatus: (dealId, status) =>
+      set((s) => ({
+        realtyDeals: s.realtyDeals.map((d) => (d.id === dealId ? { ...d, status } : d)),
+      })),
+
+    acknowledgeDualCapacity: (dealId, by) =>
+      set((s) => ({
+        realtyDeals: s.realtyDeals.map((d) =>
+          d.id === dealId
+            ? {
+                ...d,
+                dualCapacity: "disclosed" as const,
+                dualCapacityAcknowledgedAt: new Date().toISOString().slice(0, 10),
+                dualCapacityAcknowledgedBy: by,
+                items: d.items.map((it) =>
+                  it.key === "dual_capacity_disclosure"
+                    ? { ...it, status: "complete" as const, completedAt: new Date().toISOString().slice(0, 10) }
+                    : it,
+                ),
+              }
+            : d,
+        ),
+        activity: [
+          {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Dual-capacity disclosure acknowledged by ${by}`,
+            kind: "doc",
+          },
+          ...s.activity,
+        ],
       })),
   }));
 }

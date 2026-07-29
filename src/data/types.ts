@@ -142,3 +142,112 @@ export interface CommercialMeta {
   substantialDate?: string;
   liquidatedDamagesPerDay: number;
 }
+
+/** Construction closeout (G704-family practice — not a licensed AIA form) */
+export type CloseoutItemKey =
+  | "substantial_completion"
+  | "punch_list"
+  | "certificate_of_occupancy"
+  | "final_pay_app"
+  | "lien_waivers"
+  | "as_builts"
+  | "warranty_packet"
+  | "keys_codes"
+  | "surety_consent"
+  | "final_cleaning";
+
+export type CloseoutItemStatus = "not_started" | "in_progress" | "complete" | "waived" | "blocked";
+
+export interface CloseoutItem {
+  key: CloseoutItemKey;
+  label: string;
+  status: CloseoutItemStatus;
+  owner: string;
+  dueDate?: string;
+  notes?: string;
+  completedAt?: string;
+}
+
+export interface CloseoutPackage {
+  id: string;
+  projectId: string;
+  substantialDate?: string;
+  architectCertifier?: string;
+  punchOpen: number;
+  punchClosed: number;
+  items: CloseoutItem[];
+  notes: string;
+}
+
+/** Realty / brokerage track (operational checklist — not a substitute for licensed board forms) */
+export type RealtyDealStatus =
+  | "exploring"
+  | "listed"
+  | "under_contract"
+  | "pending_close"
+  | "closed"
+  | "withdrawn"
+  | "n_a";
+
+export type AgencyRole =
+  | "none"
+  | "seller_agent"
+  | "buyer_agent"
+  | "dual_agency"
+  | "transaction_broker"
+  | "owner_agent";
+
+export type DualCapacityStatus = "not_applicable" | "disclosed" | "pending_disclosure" | "declined_realty";
+
+export type RealtyChecklistKey =
+  | "agency_election"
+  | "dual_capacity_disclosure"
+  | "listing_or_buyer_agreement"
+  | "purchase_sale_agreement"
+  | "new_construction_addendum"
+  | "seller_builder_disclosure"
+  | "earnest_money_trust"
+  | "financing_contingency"
+  | "inspection_walkthrough"
+  | "title_commitment"
+  | "closing_disclosure_review"
+  | "deed_recorded";
+
+export type RealtyItemStatus = "not_started" | "in_progress" | "complete" | "n_a" | "blocked";
+
+export interface RealtyChecklistItem {
+  key: RealtyChecklistKey;
+  label: string;
+  status: RealtyItemStatus;
+  systemOfRecord: string;
+  notes?: string;
+  completedAt?: string;
+}
+
+export interface RealtyDeal {
+  id: string;
+  projectId: string;
+  status: RealtyDealStatus;
+  agencyRole: AgencyRole;
+  dualCapacity: DualCapacityStatus;
+  brokerage: string;
+  agentName: string;
+  listPrice?: number;
+  salePrice?: number;
+  underContractDate?: string;
+  closingDate?: string;
+  earnestHeldBy: string;
+  earnestAmount?: number;
+  trustAccountNote: string;
+  dualCapacityAcknowledgedAt?: string;
+  dualCapacityAcknowledgedBy?: string;
+  items: RealtyChecklistItem[];
+  notes: string;
+}
+
+export interface DualRolePolicy {
+  builderEntity: string;
+  brokerage: string;
+  licenseNote: string;
+  rules: string[];
+}

@@ -34,13 +34,22 @@ const COMMERCIAL_TABS = [
   { value: "delivery", label: "Delivery" },
 ] as const;
 
-type TabValue = (typeof BASE_TABS)[number]["value"] | (typeof COMMERCIAL_TABS)[number]["value"];
+const CLOSING_TABS = [
+  { value: "closeout", label: "Closeout" },
+  { value: "realty", label: "Realty" },
+] as const;
+
+type TabValue =
+  | (typeof BASE_TABS)[number]["value"]
+  | (typeof COMMERCIAL_TABS)[number]["value"]
+  | (typeof CLOSING_TABS)[number]["value"];
 
 function ProjectHub() {
   const { projectId } = Route.useParams();
   const {
     projects, clients, draws, changeOrders, selections, dailyLogs,
     documents, budgetLines, members, subcontracts, payApplications, commercialMeta,
+    closeoutPackages, realtyDeals,
     submitDraw, setChangeOrderStatus, setSelectionStatus,
     setSubStatus, submitPayApp, certifyPayApp, markPayAppPaid,
   } = useAppStore();
@@ -59,8 +68,8 @@ function ProjectHub() {
 
   const isCommercial = project.type === "commercial";
   const tabMeta = isCommercial
-    ? [...BASE_TABS.filter((x) => x.value !== "selections"), ...COMMERCIAL_TABS]
-    : [...BASE_TABS];
+    ? [...BASE_TABS.filter((x) => x.value !== "selections"), ...COMMERCIAL_TABS, ...CLOSING_TABS]
+    : [...BASE_TABS, ...CLOSING_TABS];
   const pDraws = draws.filter((d) => d.projectId === project.id);
   const pCOs = changeOrders.filter((c) => c.projectId === project.id);
   const pSel = selections.filter((s) => s.projectId === project.id);
@@ -70,6 +79,8 @@ function ProjectHub() {
   const pSubs = subcontracts.filter((s) => s.projectId === project.id);
   const pPayApps = payApplications.filter((a) => a.projectId === project.id);
   const meta = commercialMeta.find((m) => m.projectId === project.id);
+  const closeout = closeoutPackages.find((c) => c.projectId === project.id);
+  const realty = realtyDeals.find((d) => d.projectId === project.id);
   const crew = members.filter((m) => m.projectId === project.id);
   const paid = pDraws.filter((d) => d.status === "paid").reduce((s, d) => s + d.amount, 0);
   const coTotal = pCOs.filter((c) => c.status === "approved" || c.status === "invoiced").reduce((s, c) => s + c.amount, 0);
@@ -392,6 +403,73 @@ function ProjectHub() {
                   <p className="mt-1 text-[13px] font-medium capitalize">{v}</p>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
+        <TabsContent value="closeout">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Construction closeout</CardTitle>
+              <Button variant="outline" size="sm" asChild><Link to="/app/closing">Full closing module</Link></Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {!closeout ? (
+                <p className="text-[13px] text-fg-muted">No closeout package staged.</p>
+              ) : (
+                <>
+                  <p className="text-[12px] text-fg-muted">
+                    Punch {closeout.punchClosed} closed / {closeout.punchOpen} open
+                    {closeout.substantialDate ? ` · substantial recorded` : ""}
+                    {closeout.architectCertifier ? ` · certifier: ${closeout.architectCertifier}` : ""}
+                  </p>
+                  {closeout.items.map((it) => (
+                    <div key={it.key} className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
+                      <span className="text-fg-muted">{it.label}</span>
+                      <Badge variant={it.status === "complete" || it.status === "waived" ? "success" : it.status === "in_progress" ? "warning" : "secondary"}>
+                        {it.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                  ))}
+                  <p className="text-[11px] text-fg-subtle">G704-style substantial completion is separate from any buyer walkthrough.</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="realty">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Realty track</CardTitle>
+              <Button variant="outline" size="sm" asChild><Link to="/app/closing">Full closing module</Link></Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {!realty ? (
+                <p className="text-[13px] text-fg-muted">No realty deal.</p>
+              ) : realty.status === "n_a" ? (
+                <p className="text-[13px] text-fg-muted">{realty.notes || "Realty not applicable on this job."}</p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="outline">{realty.status.replace(/_/g, " ")}</Badge>
+                    <Badge variant="outline">{realty.agencyRole.replace(/_/g, " ")}</Badge>
+                    <Badge variant={realty.dualCapacity === "disclosed" ? "success" : "warning"}>
+                      dual: {realty.dualCapacity.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                  <p className="text-[12px] text-fg-muted">{realty.trustAccountNote}</p>
+                  {realty.items.filter((i) => i.status !== "n_a").map((it) => (
+                    <div key={it.key} className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
+                      <span className="text-fg-muted">{it.label}</span>
+                      <Badge variant={it.status === "complete" ? "success" : it.status === "in_progress" ? "warning" : "secondary"}>
+                        {it.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                  ))}
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
