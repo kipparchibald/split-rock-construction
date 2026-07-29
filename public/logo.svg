@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" role="img" aria-label="Split Rock Construction">
+  <path fill="#121212" d="M20 160 L45 70 L90 30 L100 100 L100 160 Z"/>
+  <path fill="#121212" d="M100 30 L145 50 L180 160 L100 160 Z"/>
+  <path fill="#f0f0f0" d="M94 30 L110 32 L112 100 L88 100 Z"/>
+  <path fill="#f0f0f0" d="M72 105 L100 78 L128 105 L128 145 L72 145 Z"/>
+  <rect x="90" y="112" width="20" height="33" fill="#121212"/>
+  <path fill="#f0f0f0" d="M72 145 C85 130 95 125 100 145 C105 125 115 130 128 145 L128 160 L72 160 Z"/>
+  <path fill="#f0f0f0" d="M40 160 Q70 145 100 160 Q130 145 160 160 L180 160 L20 160 Z" opacity="0"/>
+  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M85 148 Q70 165 55 185"/>
+  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M100 150 Q100 168 100 190"/>
+  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M115 148 Q130 165 145 185"/>
+  <path fill="#121212" d="M20 155 L180 155 L180 165 L20 165 Z"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" fill="none" role="img" aria-label="Split Rock">
+  <path fill="#121212" d="M18 150 L48 65 L90 28 L100 95 L100 150 Z"/>
+  <path fill="#121212" d="M100 28 L148 48 L182 150 L100 150 Z"/>
+  <path fill="#f0f0f0" d="M93 28 L110 30 L112 95 L88 95 Z"/>
+  <path fill="#f0f0f0" d="M70 100 L100 72 L130 100 L130 140 L70 140 Z"/>
+  <rect x="88" y="108" width="24" height="32" fill="#121212"/>
+  <rect x="12" y="148" width="176" height="8" fill="#121212"/>
+</svg>

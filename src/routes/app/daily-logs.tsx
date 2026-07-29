@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAppStore } from "@/data/store";
+import { formatDate } from "@/lib/utils";
+import type { DailyLogWeather } from "@/data/types";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/app/daily-logs")({ component: DailyLogsPage });
+
+function DailyLogsPage() {
+  const { dailyLogs, projects, addDailyLog } = useAppStore();
+  const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
+  const [workDone, setWorkDone] = useState("");
+  const [blockers, setBlockers] = useState("");
+  const [crewCount, setCrewCount] = useState("4");
+  const [hours, setHours] = useState("32");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!projectId || !workDone.trim()) return;
+    addDailyLog({
+      projectId, date: new Date().toISOString().slice(0, 10), weather: "clear" as DailyLogWeather,
+      crewCount: Number(crewCount) || 0, hours: Number(hours) || 0,
+      workDone: workDone.trim(), blockers: blockers.trim() || undefined, author: "Field",
+    });
+    setWorkDone(""); setBlockers("");
+    toast.success("Daily log posted");
+  }
+
+  return (
+    <div>
+      <PageHeader title="Daily logs" description="What happened on site today — the Buildertrend-style field diary owners and supers rely on." />
+      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <form onSubmit={submit} className="space-y-3 border border-border bg-bg-elevated p-4">
+          <p className="text-[13px] font-medium">Post log</p>
+          <div>
+            <Label>Job</Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Crew</Label><Input className="mt-1" value={crewCount} onChange={(e) => setCrewCount(e.target.value)} /></div>
+            <div><Label>Hours</Label><Input className="mt-1" value={hours} onChange={(e) => setHours(e.target.value)} /></div>
+          </div>
+          <div><Label>Work completed</Label><Textarea className="mt-1" value={workDone} onChange={(e) => setWorkDone(e.target.value)} required /></div>
+          <div><Label>Blockers (optional)</Label><Textarea className="mt-1" value={blockers} onChange={(e) => setBlockers(e.target.value)} /></div>
+          <Button type="submit" className="w-full">Post log</Button>
+        </form>
+        <div className="space-y-2">
+          {dailyLogs.map((l) => {
+            const p = projects.find((x) => x.id === l.projectId);
+            return (
+              <div key={l.id} className="border border-border bg-bg-elevated p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Link to="/app/projects/$projectId" params={{ projectId: l.projectId }} className="text-[13px] font-medium hover:underline">{p?.name}</Link>
+                  <span className="text-[11px] tabular-nums text-fg-subtle">{formatDate(l.date)} · {l.crewCount} crew · {l.hours}h</span>
+                </div>
+                <p className="mt-2 text-[13px] text-fg-muted">{l.workDone}</p>
+                {l.blockers ? <p className="mt-1 text-[12px] text-warning">Blocker: {l.blockers}</p> : null}
+                <p className="mt-2 text-[11px] text-fg-subtle">{l.author} · {l.weather}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

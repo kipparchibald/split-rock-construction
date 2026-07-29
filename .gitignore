@@ -1,0 +1,16 @@
+node_modules
+.output
+.vinxi
+.tanstack
+dist
+.vercel
+*.log
+.env
+.env.*
+.DS_Store
+src/routeTree.gen.ts
+.grok
+artifacts
+screenshots/*.png
+.node_modules.lock
+/tmp
