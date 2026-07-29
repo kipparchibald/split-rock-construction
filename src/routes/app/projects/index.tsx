@@ -1,22 +1,59 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FilterChips } from "@/components/layout/filter-chips";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/data/store";
+import type { ProjectStatus } from "@/data/types";
 import { formatCurrency } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/projects/")({ component: ProjectsPage });
 
+type Filter = "all" | ProjectStatus | "active";
+
 function ProjectsPage() {
   const { projects, clients } = useAppStore();
+  const [filter, setFilter] = useState<Filter>("active");
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: projects.length, active: 0 };
+    for (const p of projects) {
+      c[p.status] = (c[p.status] ?? 0) + 1;
+      if (!["complete", "on_hold"].includes(p.status)) c.active += 1;
+    }
+    return c;
+  }, [projects]);
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return projects;
+    if (filter === "active") return projects.filter((p) => !["complete", "on_hold"].includes(p.status));
+    return projects.filter((p) => p.status === filter);
+  }, [projects, filter]);
+
   return (
     <div>
       <PageHeader title="Jobs" description="Every active and pipeline project. Open a job for schedule, money, logs, and owner items." />
+      <FilterChips
+        className="mb-4"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: "active", label: "Active", count: counts.active },
+          { value: "all", label: "All", count: counts.all },
+          { value: "in_progress", label: "In progress", count: counts.in_progress ?? 0 },
+          { value: "punch_list", label: "Punch", count: counts.punch_list ?? 0 },
+          { value: "planning", label: "Planning", count: counts.planning ?? 0 },
+          { value: "permitting", label: "Permitting", count: counts.permitting ?? 0 },
+        ]}
+      />
       <div className="border border-border">
         <div className="hidden grid-cols-[1.4fr_1fr_0.8fr_0.7fr_0.9fr_0.6fr] gap-3 border-b border-border bg-bg-subtle px-4 py-2 text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle md:grid">
           <span>Job</span><span>Client</span><span>Phase</span><span>Status</span><span>Budget</span><span>%</span>
         </div>
-        {projects.map((p) => {
+        {filtered.length === 0 ? (
+          <p className="px-4 py-8 text-center text-[13px] text-fg-muted">No jobs match this filter.</p>
+        ) : filtered.map((p) => {
           const client = clients.find((c) => c.id === p.clientId);
           return (
             <Link

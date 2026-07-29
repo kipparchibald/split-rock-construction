@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Building2, Calculator, CalendarRange, ClipboardList, FileText, HardHat,
-  Home, LayoutDashboard, Menu, NotebookPen, Shield, Users, Wallet, Wrench,
+  Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
+  LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -35,7 +35,7 @@ const groups: NavGroup[] = [
       { to: "/app/pricing", label: "Bid & price", icon: Calculator },
       { to: "/app/bids", label: "Bid board", icon: ClipboardList },
       { to: "/app/budget", label: "Job cost", icon: Wallet },
-      { to: "/app/draws", label: "Draws", icon: Home },
+      { to: "/app/draws", label: "Draws", icon: Banknote },
     ],
   },
   {
@@ -50,7 +50,7 @@ const groups: NavGroup[] = [
     label: "People",
     items: [
       { to: "/app/clients", label: "Clients", icon: Users },
-      { to: "/app/portal", label: "Owner portal", icon: Home },
+      { to: "/app/portal", label: "Owner portal", icon: Eye },
     ],
   },
 ];

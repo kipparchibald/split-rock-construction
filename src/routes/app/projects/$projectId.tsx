@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { JobContextBar } from "@/components/layout/job-context-bar";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/data/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -13,6 +14,20 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const Route = createFileRoute("/app/projects/$projectId")({
   component: ProjectHub,
 });
+
+const TAB_META = [
+  { value: "overview", label: "Overview" },
+  { value: "schedule", label: "Schedule" },
+  { value: "budget", label: "Budget" },
+  { value: "draws", label: "Draws" },
+  { value: "changes", label: "Change orders" },
+  { value: "selections", label: "Selections" },
+  { value: "logs", label: "Daily log" },
+  { value: "docs", label: "Documents" },
+  { value: "client", label: "Client" },
+] as const;
+
+type TabValue = (typeof TAB_META)[number]["value"];
 
 function ProjectHub() {
   const { projectId } = Route.useParams();
@@ -22,7 +37,7 @@ function ProjectHub() {
   } = useAppStore();
   const project = projects.find((p) => p.id === projectId);
   const client = clients.find((c) => c.id === project?.clientId);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState<TabValue>("overview");
 
   if (!project) {
     return (
@@ -42,14 +57,13 @@ function ProjectHub() {
   const crew = members.filter((m) => m.projectId === project.id);
   const paid = pDraws.filter((d) => d.status === "paid").reduce((s, d) => s + d.amount, 0);
   const coTotal = pCOs.filter((c) => c.status === "approved" || c.status === "invoiced").reduce((s, c) => s + c.amount, 0);
+  const contractTotal = project.budget + coTotal;
 
   return (
     <div>
-      <Link to="/app/projects" className="mb-4 inline-flex items-center gap-1.5 text-[12px] text-fg-muted hover:text-fg">
-        <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} /> All jobs
-      </Link>
+      <JobContextBar project={project} contractTotal={contractTotal} />
 
-      <div className="mb-5 flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-medium tracking-[-0.02em]">{project.name}</h1>
@@ -64,7 +78,7 @@ function ProjectHub() {
         </div>
         <div className="text-left sm:text-right">
           <p className="label-caps">Contract</p>
-          <p className="text-lg font-medium tabular-nums">{formatCurrency(project.budget + coTotal)}</p>
+          <p className="text-lg font-medium tabular-nums">{formatCurrency(contractTotal)}</p>
           <p className="text-[11px] text-fg-subtle">base {formatCurrency(project.budget)} + COs {formatCurrency(coTotal)}</p>
         </div>
       </div>
@@ -82,12 +96,25 @@ function ProjectHub() {
           </div>
         ))}
       </div>
-      <Progress value={project.progress} className="mb-6" />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex h-auto w-full flex-wrap">
-          {["overview", "schedule", "budget", "draws", "changes", "selections", "logs", "docs", "client"].map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t === "docs" ? "Documents" : t === "logs" ? "Daily log" : t === "changes" ? "Change orders" : t}</TabsTrigger>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+        {/* Mobile: select */}
+        <div className="mb-4 md:hidden">
+          <Select value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+            <SelectTrigger aria-label="Job section">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TAB_META.map((t) => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Desktop: horizontal chips */}
+        <TabsList className="mb-1 hidden h-auto w-full flex-wrap md:inline-flex">
+          {TAB_META.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
           ))}
         </TabsList>
 
@@ -256,6 +283,13 @@ function ProjectHub() {
                   </div>
                   <p className="mt-2 text-[13px] text-fg-muted">{l.workDone}</p>
                   {l.blockers ? <p className="mt-1 text-[12px] text-warning">Blocker: {l.blockers}</p> : null}
+                  {l.photos?.length ? (
+                    <div className="mt-3 flex gap-2 overflow-x-auto">
+                      {l.photos.map((src) => (
+                        <img key={src} src={src} alt="" className="h-20 w-28 shrink-0 border border-border object-cover" />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ))}
               {!pLogs.length ? <p className="text-[13px] text-fg-muted">No logs yet.</p> : null}

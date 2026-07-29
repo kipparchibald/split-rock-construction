@@ -243,8 +243,8 @@ export const selections: SelectionItem[] = [
 ];
 
 export const dailyLogs: DailyLog[] = [
-  { id: "dl1", projectId: "p1", date: "2026-07-28", weather: "clear", crewCount: 6, hours: 48, workDone: "Finished second-floor electrical rough. Plumber set tub valves.", blockers: "Waiting on RFI-014 hold-downs before sheathing punch.", author: "Tyler Brooks" },
-  { id: "dl2", projectId: "p1", date: "2026-07-27", weather: "overcast", crewCount: 5, hours: 40, workDone: "HVAC trunk runs main floor. Window flashing check complete.", author: "Tyler Brooks" },
-  { id: "dl3", projectId: "p2", date: "2026-07-28", weather: "clear", crewCount: 4, hours: 32, workDone: "Footings poured east wing. Rebar inspection passed AM.", author: "Riley Chen" },
-  { id: "dl4", projectId: "p3", date: "2026-07-25", weather: "clear", crewCount: 2, hours: 12, workDone: "Punch list paint touch-ups rooms 2–4. Landscape lights staged.", author: "Morgan Ellis" },
+  { id: "dl1", projectId: "p1", date: "2026-07-28", weather: "clear", crewCount: 6, hours: 48, workDone: "Finished second-floor electrical rough. Plumber set tub valves.", blockers: "Waiting on RFI-014 hold-downs before sheathing punch.", author: "Tyler Brooks", photos: ["/site-photos/mep.svg", "/site-photos/framing.svg"] },
+  { id: "dl2", projectId: "p1", date: "2026-07-27", weather: "overcast", crewCount: 5, hours: 40, workDone: "HVAC trunk runs main floor. Window flashing check complete.", author: "Tyler Brooks", photos: ["/site-photos/framing.svg"] },
+  { id: "dl3", projectId: "p2", date: "2026-07-28", weather: "clear", crewCount: 4, hours: 32, workDone: "Footings poured east wing. Rebar inspection passed AM.", author: "Riley Chen", photos: ["/site-photos/foundation.svg", "/site-photos/site.svg"] },
+  { id: "dl4", projectId: "p3", date: "2026-07-25", weather: "clear", crewCount: 2, hours: 12, workDone: "Punch list paint touch-ups rooms 2–4. Landscape lights staged.", author: "Morgan Ellis", photos: ["/site-photos/finish.svg"] },
 ];

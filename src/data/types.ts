@@ -71,5 +71,5 @@ export interface SelectionItem {
 export interface DailyLog {
   id: string; projectId: string; date: string; weather: DailyLogWeather;
   crewCount: number; hours: number; workDone: string; blockers?: string;
-  visitors?: string; author: string;
+  visitors?: string; author: string; photos?: string[];
 }

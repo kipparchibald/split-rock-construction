@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="640" height="480" fill="#2a2a2a"/>
+  <rect x="40" y="280" width="560" height="140" fill="#6b6b6b" opacity="0.35"/>
+  <polygon points="80,280 200,160 320,280" fill="#6b6b6b" opacity="0.5"/>
+  <polygon points="280,280 420,120 560,280" fill="#6b6b6b" opacity="0.4"/>
+  <rect x="300" y="200" width="60" height="80" fill="#f0f0f0" opacity="0.15"/>
+  <text x="40" y="60" fill="#f0f0f0" font-family="Helvetica,Arial,sans-serif" font-size="22" font-weight="500" letter-spacing="2">FRAMING</text>
+  <text x="40" y="88" fill="#f0f0f0" opacity="0.5" font-family="Helvetica,Arial,sans-serif" font-size="12">SPLIT ROCK · SITE PHOTO</text>
+</svg>

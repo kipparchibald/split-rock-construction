@@ -13,6 +13,15 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/daily-logs")({ component: DailyLogsPage });
 
+const PHOTO_OPTIONS = [
+  { value: "none", label: "No photo" },
+  { value: "/site-photos/framing.svg", label: "Framing" },
+  { value: "/site-photos/foundation.svg", label: "Foundation" },
+  { value: "/site-photos/mep.svg", label: "MEP" },
+  { value: "/site-photos/site.svg", label: "Site work" },
+  { value: "/site-photos/finish.svg", label: "Finishes" },
+];
+
 function DailyLogsPage() {
   const { dailyLogs, projects, addDailyLog } = useAppStore();
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
@@ -20,22 +29,31 @@ function DailyLogsPage() {
   const [blockers, setBlockers] = useState("");
   const [crewCount, setCrewCount] = useState("4");
   const [hours, setHours] = useState("32");
+  const [photo, setPhoto] = useState("none");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!projectId || !workDone.trim()) return;
     addDailyLog({
-      projectId, date: new Date().toISOString().slice(0, 10), weather: "clear" as DailyLogWeather,
-      crewCount: Number(crewCount) || 0, hours: Number(hours) || 0,
-      workDone: workDone.trim(), blockers: blockers.trim() || undefined, author: "Field",
+      projectId,
+      date: new Date().toISOString().slice(0, 10),
+      weather: "clear" as DailyLogWeather,
+      crewCount: Number(crewCount) || 0,
+      hours: Number(hours) || 0,
+      workDone: workDone.trim(),
+      blockers: blockers.trim() || undefined,
+      author: "Field",
+      photos: photo !== "none" ? [photo] : undefined,
     });
-    setWorkDone(""); setBlockers("");
+    setWorkDone("");
+    setBlockers("");
+    setPhoto("none");
     toast.success("Daily log posted");
   }
 
   return (
     <div>
-      <PageHeader title="Daily logs" description="What happened on site today — the Buildertrend-style field diary owners and supers rely on." />
+      <PageHeader title="Daily logs" description="What happened on site today — work notes plus site photos for the owner portal." />
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form onSubmit={submit} className="space-y-3 border border-border bg-bg-elevated p-4">
           <p className="text-[13px] font-medium">Post log</p>
@@ -54,6 +72,20 @@ function DailyLogsPage() {
           </div>
           <div><Label>Work completed</Label><Textarea className="mt-1" value={workDone} onChange={(e) => setWorkDone(e.target.value)} required /></div>
           <div><Label>Blockers (optional)</Label><Textarea className="mt-1" value={blockers} onChange={(e) => setBlockers(e.target.value)} /></div>
+          <div>
+            <Label>Site photo</Label>
+            <Select value={photo} onValueChange={setPhoto}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PHOTO_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {photo !== "none" ? (
+            <img src={photo} alt="" className="h-24 w-full border border-border object-cover" />
+          ) : null}
           <Button type="submit" className="w-full">Post log</Button>
         </form>
         <div className="space-y-2">
@@ -67,6 +99,18 @@ function DailyLogsPage() {
                 </div>
                 <p className="mt-2 text-[13px] text-fg-muted">{l.workDone}</p>
                 {l.blockers ? <p className="mt-1 text-[12px] text-warning">Blocker: {l.blockers}</p> : null}
+                {l.photos?.length ? (
+                  <div className="mt-3 flex gap-2 overflow-x-auto">
+                    {l.photos.map((src) => (
+                      <img
+                        key={src}
+                        src={src}
+                        alt="Site photo"
+                        className="h-24 w-32 shrink-0 border border-border object-cover"
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 <p className="mt-2 text-[11px] text-fg-subtle">{l.author} · {l.weather}</p>
               </div>
             );
