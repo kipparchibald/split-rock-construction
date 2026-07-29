@@ -9,7 +9,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Split Rock Construction — Homes built on solid ground" },
-      { name: "description", content: "Split Rock Construction builds residential homes in Boise — full ops suite for projects, bids, pricing, and crews." },
+      { name: "description", content: "Split Rock Construction builds residential homes and commercial shells & TI in Boise — ops suite for jobs, subs, pay apps, and crews." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

@@ -73,3 +73,72 @@ export interface DailyLog {
   crewCount: number; hours: number; workDone: string; blockers?: string;
   visitors?: string; author: string; photos?: string[];
 }
+
+/** Commercial construction extensions */
+export type CommercialPhase =
+  | "Preconstruction"
+  | "Site Work"
+  | "Structure"
+  | "Shell / Envelope"
+  | "MEP Rough"
+  | "Interior Build-Out"
+  | "Fire / Life Safety"
+  | "Commissioning"
+  | "Closeout";
+
+export type ContractDelivery = "design_bid_build" | "design_assist" | "cm_at_risk" | "lump_sum_gc";
+export type SubStatus = "bidding" | "awarded" | "mobilized" | "complete" | "closed";
+export type PayAppStatus = "draft" | "submitted" | "certified" | "paid" | "held";
+export type BondStatus = "not_required" | "pending" | "active" | "released";
+
+export interface Subcontract {
+  id: string;
+  projectId: string;
+  company: string;
+  trade: string;
+  csiDivision: string;
+  contractAmount: number;
+  retainagePct: number;
+  billedToDate: number;
+  paidToDate: number;
+  status: SubStatus;
+  insuranceExp: string;
+  contact: string;
+  phone: string;
+}
+
+export interface PayAppLine {
+  id: string;
+  description: string;
+  scheduledValue: number;
+  previousBilled: number;
+  thisPeriod: number;
+  materialsStored: number;
+}
+
+export interface PayApplication {
+  id: string;
+  projectId: string;
+  number: number;
+  periodEnd: string;
+  status: PayAppStatus;
+  retainagePct: number;
+  lines: PayAppLine[];
+  submittedAt?: string;
+  certifiedAt?: string;
+  paidAt?: string;
+  notes: string;
+}
+
+export interface CommercialMeta {
+  projectId: string;
+  delivery: ContractDelivery;
+  bondStatus: BondStatus;
+  bondAmount: number;
+  ocip: boolean;
+  prevailingWage: boolean;
+  architect: string;
+  ownerRep: string;
+  substantialDate?: string;
+  liquidatedDamagesPerDay: number;
+}

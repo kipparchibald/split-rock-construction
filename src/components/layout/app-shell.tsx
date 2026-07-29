@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
   LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
-  type LucideIcon,
+  Factory, type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ const groups: NavGroup[] = [
     label: "Jobs",
     items: [
       { to: "/app/projects", label: "All jobs", icon: Building2 },
+      { to: "/app/commercial", label: "Commercial", icon: Factory },
       { to: "/app/schedule", label: "Schedule", icon: CalendarRange },
       { to: "/app/daily-logs", label: "Daily logs", icon: NotebookPen },
       { to: "/app/documents", label: "Documents", icon: FileText },
@@ -105,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-t border-border px-4 py-3">
           <p className="text-[11px] leading-relaxed text-fg-subtle">
             Split Rock OS<br />
-            <span className="text-fg-muted">Residential builder system</span>
+            <span className="text-fg-muted">Residential & commercial GC</span>
           </p>
         </div>
       </aside>

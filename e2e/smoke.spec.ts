@@ -6,7 +6,7 @@ test.describe("smoke", () => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(String(e)));
 
-    await gotoApp(page, "/", /homes built on solid ground/i);
+    await gotoApp(page, "/", /built on solid ground/i);
     await expect(page.getByText(/split rock/i).first()).toBeVisible();
     await expect(
       page.getByRole("link", { name: /ops suite|open field suite|launch ops suite/i }).first(),

@@ -13,7 +13,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
 function Dashboard() {
-  const { projects, draws, changeOrders, documents, safety, selections, dailyLogs, activity, clients } =
+  const { projects, draws, changeOrders, documents, safety, selections, dailyLogs, activity, clients, payApplications, subcontracts } =
     useAppStore();
 
   const active = projects.filter((p) => !["complete", "on_hold"].includes(p.status));
@@ -24,6 +24,9 @@ function Dashboard() {
   const openDocs = documents.filter((d) => d.status === "open" || d.status === "pending");
   const openSafety = safety.filter((s) => s.status !== "closed");
   const pendingSel = selections.filter((s) => s.status === "pending_owner");
+  const openPayApps = payApplications.filter((a) => a.status === "submitted" || a.status === "draft");
+  const biddingSubs = subcontracts.filter((s) => s.status === "bidding");
+  const commercialCount = projects.filter((p) => p.type === "commercial" && !["complete", "on_hold"].includes(p.status)).length;
 
   type Attention = { severity: "high" | "med"; title: string; detail: string; to: string };
   const attention: Attention[] = [];
@@ -70,6 +73,24 @@ function Dashboard() {
       to: `/app/projects/${s.projectId}`,
     });
   });
+  openPayApps.forEach((a) => {
+    const p = projects.find((x) => x.id === a.projectId);
+    attention.push({
+      severity: a.status === "submitted" ? "high" : "med",
+      title: `Pay app #${a.number} · ${a.status}`,
+      detail: p?.name ?? "Commercial job",
+      to: "/app/commercial",
+    });
+  });
+  biddingSubs.slice(0, 2).forEach((s) => {
+    attention.push({
+      severity: "med",
+      title: `Sub buyout open · ${s.trade}`,
+      detail: s.company,
+      to: "/app/commercial",
+    });
+  });
+
 
   const todayLogs = dailyLogs.filter((l) => l.date === "2026-07-28");
 
@@ -91,7 +112,7 @@ function Dashboard() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active jobs" value={String(active.length)} hint={`${projects.length} total`} icon={<BuildingIcon />} />
+        <StatCard label="Active jobs" value={String(active.length)} hint={`${commercialCount} commercial`} icon={<BuildingIcon />} />
         <StatCard label="Work in place" value={formatCurrency(spent)} hint={`of ${formatCurrency(budget)} budget`} icon={<DollarSign className="h-4 w-4" strokeWidth={1.75} />} />
         <StatCard label="Draws ready" value={String(readyDraws.length)} hint={formatCurrency(readyDraws.reduce((s, d) => s + d.amount, 0))} icon={<Clock className="h-4 w-4" strokeWidth={1.75} />} />
         <StatCard label="Open safety" value={String(openSafety.length)} hint={openSafety.length === 0 ? "All clear" : "Needs review"} icon={<AlertTriangle className="h-4 w-4" strokeWidth={1.75} />} />

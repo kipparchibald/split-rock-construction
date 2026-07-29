@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Building2, CheckCircle2, HardHat, MapPin, Phone, Shield, Ruler } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Factory, HardHat, MapPin, Phone, Shield, Ruler } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { COMPANY } from "@/data/seed";
@@ -7,16 +7,16 @@ import { COMPANY } from "@/data/seed";
 export const Route = createFileRoute("/")({ component: LandingPage });
 
 const services = [
-  { title: "Custom homes", body: "Ranch to two-story farmhouse — designed for how Idaho families live.", icon: Building2 },
+  { title: "Custom homes", body: "Ranch to two-story farmhouse — craft and schedule discipline for Idaho families.", icon: Building2 },
   { title: "Spec & production", body: "Efficient plan sets for developers who need quality without drama.", icon: Ruler },
-  { title: "Accessible living", body: "Zero-threshold design, wide corridors, finishes that age well.", icon: HardHat },
+  { title: "Commercial shell & TI", body: "Light industrial shells, retail TI, design-assist GC — CSI buyout and pay apps.", icon: Factory },
   { title: "Safety-first sites", body: "Daily briefings, documented near-misses, crews who look out for each other.", icon: Shield },
 ];
 const process = [
-  { step: "01", title: "Listen", body: "Walk the lot, map priorities, lock a budget you can trust." },
-  { step: "02", title: "Plan", body: "Permits, selections, and a schedule with real milestones." },
-  { step: "03", title: "Build", body: "Superintendent-led crews, weekly owner updates, clean sites." },
-  { step: "04", title: "Hand off", body: "Punch list closed, warranty clear, keys in hand." },
+  { step: "01", title: "Listen", body: "Walk the lot or shell, map priorities, lock a budget you can trust." },
+  { step: "02", title: "Plan", body: "Permits, buyout, selections, and a schedule with real milestones." },
+  { step: "03", title: "Build", body: "Superintendent-led crews, sub management, weekly owner updates." },
+  { step: "04", title: "Hand off", body: "Punch list closed, pay apps reconciled, CO and keys in hand." },
 ];
 
 function LandingPage() {
@@ -44,21 +44,21 @@ function LandingPage() {
           <div>
             <p className="label-caps mb-4 inline-flex items-center gap-2">
               <MapPin className="h-3 w-3" strokeWidth={1.75} />
-              {COMPANY.location} · Residential
+              {COMPANY.location} · Residential & commercial
             </p>
             <h1 className="max-w-xl text-3xl font-medium tracking-[-0.03em] text-fg sm:text-4xl lg:text-[2.75rem] lg:leading-[1.12]">
-              Homes built on solid ground.
+              Homes and commercial — built on solid ground.
             </h1>
             <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-fg-muted">
-              Split Rock Construction builds residential homes with craft, schedule discipline,
-              and a clear path toward commercial work when the right project shows up.
+              Split Rock Construction builds custom homes and commercial shells and tenant
+              improvements across the Treasure Valley — one field system, one standard of craft.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               <Button size="lg" asChild><a href="#contact">Talk with us <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
               <Button size="lg" variant="outline" asChild><Link to="/app">Open field suite</Link></Button>
             </div>
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6">
-              {[{ k: "Active builds", v: "4" }, { k: "Schedule hit", v: "94%" }, { k: "Lost-time", v: "0" }].map((s) => (
+              {[{ k: "Active builds", v: "5" }, { k: "Commercial volume", v: "$2.6M" }, { k: "Lost-time", v: "0" }].map((s) => (
                 <div key={s.k}>
                   <p className="label-caps">{s.k}</p>
                   <p className="mt-1 text-lg font-medium tabular-nums text-fg">{s.v}</p>
@@ -71,7 +71,7 @@ function LandingPage() {
               <img src="/logo.jpg" alt="Split Rock Construction — home built on split rock" className="h-44 w-auto object-contain sm:h-52" />
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {["Weekly owner walkthroughs", "Milestone billing", "Licensed & insured", "Local Idaho crews"].map((item) => (
+              {["Weekly owner walkthroughs", "Milestone billing & pay apps", "Licensed, insured & bonded", "Local Idaho crews"].map((item) => (
                 <div key={item} className="flex items-start gap-2 text-[13px] text-fg-muted">
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fg" strokeWidth={1.75} />
                   <span>{item}</span>
@@ -85,7 +85,7 @@ function LandingPage() {
       <section id="services" className="border-b border-border bg-bg-elevated">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
           <p className="label-caps">What we build</p>
-          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Residential first. Commercial when it fits.</h2>
+          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Residential homes. Commercial shells & TI.</h2>
           <div className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
             {services.map((s) => (
               <div key={s.title} className="bg-bg-elevated p-5">
@@ -124,9 +124,9 @@ function LandingPage() {
           </div>
           <div className="mt-6 grid gap-px border border-border bg-border md:grid-cols-3">
             {[
-              { name: "Hart Residence", meta: "Boise · 2,840 sqft · MEP", pct: 62 },
-              { name: "Willow Creek Farmhouse", meta: "Eagle · 3,120 sqft · Foundation", pct: 28 },
-              { name: "Crestview Accessible", meta: "Meridian · 1,960 sqft · Punch list", pct: 94 },
+              { name: "Hart Residence", meta: "Boise · Residential · 2,840 sqft", pct: 62 },
+              { name: "Commerce Park Shell", meta: "Boise · Commercial · 18,000 sqft", pct: 34 },
+              { name: "Crestview Accessible", meta: "Meridian · Residential · 1,960 sqft", pct: 94 },
             ].map((job) => (
               <div key={job.name} className="bg-bg-elevated p-5">
                 <h3 className="text-[13px] font-medium">{job.name}</h3>

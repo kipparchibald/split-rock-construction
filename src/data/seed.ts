@@ -1,11 +1,11 @@
 import type {
-  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, Crew, CrewMember, DailyLog, DocumentItem, Equipment, ProgressDraw, Project, SafetyIncident, SelectionItem,
+  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, Equipment, PayApplication, ProgressDraw, Project, SafetyIncident, SelectionItem, Subcontract,
 } from "./types";
 
 export const COMPANY = {
   name: "Split Rock Construction",
   shortName: "Split Rock",
-  tagline: "Homes built on solid ground",
+  tagline: "Homes and commercial built on solid ground",
   location: "Boise, ID",
   phone: "(208) 555-0142",
   email: "hello@splitrock.build",
@@ -16,7 +16,7 @@ export const clients: Client[] = [
   { id: "c1", name: "James & Elena Hart", email: "elena.hart@email.com", phone: "(208) 555-2201", type: "homeowner", address: "1842 River Bend Dr, Boise, ID", notes: "Custom ranch, board-form concrete accent." },
   { id: "c2", name: "Marcus Cole", email: "marcus@colehomes.dev", phone: "(208) 555-3344", type: "developer", address: "90 Market St, Boise, ID", notes: "3-lot speculative series in Meridian." },
   { id: "c3", name: "Priya & Noah Bennett", email: "noah.b@email.com", phone: "(208) 555-1188", type: "homeowner", address: "22 Willow Creek Ln, Eagle, ID", notes: "Two-story modern farmhouse, ADU later." },
-  { id: "c4", name: "Treasure Valley Holdings", email: "ops@tvholdings.com", phone: "(208) 555-9001", type: "commercial", address: "410 Commerce Park, Boise, ID", notes: "Future commercial pipeline — light industrial shell." },
+  { id: "c4", name: "Treasure Valley Holdings", email: "ops@tvholdings.com", phone: "(208) 555-9001", type: "commercial", address: "410 Commerce Park, Boise, ID", notes: "Light industrial + retail shells. Primary commercial account." },
   { id: "c5", name: "Diane Okonkwo", email: "diane.o@email.com", phone: "(208) 555-7720", type: "homeowner", address: "9 Crestview Ct, Meridian, ID", notes: "Accessible single-level with heated floors." },
 ];
 
@@ -133,21 +133,45 @@ export const projects: Project[] = [
     ],
   },
   {
-    id: "p5", name: "Commerce Park Shell (Pipeline)", address: "410 Commerce Park, Boise", clientId: "c4", type: "commercial",
-    status: "permitting", phase: "Site Work", progress: 5, budget: 2100000, spent: 42000,
-    startDate: "2027-03-01", endDate: "2027-12-15", superintendent: "Morgan Ellis", sqft: 18000,
-    description: "Future light industrial shell — Split Rock's first commercial step.",
+    id: "p5", name: "Commerce Park Shell", address: "410 Commerce Park, Boise", clientId: "c4", type: "commercial",
+    status: "in_progress", phase: "Structure", progress: 34, budget: 2100000, spent: 712000,
+    startDate: "2026-03-01", endDate: "2026-12-15", superintendent: "Morgan Ellis", sqft: 18000,
+    description: "18,000 sqft light industrial shell — tilt-up panels, clear-span bays, core restrooms, and fire riser room. Design-assist delivery.",
     milestones: [
-      { name: "LOI signed", date: "2026-06-01", done: true },
-      { name: "Entitlements", date: "2026-11-01", done: false },
-      { name: "Permit", date: "2027-02-01", done: false },
+      { name: "Contract executed", date: "2026-01-15", done: true },
+      { name: "Building permit issued", date: "2026-02-20", done: true },
+      { name: "Foundation complete", date: "2026-05-10", done: true },
+      { name: "Shell dried-in", date: "2026-09-01", done: false },
+      { name: "Substantial completion", date: "2026-12-01", done: false },
+      { name: "Final CO", date: "2026-12-15", done: false },
     ],
     schedule: [
-      { phase: "Site Work", start: "2027-03-01", end: "2027-04-15", pct: 0 },
-      { phase: "Foundation", start: "2027-04-16", end: "2027-06-01", pct: 0 },
-      { phase: "Framing", start: "2027-06-02", end: "2027-09-01", pct: 0 },
-      { phase: "Exterior", start: "2027-08-15", end: "2027-10-30", pct: 0 },
-      { phase: "Final Walkthrough", start: "2027-12-01", end: "2027-12-15", pct: 0 },
+      { phase: "Site Work", start: "2026-03-01", end: "2026-04-15", pct: 100 },
+      { phase: "Foundation", start: "2026-04-16", end: "2026-05-20", pct: 100 },
+      { phase: "Framing", start: "2026-05-21", end: "2026-08-30", pct: 45 },
+      { phase: "MEP Rough-In", start: "2026-07-15", end: "2026-10-15", pct: 15 },
+      { phase: "Exterior", start: "2026-08-01", end: "2026-10-30", pct: 10 },
+      { phase: "Interior Finishes", start: "2026-10-01", end: "2026-11-20", pct: 0 },
+      { phase: "Final Walkthrough", start: "2026-12-01", end: "2026-12-15", pct: 0 },
+    ],
+  },
+  {
+    id: "p6", name: "Eagle Retail TI — Suite 200", address: "88 State St, Eagle", clientId: "c4", type: "commercial",
+    status: "planning", phase: "Site Work", progress: 8, budget: 485000, spent: 22000,
+    startDate: "2026-09-15", endDate: "2027-02-28", superintendent: "Tyler Brooks", sqft: 4200,
+    description: "Retail tenant improvement — demising walls, HVAC zone split, storefront, and finish package for national tenant.",
+    milestones: [
+      { name: "Lease executed", date: "2026-07-01", done: true },
+      { name: "Permit submittal", date: "2026-08-15", done: false },
+      { name: "Mobilization", date: "2026-09-15", done: false },
+      { name: "Tenant turnover", date: "2027-02-28", done: false },
+    ],
+    schedule: [
+      { phase: "Site Work", start: "2026-09-15", end: "2026-09-30", pct: 0 },
+      { phase: "Framing", start: "2026-10-01", end: "2026-11-05", pct: 0 },
+      { phase: "MEP Rough-In", start: "2026-11-06", end: "2026-12-15", pct: 0 },
+      { phase: "Interior Finishes", start: "2026-12-16", end: "2027-02-10", pct: 0 },
+      { phase: "Final Walkthrough", start: "2027-02-15", end: "2027-02-28", pct: 0 },
     ],
   },
 ];
@@ -162,8 +186,11 @@ export const bids: Bid[] = [
   { id: "b3", title: "Cole Spec Series — 3 Lots", clientId: "c2", type: "residential", status: "submitted", amount: 1245000, submittedAt: "2026-07-10", dueDate: "2026-08-01", notes: "Volume pricing if all three awarded.", lineItems: [
     { label: "Lot 7 build", amount: 425000 }, { label: "Lot 8 build", amount: 410000 }, { label: "Lot 9 build", amount: 410000 },
   ]},
-  { id: "b4", title: "Commerce Park Shell — Design Assist", clientId: "c4", type: "commercial", status: "draft", amount: 2100000, dueDate: "2026-09-15", notes: "First commercial bid package.", lineItems: [
-    { label: "Site development", amount: 320000 }, { label: "Structure", amount: 980000 }, { label: "Envelope", amount: 420000 }, { label: "MEP core", amount: 280000 }, { label: "GC fee & contingency", amount: 100000 },
+  { id: "b4", title: "Commerce Park Shell — Design Assist", clientId: "c4", type: "commercial", status: "won", amount: 2100000, submittedAt: "2026-01-05", dueDate: "2026-01-12", notes: "Won design-assist; CSI divisions in bid package.", lineItems: [
+    { label: "Div 03 Concrete", amount: 320000 }, { label: "Div 05 Metals / structure", amount: 680000 }, { label: "Div 07 Envelope", amount: 420000 }, { label: "Div 21–26 MEP core", amount: 480000 }, { label: "Div 01 GC / general conditions", amount: 200000 },
+  ]},
+  { id: "b6", title: "Eagle Retail TI — Suite 200", clientId: "c4", type: "commercial", status: "submitted", amount: 485000, submittedAt: "2026-07-20", dueDate: "2026-08-05", notes: "National tenant TI — unit pricing on finishes.", lineItems: [
+    { label: "Demolition & protection", amount: 28000 }, { label: "Framing & drywall", amount: 95000 }, { label: "MEP", amount: 145000 }, { label: "Finishes", amount: 162000 }, { label: "GC fee & contingency", amount: 55000 },
   ]},
   { id: "b5", title: "Riverside Addition (lost)", clientId: "c1", type: "residential", status: "lost", amount: 186000, submittedAt: "2025-04-02", dueDate: "2025-04-15", notes: "Client delayed.", lineItems: [
     { label: "Addition structure", amount: 110000 }, { label: "MEP & finishes", amount: 76000 },
@@ -201,9 +228,22 @@ export const budgetLines: BudgetLine[] = [
   { id: "bl12", projectId: "p3", category: "Subcontractors", budgeted: 120000, committed: 120000, actual: 118200 },
   { id: "bl13", projectId: "p3", category: "Equipment", budgeted: 18000, committed: 16000, actual: 15500 },
   { id: "bl14", projectId: "p3", category: "Contingency", budgeted: 25000, committed: 20000, actual: 19000 },
+  { id: "bl15", projectId: "p5", category: "General conditions", budgeted: 120000, committed: 95000, actual: 82000 },
+  { id: "bl16", projectId: "p5", category: "Concrete", budgeted: 285000, committed: 285000, actual: 278000 },
+  { id: "bl17", projectId: "p5", category: "Structural steel", budgeted: 520000, committed: 520000, actual: 210000 },
+  { id: "bl18", projectId: "p5", category: "Envelope", budgeted: 310000, committed: 310000, actual: 42000 },
+  { id: "bl19", projectId: "p5", category: "MEP", budgeted: 445000, committed: 443000, actual: 45000 },
+  { id: "bl20", projectId: "p5", category: "GC fee / contingency", budgeted: 240000, committed: 80000, actual: 55000 },
+  { id: "bl21", projectId: "p6", category: "Labor", budgeted: 95000, committed: 12000, actual: 8000 },
+  { id: "bl22", projectId: "p6", category: "Materials", budgeted: 180000, committed: 20000, actual: 9000 },
+  { id: "bl23", projectId: "p6", category: "Subcontractors", budgeted: 160000, committed: 72000, actual: 0 },
+  { id: "bl24", projectId: "p6", category: "Contingency", budgeted: 50000, committed: 0, actual: 5000 },
 ];
 
 export const activity: ActivityItem[] = [
+  { id: "a0", at: "2026-07-28T10:00:00", text: "Pay app #3 submitted — Commerce Park Shell", kind: "project" },
+  { id: "a0b", at: "2026-07-27T09:00:00", text: "Sub buyout: FireGuard bid received for fire protection", kind: "bid" },
+
   { id: "a1", at: "2026-07-28T09:15:00", text: "Rough electrical inspection scheduled for Hart Residence", kind: "project" },
   { id: "a2", at: "2026-07-27T16:40:00", text: "Bid package submitted: Cole Spec Series — 3 Lots", kind: "bid" },
   { id: "a3", at: "2026-07-27T11:05:00", text: "Safety: minor rebar cut logged at Willow Creek", kind: "safety" },
@@ -247,4 +287,87 @@ export const dailyLogs: DailyLog[] = [
   { id: "dl2", projectId: "p1", date: "2026-07-27", weather: "overcast", crewCount: 5, hours: 40, workDone: "HVAC trunk runs main floor. Window flashing check complete.", author: "Tyler Brooks", photos: ["/site-photos/framing.svg"] },
   { id: "dl3", projectId: "p2", date: "2026-07-28", weather: "clear", crewCount: 4, hours: 32, workDone: "Footings poured east wing. Rebar inspection passed AM.", author: "Riley Chen", photos: ["/site-photos/foundation.svg", "/site-photos/site.svg"] },
   { id: "dl4", projectId: "p3", date: "2026-07-25", weather: "clear", crewCount: 2, hours: 12, workDone: "Punch list paint touch-ups rooms 2–4. Landscape lights staged.", author: "Morgan Ellis", photos: ["/site-photos/finish.svg"] },
+];
+
+
+export const commercialMeta: CommercialMeta[] = [
+  {
+    projectId: "p5", delivery: "design_assist", bondStatus: "active", bondAmount: 2100000,
+    ocip: false, prevailingWage: false, architect: "Northline Architects", ownerRep: "TV Holdings — Ops",
+    substantialDate: "2026-12-01", liquidatedDamagesPerDay: 1500,
+  },
+  {
+    projectId: "p6", delivery: "lump_sum_gc", bondStatus: "pending", bondAmount: 485000,
+    ocip: false, prevailingWage: false, architect: "Tenant vendor set", ownerRep: "TV Holdings — Retail",
+    liquidatedDamagesPerDay: 750,
+  },
+];
+
+export const subcontracts: Subcontract[] = [
+  { id: "sub1", projectId: "p5", company: "Valley Concrete Co.", trade: "Concrete", csiDivision: "03", contractAmount: 285000, retainagePct: 5, billedToDate: 240000, paidToDate: 228000, status: "complete", insuranceExp: "2027-01-15", contact: "Dee Morales", phone: "(208) 555-6101" },
+  { id: "sub2", projectId: "p5", company: "Intermountain Steel", trade: "Structural steel", csiDivision: "05", contractAmount: 520000, retainagePct: 5, billedToDate: 210000, paidToDate: 199500, status: "mobilized", insuranceExp: "2026-12-01", contact: "Chris Vale", phone: "(208) 555-6102" },
+  { id: "sub3", projectId: "p5", company: "Peak Envelope Systems", trade: "Roofing & panel", csiDivision: "07", contractAmount: 310000, retainagePct: 5, billedToDate: 40000, paidToDate: 38000, status: "awarded", insuranceExp: "2027-03-01", contact: "Sam Wu", phone: "(208) 555-6103" },
+  { id: "sub4", projectId: "p5", company: "Treasure Electric", trade: "Electrical", csiDivision: "26", contractAmount: 195000, retainagePct: 5, billedToDate: 28000, paidToDate: 26600, status: "mobilized", insuranceExp: "2026-11-20", contact: "Pat Reed", phone: "(208) 555-6104" },
+  { id: "sub5", projectId: "p5", company: "Snake River Mechanical", trade: "HVAC / Plumbing", csiDivision: "22/23", contractAmount: 248000, retainagePct: 5, billedToDate: 15000, paidToDate: 14250, status: "awarded", insuranceExp: "2027-02-10", contact: "Lee Ortiz", phone: "(208) 555-6105" },
+  { id: "sub6", projectId: "p5", company: "FireGuard Life Safety", trade: "Fire protection", csiDivision: "21", contractAmount: 92000, retainagePct: 5, billedToDate: 0, paidToDate: 0, status: "bidding", insuranceExp: "2027-06-01", contact: "Ava Kim", phone: "(208) 555-6106" },
+  { id: "sub7", projectId: "p6", company: "Interior Works NW", trade: "Drywall & framing", csiDivision: "09", contractAmount: 88000, retainagePct: 10, billedToDate: 0, paidToDate: 0, status: "bidding", insuranceExp: "2027-04-01", contact: "Jordan Lee", phone: "(208) 555-6201" },
+  { id: "sub8", projectId: "p6", company: "Treasure Electric", trade: "Electrical TI", csiDivision: "26", contractAmount: 72000, retainagePct: 10, billedToDate: 0, paidToDate: 0, status: "awarded", insuranceExp: "2026-11-20", contact: "Pat Reed", phone: "(208) 555-6104" },
+];
+
+export const payApplications: PayApplication[] = [
+  {
+    id: "pa1", projectId: "p5", number: 1, periodEnd: "2026-04-30", status: "paid", retainagePct: 5,
+    submittedAt: "2026-05-02", certifiedAt: "2026-05-08", paidAt: "2026-05-15",
+    notes: "Site + foundation mobilization.",
+    lines: [
+      { id: "l1", description: "General conditions", scheduledValue: 120000, previousBilled: 0, thisPeriod: 35000, materialsStored: 0 },
+      { id: "l2", description: "Site work", scheduledValue: 180000, previousBilled: 0, thisPeriod: 120000, materialsStored: 0 },
+      { id: "l3", description: "Concrete / foundation", scheduledValue: 285000, previousBilled: 0, thisPeriod: 95000, materialsStored: 12000 },
+      { id: "l4", description: "Structural steel", scheduledValue: 520000, previousBilled: 0, thisPeriod: 0, materialsStored: 0 },
+      { id: "l5", description: "Envelope", scheduledValue: 310000, previousBilled: 0, thisPeriod: 0, materialsStored: 0 },
+      { id: "l6", description: "MEP core", scheduledValue: 445000, previousBilled: 0, thisPeriod: 0, materialsStored: 0 },
+      { id: "l7", description: "GC fee / OH&P", scheduledValue: 240000, previousBilled: 0, thisPeriod: 18000, materialsStored: 0 },
+    ],
+  },
+  {
+    id: "pa2", projectId: "p5", number: 2, periodEnd: "2026-05-31", status: "paid", retainagePct: 5,
+    submittedAt: "2026-06-02", certifiedAt: "2026-06-09", paidAt: "2026-06-18",
+    notes: "Foundation complete; steel delivery.",
+    lines: [
+      { id: "l1", description: "General conditions", scheduledValue: 120000, previousBilled: 35000, thisPeriod: 25000, materialsStored: 0 },
+      { id: "l2", description: "Site work", scheduledValue: 180000, previousBilled: 120000, thisPeriod: 60000, materialsStored: 0 },
+      { id: "l3", description: "Concrete / foundation", scheduledValue: 285000, previousBilled: 95000, thisPeriod: 190000, materialsStored: 0 },
+      { id: "l4", description: "Structural steel", scheduledValue: 520000, previousBilled: 0, thisPeriod: 80000, materialsStored: 45000 },
+      { id: "l5", description: "Envelope", scheduledValue: 310000, previousBilled: 0, thisPeriod: 0, materialsStored: 0 },
+      { id: "l6", description: "MEP core", scheduledValue: 445000, previousBilled: 0, thisPeriod: 0, materialsStored: 0 },
+      { id: "l7", description: "GC fee / OH&P", scheduledValue: 240000, previousBilled: 18000, thisPeriod: 32000, materialsStored: 0 },
+    ],
+  },
+  {
+    id: "pa3", projectId: "p5", number: 3, periodEnd: "2026-07-31", status: "submitted", retainagePct: 5,
+    submittedAt: "2026-08-03",
+    notes: "Structure in progress — tilt panels and joists.",
+    lines: [
+      { id: "l1", description: "General conditions", scheduledValue: 120000, previousBilled: 60000, thisPeriod: 20000, materialsStored: 0 },
+      { id: "l2", description: "Site work", scheduledValue: 180000, previousBilled: 180000, thisPeriod: 0, materialsStored: 0 },
+      { id: "l3", description: "Concrete / foundation", scheduledValue: 285000, previousBilled: 285000, thisPeriod: 0, materialsStored: 0 },
+      { id: "l4", description: "Structural steel", scheduledValue: 520000, previousBilled: 80000, thisPeriod: 160000, materialsStored: 30000 },
+      { id: "l5", description: "Envelope", scheduledValue: 310000, previousBilled: 0, thisPeriod: 35000, materialsStored: 15000 },
+      { id: "l6", description: "MEP core", scheduledValue: 445000, previousBilled: 0, thisPeriod: 28000, materialsStored: 0 },
+      { id: "l7", description: "GC fee / OH&P", scheduledValue: 240000, previousBilled: 50000, thisPeriod: 28000, materialsStored: 0 },
+    ],
+  },
+  {
+    id: "pa4", projectId: "p5", number: 4, periodEnd: "2026-08-31", status: "draft", retainagePct: 5,
+    notes: "Draft — structure mid-month.",
+    lines: [
+      { id: "l1", description: "General conditions", scheduledValue: 120000, previousBilled: 80000, thisPeriod: 15000, materialsStored: 0 },
+      { id: "l2", description: "Site work", scheduledValue: 180000, previousBilled: 180000, thisPeriod: 0, materialsStored: 0 },
+      { id: "l3", description: "Concrete / foundation", scheduledValue: 285000, previousBilled: 285000, thisPeriod: 0, materialsStored: 0 },
+      { id: "l4", description: "Structural steel", scheduledValue: 520000, previousBilled: 240000, thisPeriod: 90000, materialsStored: 20000 },
+      { id: "l5", description: "Envelope", scheduledValue: 310000, previousBilled: 35000, thisPeriod: 40000, materialsStored: 10000 },
+      { id: "l6", description: "MEP core", scheduledValue: 445000, previousBilled: 28000, thisPeriod: 35000, materialsStored: 0 },
+      { id: "l7", description: "GC fee / OH&P", scheduledValue: 240000, previousBilled: 78000, thisPeriod: 22000, materialsStored: 0 },
+    ],
+  },
 ];

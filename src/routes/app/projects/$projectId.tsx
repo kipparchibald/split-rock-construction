@@ -9,13 +9,14 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/data/store";
+import { payAppTotals } from "@/lib/pay-app";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/projects/$projectId")({
   component: ProjectHub,
 });
 
-const TAB_META = [
+const BASE_TABS = [
   { value: "overview", label: "Overview" },
   { value: "schedule", label: "Schedule" },
   { value: "budget", label: "Budget" },
@@ -27,13 +28,21 @@ const TAB_META = [
   { value: "client", label: "Client" },
 ] as const;
 
-type TabValue = (typeof TAB_META)[number]["value"];
+const COMMERCIAL_TABS = [
+  { value: "subs", label: "Subcontracts" },
+  { value: "payapps", label: "Pay apps" },
+  { value: "delivery", label: "Delivery" },
+] as const;
+
+type TabValue = (typeof BASE_TABS)[number]["value"] | (typeof COMMERCIAL_TABS)[number]["value"];
 
 function ProjectHub() {
   const { projectId } = Route.useParams();
   const {
     projects, clients, draws, changeOrders, selections, dailyLogs,
-    documents, budgetLines, members, submitDraw, setChangeOrderStatus, setSelectionStatus,
+    documents, budgetLines, members, subcontracts, payApplications, commercialMeta,
+    submitDraw, setChangeOrderStatus, setSelectionStatus,
+    setSubStatus, submitPayApp, certifyPayApp, markPayAppPaid,
   } = useAppStore();
   const project = projects.find((p) => p.id === projectId);
   const client = clients.find((c) => c.id === project?.clientId);
@@ -48,12 +57,19 @@ function ProjectHub() {
     );
   }
 
+  const isCommercial = project.type === "commercial";
+  const tabMeta = isCommercial
+    ? [...BASE_TABS.filter((x) => x.value !== "selections"), ...COMMERCIAL_TABS]
+    : [...BASE_TABS];
   const pDraws = draws.filter((d) => d.projectId === project.id);
   const pCOs = changeOrders.filter((c) => c.projectId === project.id);
   const pSel = selections.filter((s) => s.projectId === project.id);
   const pLogs = dailyLogs.filter((l) => l.projectId === project.id);
   const pDocs = documents.filter((d) => d.projectId === project.id);
   const pBudget = budgetLines.filter((b) => b.projectId === project.id);
+  const pSubs = subcontracts.filter((s) => s.projectId === project.id);
+  const pPayApps = payApplications.filter((a) => a.projectId === project.id);
+  const meta = commercialMeta.find((m) => m.projectId === project.id);
   const crew = members.filter((m) => m.projectId === project.id);
   const paid = pDraws.filter((d) => d.status === "paid").reduce((s, d) => s + d.amount, 0);
   const coTotal = pCOs.filter((c) => c.status === "approved" || c.status === "invoiced").reduce((s, c) => s + c.amount, 0);
@@ -105,7 +121,7 @@ function ProjectHub() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TAB_META.map((t) => (
+              {tabMeta.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
               ))}
             </SelectContent>
@@ -113,7 +129,7 @@ function ProjectHub() {
         </div>
         {/* Desktop: horizontal chips */}
         <TabsList className="mb-1 hidden h-auto w-full flex-wrap md:inline-flex">
-          {TAB_META.map((t) => (
+          {tabMeta.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
           ))}
         </TabsList>
@@ -311,6 +327,71 @@ function ProjectHub() {
                 </div>
               ))}
               {!pDocs.length ? <p className="text-[13px] text-fg-muted">No documents.</p> : null}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
+        <TabsContent value="subs" className="space-y-2">
+          {pSubs.map((sub) => (
+            <div key={sub.id} className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[13px] font-medium">{sub.company} · Div {sub.csiDivision}</p>
+                <p className="text-[12px] text-fg-muted">{sub.trade} · {sub.contact}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] tabular-nums font-medium">{formatCurrency(sub.contractAmount)}</span>
+                <Badge variant="secondary">{sub.status}</Badge>
+                {sub.status === "bidding" ? <Button size="sm" onClick={() => setSubStatus(sub.id, "awarded")}>Award</Button> : null}
+              </div>
+            </div>
+          ))}
+          {!pSubs.length ? <p className="text-[13px] text-fg-muted">No subcontracts.</p> : null}
+          <Button variant="outline" size="sm" asChild><Link to="/app/commercial">Open commercial module</Link></Button>
+        </TabsContent>
+
+        <TabsContent value="payapps" className="space-y-3">
+          {pPayApps.slice().sort((a, b) => b.number - a.number).map((app) => {
+            const totals = payAppTotals(app);
+            return (
+              <div key={app.id} className="border border-border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[13px] font-medium">Pay app #{app.number}</p>
+                    <p className="text-[11px] text-fg-muted">Period {formatDate(app.periodEnd)} · due {formatCurrency(totals.currentPayment)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={app.status === "paid" ? "success" : app.status === "draft" ? "secondary" : "warning"}>{app.status}</Badge>
+                    {app.status === "draft" ? <Button size="sm" onClick={() => submitPayApp(app.id)}>Submit</Button> : null}
+                    {app.status === "submitted" ? <Button size="sm" onClick={() => certifyPayApp(app.id)}>Certify</Button> : null}
+                    {app.status === "certified" ? <Button size="sm" variant="outline" onClick={() => markPayAppPaid(app.id)}>Paid</Button> : null}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {!pPayApps.length ? <p className="text-[13px] text-fg-muted">No pay applications.</p> : null}
+        </TabsContent>
+
+        <TabsContent value="delivery">
+          <Card>
+            <CardHeader><CardTitle>Commercial delivery</CardTitle></CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Delivery", meta?.delivery.replace(/_/g, " ") ?? "—"],
+                ["Bond", meta ? `${meta.bondStatus.replace(/_/g, " ")} · ${formatCurrency(meta.bondAmount)}` : "—"],
+                ["Architect", meta?.architect ?? "—"],
+                ["Owner rep", meta?.ownerRep ?? "—"],
+                ["LD / day", meta ? formatCurrency(meta.liquidatedDamagesPerDay) : "—"],
+                ["OCIP", meta?.ocip ? "Yes" : "No"],
+                ["Prevailing wage", meta?.prevailingWage ? "Yes" : "No"],
+                ["Substantial", meta?.substantialDate ? formatDate(meta.substantialDate) : "—"],
+              ].map(([k, v]) => (
+                <div key={String(k)} className="border border-border p-3">
+                  <p className="label-caps">{k}</p>
+                  <p className="mt-1 text-[13px] font-medium capitalize">{v}</p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>

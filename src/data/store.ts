@@ -1,15 +1,16 @@
 import { create } from "zustand";
 import {
   activity as seedActivity, bids as seedBids, budgetLines as seedBudget,
-  changeOrders as seedCOs, clients as seedClients, crews as seedCrews,
-  dailyLogs as seedLogs, documents as seedDocs, equipment as seedEquipment,
-  members as seedMembers, progressDraws as seedDraws, projects as seedProjects,
-  safetyIncidents as seedSafety, selections as seedSelections,
+  changeOrders as seedCOs, clients as seedClients, commercialMeta as seedCommercialMeta,
+  crews as seedCrews, dailyLogs as seedLogs, documents as seedDocs,
+  equipment as seedEquipment, members as seedMembers, payApplications as seedPayApps,
+  progressDraws as seedDraws, projects as seedProjects, safetyIncidents as seedSafety,
+  selections as seedSelections, subcontracts as seedSubs,
 } from "./seed";
 import type {
-  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, Crew, CrewMember,
-  DailyLog, DocumentItem, Equipment, ProgressDraw, Project, ProjectStatus,
-  SafetyIncident, SelectionItem,
+  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CommercialMeta, Crew, CrewMember,
+  DailyLog, DocumentItem, Equipment, PayApplication, ProgressDraw, Project, ProjectStatus,
+  SafetyIncident, SelectionItem, SubStatus, Subcontract,
 } from "./types";
 
 function uid(prefix: string) {
@@ -22,6 +23,7 @@ interface AppState {
   documents: DocumentItem[]; budgetLines: BudgetLine[]; activity: ActivityItem[];
   draws: ProgressDraw[]; changeOrders: ChangeOrder[]; selections: SelectionItem[];
   dailyLogs: DailyLog[];
+  subcontracts: Subcontract[]; payApplications: PayApplication[]; commercialMeta: CommercialMeta[];
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
   addDailyLog: (log: Omit<DailyLog, "id">) => void;
   submitDraw: (id: string) => void;
@@ -33,6 +35,10 @@ interface AppState {
   assignEquipment: (id: string, projectId: string | undefined) => void;
   addClient: (client: Omit<Client, "id">) => void;
   addSafetyIncident: (incident: Omit<SafetyIncident, "id">) => void;
+  setSubStatus: (id: string, status: SubStatus) => void;
+  submitPayApp: (id: string) => void;
+  certifyPayApp: (id: string) => void;
+  markPayAppPaid: (id: string) => void;
 }
 
 function createAppStore() {
@@ -41,6 +47,7 @@ function createAppStore() {
     equipment: seedEquipment, bids: seedBids, safety: seedSafety, documents: seedDocs,
     budgetLines: seedBudget, activity: seedActivity, draws: seedDraws,
     changeOrders: seedCOs, selections: seedSelections, dailyLogs: seedLogs,
+    subcontracts: seedSubs, payApplications: seedPayApps, commercialMeta: seedCommercialMeta,
 
     updateProjectStatus: (id, status) =>
       set((s) => ({
@@ -102,10 +109,41 @@ function createAppStore() {
         safety: [{ ...incident, id: uid("s") }, ...s.safety],
         activity: [{ id: uid("a"), at: new Date().toISOString(), text: `Safety: ${incident.title}`, kind: "safety" }, ...s.activity],
       })),
+
+    setSubStatus: (id, status) =>
+      set((s) => ({
+        subcontracts: s.subcontracts.map((sub) => (sub.id === id ? { ...sub, status } : sub)),
+      })),
+
+    submitPayApp: (id) =>
+      set((s) => ({
+        payApplications: s.payApplications.map((pa) =>
+          pa.id === id
+            ? { ...pa, status: "submitted" as const, submittedAt: new Date().toISOString().slice(0, 10) }
+            : pa,
+        ),
+        activity: [{ id: uid("a"), at: new Date().toISOString(), text: "Pay application submitted", kind: "project" }, ...s.activity],
+      })),
+
+    certifyPayApp: (id) =>
+      set((s) => ({
+        payApplications: s.payApplications.map((pa) =>
+          pa.id === id
+            ? { ...pa, status: "certified" as const, certifiedAt: new Date().toISOString().slice(0, 10) }
+            : pa,
+        ),
+      })),
+
+    markPayAppPaid: (id) =>
+      set((s) => ({
+        payApplications: s.payApplications.map((pa) =>
+          pa.id === id
+            ? { ...pa, status: "paid" as const, paidAt: new Date().toISOString().slice(0, 10) }
+            : pa,
+        ),
+      })),
   }));
 }
 
-const globalForStore = globalThis as unknown as { __splitRockStore?: ReturnType<typeof createAppStore> };
-
-export const useAppStore =
-  globalForStore.__splitRockStore ?? (globalForStore.__splitRockStore = createAppStore());
+// Always create from current seed so commercial data stays in sync on reload
+export const useAppStore = createAppStore();

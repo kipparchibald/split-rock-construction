@@ -10,7 +10,7 @@ import { formatCurrency } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/projects/")({ component: ProjectsPage });
 
-type Filter = "all" | ProjectStatus | "active";
+type Filter = "all" | ProjectStatus | "active" | "residential" | "commercial";
 
 function ProjectsPage() {
   const { projects, clients } = useAppStore();
@@ -28,6 +28,7 @@ function ProjectsPage() {
   const filtered = useMemo(() => {
     if (filter === "all") return projects;
     if (filter === "active") return projects.filter((p) => !["complete", "on_hold"].includes(p.status));
+    if (filter === "residential" || filter === "commercial") return projects.filter((p) => p.type === filter);
     return projects.filter((p) => p.status === filter);
   }, [projects, filter]);
 
@@ -41,10 +42,11 @@ function ProjectsPage() {
         options={[
           { value: "active", label: "Active", count: counts.active },
           { value: "all", label: "All", count: counts.all },
+          { value: "residential", label: "Residential", count: projects.filter((p) => p.type === "residential").length },
+          { value: "commercial", label: "Commercial", count: projects.filter((p) => p.type === "commercial").length },
           { value: "in_progress", label: "In progress", count: counts.in_progress ?? 0 },
           { value: "punch_list", label: "Punch", count: counts.punch_list ?? 0 },
           { value: "planning", label: "Planning", count: counts.planning ?? 0 },
-          { value: "permitting", label: "Permitting", count: counts.permitting ?? 0 },
         ]}
       />
       <div className="border border-border">
@@ -64,7 +66,7 @@ function ProjectsPage() {
             >
               <div>
                 <p className="text-[13px] font-medium">{p.name}</p>
-                <p className="text-[11px] text-fg-muted">{p.address}</p>
+                <p className="text-[11px] text-fg-muted">{p.address} · {p.type}</p>
               </div>
               <p className="text-[12px] text-fg-muted">{client?.name}</p>
               <p className="text-[12px] text-fg-muted">{p.phase}</p>
