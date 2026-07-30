@@ -35,8 +35,8 @@ export function Logo({
             : "h-9 w-auto shrink-0 object-contain",
           markClassName,
         )}
-        width={variant === "mark" ? 32 : 140}
-        height={variant === "mark" ? 38 : 56}
+        width={variant === "mark" ? 40 : 160}
+        height={variant === "mark" ? 38 : 81}
       />
       {/* Wordmark is baked into the full lockup image; only show text fallback for mark-only */}
       {showWordmark && variant === "mark" && (
