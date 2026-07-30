@@ -5,9 +5,18 @@ export interface CostInputs {
   land: number; siteWork: number; foundation: number; structure: number;
   mep: number; finishes: number; landscaping: number; permitsFees: number; other: number;
 }
+
+/** Pricing assumptions — overhead and profit are now explicit so you can tune them independently. */
 export interface PricingAssumptions {
-  markupPct: number; contingencyPct: number; softCosts: number; taxPct: number;
+  /** Job + company overhead % applied to (hard + contingency + soft). Typical early-stage 8–12%. */
+  overheadPct: number;
+  /** Desired profit % applied to the same base. Target 8–15% depending on risk/volume. */
+  profitPct: number;
+  contingencyPct: number;
+  softCosts: number;
+  taxPct: number;
 }
+
 export interface DrawMilestone {
   id: string; name: string; pct: number; trigger: string; protects: string;
 }
@@ -16,8 +25,14 @@ export const DEFAULT_COSTS: CostInputs = {
   land: 0, siteWork: 42000, foundation: 68000, structure: 185000,
   mep: 98000, finishes: 142000, landscaping: 18000, permitsFees: 12000, other: 8000,
 };
+
+/** Defaults keep total OH+P at 18% (same economics as the previous combined markup). */
 export const DEFAULT_ASSUMPTIONS: PricingAssumptions = {
-  markupPct: 18, contingencyPct: 5, softCosts: 14500, taxPct: 0,
+  overheadPct: 10,
+  profitPct: 8,
+  contingencyPct: 5,
+  softCosts: 14500,
+  taxPct: 0,
 };
 
 export const STANDARD_DRAWS: DrawMilestone[] = [
@@ -35,24 +50,53 @@ export function hardCostTotal(c: CostInputs): number {
 }
 
 export interface PriceBreakdown {
-  hardCosts: number; contingency: number; markup: number; softCosts: number;
-  tax: number; contractPrice: number; minSafePrice: number; costPerSqft: number | null;
+  hardCosts: number;
+  contingency: number;
+  softCosts: number;
+  /** Dollar amount of overhead */
+  overhead: number;
+  /** Dollar amount of profit */
+  profit: number;
+  /** Combined OH + Profit (for compatibility / summary) */
+  markup: number;
+  tax: number;
+  contractPrice: number;
+  minSafePrice: number;
+  costPerSqft: number | null;
+  /** Effective total OH&P percentage used */
+  totalOhpPct: number;
 }
 
 export function calcPrice(costs: CostInputs, assumptions: PricingAssumptions, sqft?: number): PriceBreakdown {
   const hardCosts = hardCostTotal(costs);
   const contingency = hardCosts * (assumptions.contingencyPct / 100);
   const base = hardCosts + contingency + assumptions.softCosts;
-  const markup = base * (assumptions.markupPct / 100);
+
+  // Both percentages apply to the same base so the math stays predictable and matches prior 18% combined behavior.
+  const overhead = base * (assumptions.overheadPct / 100);
+  const profit = base * (assumptions.profitPct / 100);
+  const markup = overhead + profit;
+  const totalOhpPct = assumptions.overheadPct + assumptions.profitPct;
+
   const pretax = base + markup;
   const tax = pretax * (assumptions.taxPct / 100);
   const contractPrice = Math.round(pretax + tax);
+
+  // Safe floor: hard + soft + ~12% minimum coverage (protects against under-pricing early jobs).
   const minSafePrice = Math.round(hardCosts + assumptions.softCosts + hardCosts * 0.12);
+
   return {
-    hardCosts: Math.round(hardCosts), contingency: Math.round(contingency),
-    markup: Math.round(markup), softCosts: Math.round(assumptions.softCosts),
-    tax: Math.round(tax), contractPrice, minSafePrice,
+    hardCosts: Math.round(hardCosts),
+    contingency: Math.round(contingency),
+    softCosts: Math.round(assumptions.softCosts),
+    overhead: Math.round(overhead),
+    profit: Math.round(profit),
+    markup: Math.round(markup),
+    tax: Math.round(tax),
+    contractPrice,
+    minSafePrice,
     costPerSqft: sqft && sqft > 0 ? Math.round(contractPrice / sqft) : null,
+    totalOhpPct,
   };
 }
 
