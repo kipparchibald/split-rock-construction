@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ASSUMPTIONS,
   DEFAULT_COSTS,
+  JOB_OVERHEAD_PRESETS,
   STANDARD_DRAWS,
+  applyJobPreset,
   buildDrawSchedule,
   calcBuilderFinance,
   calcPrice,
   hardCostTotal,
+  matchJobPreset,
 } from "./pricing";
 
 describe("hardCostTotal", () => {
@@ -86,6 +89,58 @@ describe("calcPrice", () => {
     expect(a.contractPrice).toBe(b.contractPrice);
     expect(a.overhead).toBeGreaterThan(b.overhead);
     expect(a.profit).toBeLessThan(b.profit);
+  });
+});
+
+describe("job overhead presets", () => {
+  it("has the expected preset ids", () => {
+    const ids = JOB_OVERHEAD_PRESETS.map((p) => p.id);
+    expect(ids).toContain("spec_ranch");
+    expect(ids).toContain("semi_custom");
+    expect(ids).toContain("full_custom");
+    expect(ids).toContain("early_stage");
+    expect(ids).toContain("volume_spec");
+    expect(ids).toContain("high_risk");
+  });
+
+  it("applyJobPreset sets OH, profit, contingency and optional soft costs", () => {
+    const applied = applyJobPreset("spec_ranch", DEFAULT_ASSUMPTIONS);
+    expect(applied.overheadPct).toBe(8);
+    expect(applied.profitPct).toBe(9);
+    expect(applied.contingencyPct).toBe(4);
+    expect(applied.softCosts).toBe(12000);
+    expect(applied.taxPct).toBe(DEFAULT_ASSUMPTIONS.taxPct);
+  });
+
+  it("matchJobPreset returns the matching id after apply", () => {
+    for (const p of JOB_OVERHEAD_PRESETS) {
+      const a = applyJobPreset(p.id);
+      expect(matchJobPreset(a)).toBe(p.id);
+    }
+  });
+
+  it("matchJobPreset returns null for custom values", () => {
+    expect(
+      matchJobPreset({
+        overheadPct: 11.1,
+        profitPct: 7.7,
+        contingencyPct: 4.2,
+        softCosts: 13000,
+        taxPct: 0,
+      }),
+    ).toBeNull();
+  });
+
+  it("early_stage carries higher overhead than volume_spec", () => {
+    const early = applyJobPreset("early_stage");
+    const volume = applyJobPreset("volume_spec");
+    expect(early.overheadPct).toBeGreaterThan(volume.overheadPct);
+  });
+
+  it("high_risk has the highest contingency among presets", () => {
+    const conts = JOB_OVERHEAD_PRESETS.map((p) => p.contingencyPct);
+    const high = JOB_OVERHEAD_PRESETS.find((p) => p.id === "high_risk")!;
+    expect(high.contingencyPct).toBe(Math.max(...conts));
   });
 });
 
