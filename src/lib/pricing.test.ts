@@ -48,6 +48,10 @@ describe("calcPrice", () => {
     expect(price.hardCosts).toBe(hard);
     expect(price.contractPrice).toBeGreaterThan(hard);
     expect(price.contingency).toBe(Math.round(hard * 0.05));
+    expect(price.overhead).toBeGreaterThan(0);
+    expect(price.profit).toBeGreaterThan(0);
+    expect(price.markup).toBe(price.overhead + price.profit);
+    expect(price.totalOhpPct).toBe(DEFAULT_ASSUMPTIONS.overheadPct + DEFAULT_ASSUMPTIONS.profitPct);
     expect(price.costPerSqft).toBe(Math.round(price.contractPrice / 2400));
   });
 
@@ -56,14 +60,15 @@ describe("calcPrice", () => {
     expect(price.costPerSqft).toBeNull();
   });
 
-  it("flags prices below the safe floor when markup is too low", () => {
+  it("flags prices below the safe floor when OH+P is too low", () => {
     const price = calcPrice(DEFAULT_COSTS, {
-      markupPct: 0,
+      overheadPct: 0,
+      profitPct: 0,
       contingencyPct: 0,
       softCosts: 0,
       taxPct: 0,
     });
-    // minSafe = hard + soft + 12% of hard; with 0 markup/contingency/soft, contract = hard only
+    // minSafe = hard + soft + 12% of hard; with zero OH/P/contingency/soft, contract = hard only
     expect(price.contractPrice).toBeLessThan(price.minSafePrice);
   });
 
@@ -72,6 +77,15 @@ describe("calcPrice", () => {
     const withTax = calcPrice(DEFAULT_COSTS, { ...DEFAULT_ASSUMPTIONS, taxPct: 6 });
     expect(withTax.tax).toBeGreaterThan(0);
     expect(withTax.contractPrice).toBeGreaterThan(noTax.contractPrice);
+  });
+
+  it("lets overhead and profit be tuned independently while preserving total", () => {
+    const a = calcPrice(DEFAULT_COSTS, { ...DEFAULT_ASSUMPTIONS, overheadPct: 12, profitPct: 6 });
+    const b = calcPrice(DEFAULT_COSTS, { ...DEFAULT_ASSUMPTIONS, overheadPct: 6, profitPct: 12 });
+    // Same total OH+P % → same contract price (both applied to the same base)
+    expect(a.contractPrice).toBe(b.contractPrice);
+    expect(a.overhead).toBeGreaterThan(b.overhead);
+    expect(a.profit).toBeLessThan(b.profit);
   });
 });
 
