@@ -55,7 +55,7 @@ function PricingPage() {
     <div>
       <PageHeader
         title="Bid & price"
-        description="Transparent pricing that protects both parties — fixed-price, cost-plus, or build-to-close."
+        description="Transparent pricing that protects both parties — fixed-price, cost-plus, or build-to-close. Overhead and profit are explicit so you can tune them independently."
       />
 
       <div className="mb-6 grid gap-3 lg:grid-cols-3">
@@ -94,8 +94,24 @@ function PricingPage() {
                 <Input className="mt-1" inputMode="numeric" value={sqft} onChange={(e) => setSqft(Number(e.target.value) || 0)} />
               </div>
               <div>
-                <Label>GC fee / OH&P %</Label>
-                <Input className="mt-1" inputMode="decimal" value={assumptions.markupPct} onChange={(e) => setAssumptions((a) => ({ ...a, markupPct: Number(e.target.value) || 0 }))} />
+                <Label>Overhead %</Label>
+                <Input
+                  className="mt-1"
+                  inputMode="decimal"
+                  value={assumptions.overheadPct}
+                  onChange={(e) => setAssumptions((a) => ({ ...a, overheadPct: Number(e.target.value) || 0 }))}
+                />
+                <p className="mt-1 text-[11px] text-fg-subtle">Job + company OH (supervision, insurance, office, vehicles…)</p>
+              </div>
+              <div>
+                <Label>Profit %</Label>
+                <Input
+                  className="mt-1"
+                  inputMode="decimal"
+                  value={assumptions.profitPct}
+                  onChange={(e) => setAssumptions((a) => ({ ...a, profitPct: Number(e.target.value) || 0 }))}
+                />
+                <p className="mt-1 text-[11px] text-fg-subtle">Owner return + risk buffer. Raise on custom / higher-risk work.</p>
               </div>
               <div>
                 <Label>Contingency %</Label>
@@ -109,19 +125,27 @@ function PricingPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Contract price</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Contract price</CardTitle>
+              <p className="text-[12px] text-fg-muted">Total OH&P = {price.totalOhpPct}%</p>
+            </CardHeader>
             <CardContent className="space-y-2 text-[13px]">
               {[
                 ["Hard costs", price.hardCosts],
                 ["Contingency", price.contingency],
                 ["Soft costs", price.softCosts],
-                ["GC fee / OH&P", price.markup],
+                ["Overhead", price.overhead],
+                ["Profit", price.profit],
               ].map(([k, v]) => (
                 <div key={String(k)} className="flex justify-between border-b border-border py-2">
                   <span className="text-fg-muted">{k}</span>
                   <span className="tabular-nums">{formatCurrency(Number(v))}</span>
                 </div>
               ))}
+              <div className="flex justify-between border-b border-border py-2">
+                <span className="text-fg-muted">Combined OH&P</span>
+                <span className="tabular-nums">{formatCurrency(price.markup)}</span>
+              </div>
               <div className="flex justify-between py-3">
                 <span className="font-medium">Contract price</span>
                 <span className="text-xl font-medium tabular-nums">{formatCurrency(price.contractPrice)}</span>
@@ -130,7 +154,7 @@ function PricingPage() {
               <div className="border border-border bg-bg p-3">
                 <p className="label-caps">Safe floor</p>
                 <p className="mt-1 text-[13px] font-medium tabular-nums">{formatCurrency(price.minSafePrice)}</p>
-                <p className="mt-1 text-[11px] text-fg-muted">Below this you are eating risk — hard costs + soft + ~12% minimum OH&P.</p>
+                <p className="mt-1 text-[11px] text-fg-muted">Below this you are eating risk — hard costs + soft + ~12% minimum coverage.</p>
               </div>
               {price.contractPrice < price.minSafePrice ? (
                 <Badge variant="danger">Below safe floor</Badge>
