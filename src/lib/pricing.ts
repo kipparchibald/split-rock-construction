@@ -35,6 +35,141 @@ export const DEFAULT_ASSUMPTIONS: PricingAssumptions = {
   taxPct: 0,
 };
 
+// ── Job-specific overhead presets ───────────────────────────────────────────
+
+export type JobPresetId =
+  | "spec_ranch"
+  | "semi_custom"
+  | "full_custom"
+  | "early_stage"
+  | "volume_spec"
+  | "high_risk";
+
+export interface JobOverheadPreset {
+  id: JobPresetId;
+  label: string;
+  shortLabel: string;
+  description: string;
+  /** When this preset is best used */
+  bestFor: string;
+  overheadPct: number;
+  profitPct: number;
+  contingencyPct: number;
+  /** Optional soft-cost override; omit to keep current soft costs */
+  softCosts?: number;
+}
+
+/**
+ * Practical presets for Split Rock Construction (Teton Heights ranches,
+ * Jefferson County / Eastern Idaho residential).
+ *
+ * Numbers are starting points — adjust after the first 2–3 completed jobs
+ * once you have real job-cost data.
+ */
+export const JOB_OVERHEAD_PRESETS: JobOverheadPreset[] = [
+  {
+    id: "spec_ranch",
+    label: "Spec ranch (Teton Heights)",
+    shortLabel: "Spec ranch",
+    description: "Repeatable 1,500–1,600 sf ranch + basement on 0.6-acre lots. Process dialed, preferred subs, standard finishes.",
+    bestFor: "Your core product on Teton Heights lots once the first couple are complete.",
+    overheadPct: 8,
+    profitPct: 9,
+    contingencyPct: 4,
+    softCosts: 12000,
+  },
+  {
+    id: "semi_custom",
+    label: "Semi-custom",
+    shortLabel: "Semi-custom",
+    description: "Mostly standard plans with owner finish upgrades and a few plan tweaks. Moderate coordination load.",
+    bestFor: "Buyers who want some personalization without full custom complexity.",
+    overheadPct: 10,
+    profitPct: 10,
+    contingencyPct: 5,
+    softCosts: 14500,
+  },
+  {
+    id: "full_custom",
+    label: "Full custom",
+    shortLabel: "Full custom",
+    description: "Owner-driven design, unique finishes, more RFIs, longer selection cycle, higher supervision time.",
+    bestFor: "True custom homes or heavily modified plans.",
+    overheadPct: 12,
+    profitPct: 12,
+    contingencyPct: 6,
+    softCosts: 18000,
+  },
+  {
+    id: "early_stage",
+    label: "Early-stage company",
+    shortLabel: "Early stage",
+    description: "First 1–3 jobs while systems, preferred pricing, and processes are still being built. Fixed costs spread thinly.",
+    bestFor: "Protect margin while you dial in the repeatable model.",
+    overheadPct: 14,
+    profitPct: 8,
+    contingencyPct: 6,
+    softCosts: 16000,
+  },
+  {
+    id: "volume_spec",
+    label: "Volume / preferred-sub",
+    shortLabel: "Volume",
+    description: "Multiple concurrent or sequential specs with locked material packages and preferred-sub pricing.",
+    bestFor: "Once you have steady volume and negotiated rates.",
+    overheadPct: 7,
+    profitPct: 10,
+    contingencyPct: 3.5,
+    softCosts: 11000,
+  },
+  {
+    id: "high_risk",
+    label: "High-risk / complex site",
+    shortLabel: "High risk",
+    description: "Difficult access, winter start, steep grade, remote utilities, or other elevated risk factors.",
+    bestFor: "Jobs that need extra contingency and higher profit to justify the risk.",
+    overheadPct: 13,
+    profitPct: 14,
+    contingencyPct: 8,
+    softCosts: 20000,
+  },
+];
+
+export function getJobPreset(id: JobPresetId): JobOverheadPreset {
+  const found = JOB_OVERHEAD_PRESETS.find((p) => p.id === id);
+  if (!found) throw new Error(`Unknown job preset: ${id}`);
+  return found;
+}
+
+/** Apply a preset onto existing assumptions (preserves taxPct; soft costs only override when the preset defines them). */
+export function applyJobPreset(
+  presetId: JobPresetId,
+  current: PricingAssumptions = DEFAULT_ASSUMPTIONS,
+): PricingAssumptions {
+  const p = getJobPreset(presetId);
+  return {
+    overheadPct: p.overheadPct,
+    profitPct: p.profitPct,
+    contingencyPct: p.contingencyPct,
+    softCosts: p.softCosts ?? current.softCosts,
+    taxPct: current.taxPct,
+  };
+}
+
+/** Detect which preset (if any) matches the current assumptions closely. */
+export function matchJobPreset(a: PricingAssumptions): JobPresetId | null {
+  for (const p of JOB_OVERHEAD_PRESETS) {
+    if (
+      Math.abs(a.overheadPct - p.overheadPct) < 0.05 &&
+      Math.abs(a.profitPct - p.profitPct) < 0.05 &&
+      Math.abs(a.contingencyPct - p.contingencyPct) < 0.05
+    ) {
+      return p.id;
+    }
+  }
+  return null;
+}
+
 export const STANDARD_DRAWS: DrawMilestone[] = [
   { id: "d1", name: "Contract deposit", pct: 0.1, trigger: "Signed contract + materials deposit", protects: "Locks plans & long-lead items." },
   { id: "d2", name: "Foundation complete", pct: 0.15, trigger: "Foundation poured, inspected, backfilled", protects: "Pay only for verified work in place." },
