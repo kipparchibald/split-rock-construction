@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/data/store";
 import { payAppTotals } from "@/lib/pay-app";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { buildJobPnl } from "@/lib/job-cost";
+import { JobPnlStrip } from "@/components/layout/job-pnl-strip";
 
 export const Route = createFileRoute("/app/projects/$projectId")({
   component: ProjectHub,
@@ -193,24 +195,40 @@ function ProjectHub() {
         </TabsContent>
 
         <TabsContent value="budget">
-          <Card>
-            <CardHeader><CardTitle>Job cost</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <div className="hidden grid-cols-4 gap-2 border-b border-border px-4 py-2 text-[11px] uppercase tracking-[0.06em] text-fg-subtle sm:grid">
-                <span>Category</span><span>Budgeted</span><span>Committed</span><span>Actual</span>
+          {(() => {
+            const pnl = buildJobPnl(project, {
+              budgetLines, draws, changeOrders, selections, subcontracts, payApplications,
+            });
+            return (
+              <div className="space-y-3">
+                <JobPnlStrip pnl={pnl} compact />
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-2">
+                    <CardTitle>Cost codes</CardTitle>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to="/app/budget">Open portfolio job cost</Link>
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="hidden grid-cols-5 gap-2 border-b border-border px-4 py-2 text-[11px] uppercase tracking-[0.06em] text-fg-subtle sm:grid">
+                      <span>Code</span><span>Name</span><span>Budgeted</span><span>Committed</span><span>Actual</span>
+                    </div>
+                    {pnl.lines.length === 0 ? (
+                      <p className="px-4 py-6 text-[13px] text-fg-muted">No cost codes yet. Seed from Bid & price or add lines on Job cost.</p>
+                    ) : pnl.lines.map((b) => (
+                      <div key={b.id} className="grid gap-1 border-b border-border px-4 py-3 text-[12px] last:border-0 sm:grid-cols-5 sm:items-center">
+                        <span className="font-mono text-[11px] text-fg-muted">{b.code}</span>
+                        <span className="font-medium">{b.name}</span>
+                        <span className="tabular-nums">{formatCurrency(b.budgeted)}</span>
+                        <span className="tabular-nums text-fg-muted">{formatCurrency(b.committed)}</span>
+                        <span className={`tabular-nums ${b.overBudget ? "text-danger" : ""}`}>{formatCurrency(b.actual)}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
               </div>
-              {pBudget.length === 0 ? (
-                <p className="px-4 py-6 text-[13px] text-fg-muted">No cost codes yet.</p>
-              ) : pBudget.map((b) => (
-                <div key={b.id} className="grid gap-1 border-b border-border px-4 py-3 text-[12px] last:border-0 sm:grid-cols-4 sm:items-center">
-                  <span className="font-medium">{b.category}</span>
-                  <span className="tabular-nums">{formatCurrency(b.budgeted)}</span>
-                  <span className="tabular-nums text-fg-muted">{formatCurrency(b.committed)}</span>
-                  <span className={`tabular-nums ${b.actual > b.budgeted ? "text-danger" : ""}`}>{formatCurrency(b.actual)}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="draws">

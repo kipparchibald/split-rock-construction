@@ -33,6 +33,8 @@ import { loadClosedJobs } from "@/lib/estimate-history";
 import { LIMITS, clampText } from "@/lib/security";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/data/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/pricing")({ component: PricingPage });
 
@@ -63,6 +65,9 @@ function PricingPage() {
   const [draft, setDraft] = useState<EstimateDraft | null>(null);
   const [draftApplied, setDraftApplied] = useState(false);
   const [closedCount, setClosedCount] = useState(0);
+  const [seedProjectId, setSeedProjectId] = useState("p6");
+  const projects = useAppStore((s) => s.projects);
+  const seedBudgetFromEstimate = useAppStore((s) => s.seedBudgetFromEstimate);
 
   useEffect(() => {
     setClosedCount(loadClosedJobs().length);
@@ -617,6 +622,41 @@ function PricingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Push estimate → job cost</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1">
+            <Label>Target job</Label>
+            <select
+              className="mt-1 w-full border border-border bg-bg px-3 py-2 text-[13px]"
+              value={seedProjectId}
+              onChange={(e) => setSeedProjectId(e.target.value)}
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[11px] text-fg-subtle">
+              Replaces that job's cost codes with this estimate's buckets + soft costs, contingency, and OH&P.
+              Existing actuals are cleared — use early, before field spend is recorded.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => {
+              seedBudgetFromEstimate(seedProjectId, costs, assumptions);
+              toast.success("Job cost seeded from estimate");
+            }}
+          >
+            Seed job cost codes
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -47,7 +47,14 @@ export interface ActivityItem {
   id: string; at: string; text: string; kind: "project" | "bid" | "safety" | "doc" | "crew";
 }
 export interface BudgetLine {
-  id: string; projectId: string; category: string; budgeted: number; committed: number; actual: number;
+  id: string;
+  projectId: string;
+  /** Catalog id from src/lib/cost-codes (e.g. 03-FND). Falls back via category if missing. */
+  costCodeId: string;
+  category: string;
+  budgeted: number;
+  committed: number;
+  actual: number;
 }
 
 export type DrawStatus = "upcoming" | "ready" | "submitted" | "paid" | "held";

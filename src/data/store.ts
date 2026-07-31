@@ -15,6 +15,10 @@ import type {
   RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
 } from "./types";
 import { LIMITS, clampText } from "@/lib/security";
+import { estimateBucketsToBudget } from "@/lib/cost-codes";
+import type { CostInputs } from "@/lib/pricing";
+import { calcPrice } from "@/lib/pricing";
+import type { PricingAssumptions } from "@/lib/pricing";
 
 function uid(prefix: string) {
   try {
@@ -58,6 +62,16 @@ interface AppState {
   setRealtyItemStatus: (dealId: string, key: string, status: RealtyItemStatus) => void;
   setRealtyDealStatus: (dealId: string, status: RealtyDealStatus) => void;
   acknowledgeDualCapacity: (dealId: string, by: string) => void;
+  updateBudgetLine: (
+    id: string,
+    patch: Partial<Pick<BudgetLine, "budgeted" | "committed" | "actual" | "costCodeId" | "category">>,
+  ) => void;
+  /** Replace project budget lines from Bid & Price cost buckets (estimate → job cost). */
+  seedBudgetFromEstimate: (
+    projectId: string,
+    costs: CostInputs,
+    assumptions: PricingAssumptions,
+  ) => void;
 }
 
 function createAppStore() {
@@ -293,6 +307,51 @@ function createAppStore() {
           kind: "doc",
         }),
       })),
+    updateBudgetLine: (id, patch) =>
+      set((s) => ({
+        budgetLines: s.budgetLines.map((l) => {
+          if (l.id !== id) return l;
+          const next = { ...l, ...patch };
+          const clamp = (n: unknown) => Math.max(0, Math.min(50_000_000, Math.round(Number(n) || 0)));
+          return {
+            ...next,
+            budgeted: patch.budgeted !== undefined ? clamp(patch.budgeted) : l.budgeted,
+            committed: patch.committed !== undefined ? clamp(patch.committed) : l.committed,
+            actual: patch.actual !== undefined ? clamp(patch.actual) : l.actual,
+            category: patch.category !== undefined ? clampText(patch.category, 80) : l.category,
+            costCodeId: patch.costCodeId !== undefined ? clampText(patch.costCodeId, 24) : l.costCodeId,
+          };
+        }),
+      })),
+
+    seedBudgetFromEstimate: (projectId, costs, assumptions) =>
+      set((s) => {
+        const price = calcPrice(costs, assumptions);
+        const rows = estimateBucketsToBudget(costs, {
+          softCosts: assumptions.softCosts,
+          contingency: price.contingency,
+          overheadProfit: price.markup,
+        });
+        const fresh: BudgetLine[] = rows.map((r) => ({
+          id: uid("bl"),
+          projectId,
+          costCodeId: r.costCodeId,
+          category: r.category,
+          budgeted: r.budgeted,
+          committed: 0,
+          actual: 0,
+        }));
+        return {
+          budgetLines: [...s.budgetLines.filter((l) => l.projectId !== projectId), ...fresh],
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Job cost seeded from estimate (${fresh.length} codes)`,
+            kind: "project",
+          }),
+        };
+      }),
+
   }));
 }
 
