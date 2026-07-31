@@ -19,7 +19,8 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/logo-icon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/logo-app-mark.jpg", type: "image/jpeg" },
+      { rel: "apple-touch-icon", href: "/logo-app-mark.jpg" },
     ],
   }),
   component: RootComponent,

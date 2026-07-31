@@ -5,7 +5,7 @@ interface LogoProps {
   markClassName?: string;
   showWordmark?: boolean;
   inverted?: boolean;
-  /** full = horizontal lockup image; mark = icon + optional text */
+  /** full = mountain + wordmark lockup image; mark = icon with optional text */
   variant?: "full" | "mark";
 }
 
@@ -16,8 +16,6 @@ export function Logo({
   inverted = false,
   variant = "full",
 }: LogoProps) {
-  // Full lockup is a real image (mark + wordmark). Dark variant for dark chrome.
-  // Mark uses the square app mark so nav stays crisp at small sizes.
   if (variant === "full") {
     const src = inverted ? "/logo-dark.jpg" : "/logo.jpg";
     return (
@@ -25,9 +23,12 @@ export function Logo({
         <img
           src={src}
           alt="Split Rock Construction"
-          className={cn("h-9 w-auto max-w-[200px] shrink-0 object-contain object-left sm:h-10 sm:max-w-[240px]", markClassName)}
+          className={cn(
+            "h-9 w-auto max-w-[200px] shrink-0 object-contain object-left sm:h-10 sm:max-w-[240px]",
+            markClassName,
+          )}
           width={240}
-          height={84}
+          height={130}
           decoding="async"
         />
       </div>
@@ -40,7 +41,10 @@ export function Logo({
         src="/logo-app-mark.jpg"
         alt=""
         aria-hidden={!showWordmark}
-        className={cn("h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover", markClassName)}
+        className={cn(
+          "h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover",
+          markClassName,
+        )}
         width={32}
         height={32}
         decoding="async"
