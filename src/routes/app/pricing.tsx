@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Sparkles, AlertTriangle, CheckCircle2, History } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CONTRACT_GUIDANCE,
@@ -21,6 +24,12 @@ import {
   type JobPresetId,
   type PricingAssumptions,
 } from "@/lib/pricing";
+import {
+  DRAFT_EXAMPLES,
+  draftEstimateFromText,
+  type EstimateDraft,
+} from "@/lib/estimate-draft";
+import { loadClosedJobs } from "@/lib/estimate-history";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +57,12 @@ function PricingPage() {
   const [holding, setHolding] = useState(1200);
   const [salePrice, setSalePrice] = useState(0);
   const [sellingPct, setSellingPct] = useState(6);
+
+  // Offline smart draft
+  const [brief, setBrief] = useState("");
+  const [draft, setDraft] = useState<EstimateDraft | null>(null);
+  const [draftApplied, setDraftApplied] = useState(false);
+  const closedCount = typeof window !== "undefined" ? loadClosedJobs().length : 0;
 
   const activePreset = useMemo(() => matchJobPreset(assumptions), [assumptions]);
   const activePresetMeta = activePreset
@@ -78,11 +93,27 @@ function PricingPage() {
     setAssumptions((current) => applyJobPreset(id, current));
   }
 
+  function runDraft() {
+    const text = brief.trim() || DRAFT_EXAMPLES[0];
+    if (!brief.trim()) setBrief(text);
+    const result = draftEstimateFromText(text);
+    setDraft(result);
+    setDraftApplied(false);
+  }
+
+  function applyDraft() {
+    if (!draft) return;
+    setCosts(draft.costs);
+    setAssumptions(draft.assumptions);
+    setSqft(draft.sqft);
+    setDraftApplied(true);
+  }
+
   return (
     <div>
       <PageHeader
         title="Bid & price"
-        description="Transparent pricing that protects both parties — fixed-price, cost-plus, or build-to-close. Use job presets for overhead, then fine-tune."
+        description="Transparent pricing that protects both parties — draft from a short brief, apply a job preset, then fine-tune every line."
       />
 
       <div className="mb-6 grid gap-3 lg:grid-cols-3">
@@ -111,6 +142,172 @@ function PricingPage() {
         </TabsList>
 
         <TabsContent value="builder" className="space-y-4">
+          {/* Offline smart draft */}
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-fg" strokeWidth={1.75} />
+                    Draft estimate
+                  </CardTitle>
+                  <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-fg-muted">
+                    Short text only. Runs fully offline — local rules + your closed-job history.
+                    Seeds costs and OH preset; never a binding bid. For supers and estimators.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="gap-1 font-normal">
+                    <History className="h-3 w-3" strokeWidth={1.75} />
+                    {closedCount} closed job{closedCount === 1 ? "" : "s"}
+                  </Badge>
+                  <Badge variant="outline" className="font-normal">
+                    Offline
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label htmlFor="estimate-brief">Job brief</Label>
+                <Textarea
+                  id="estimate-brief"
+                  className="mt-1"
+                  rows={3}
+                  placeholder="e.g. 1600 sf ranch + basement, 3-car, Teton Heights spec"
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DRAFT_EXAMPLES.map((ex) => (
+                  <button
+                    key={ex}
+                    type="button"
+                    onClick={() => setBrief(ex)}
+                    className="rounded-md border border-border bg-bg px-2.5 py-1.5 text-left text-[11px] text-fg-muted transition-colors hover:border-fg-subtle hover:text-fg"
+                  >
+                    {ex}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={runDraft}>
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Generate draft
+                </Button>
+                {draft ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={applyDraft}
+                    disabled={draftApplied}
+                  >
+                    {draftApplied ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        Applied to builder
+                      </>
+                    ) : (
+                      "Apply to builder"
+                    )}
+                  </Button>
+                ) : null}
+              </div>
+
+              {draft ? (
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                      {draft.parsed.kind}
+                      {draft.parsed.commercialSubtype ? ` · ${draft.parsed.commercialSubtype}` : ""}
+                    </Badge>
+                    <Badge variant="outline">{draft.sqft.toLocaleString()} sf</Badge>
+                    <Badge variant="outline">
+                      Preset · {draft.presetId.replace(/_/g, " ")}
+                    </Badge>
+                    <Badge
+                      variant={draft.confidence >= 0.55 ? "success" : "secondary"}
+                      className="tabular-nums"
+                    >
+                      Confidence {Math.round(draft.confidence * 100)}%
+                    </Badge>
+                    {draftApplied ? (
+                      <Badge variant="success" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
+                        In builder — edit freely
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="border border-border bg-bg p-3">
+                      <p className="label-caps">Draft contract</p>
+                      <p className="mt-1 text-lg font-medium tabular-nums">
+                        {formatCurrency(draft.previewContractPrice)}
+                      </p>
+                      {draft.previewCostPerSqft ? (
+                        <p className="mt-0.5 text-[11px] text-fg-subtle">
+                          {formatCurrency(draft.previewCostPerSqft)} / sf
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="border border-border bg-bg p-3 sm:col-span-2">
+                      <p className="label-caps flex items-center gap-1.5">
+                        <AlertTriangle className="h-3 w-3" strokeWidth={1.75} />
+                        Disclaimer
+                      </p>
+                      <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">
+                        {draft.disclaimer}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    <div>
+                      <p className="label-caps mb-2">Assumptions</p>
+                      <ul className="space-y-1.5 text-[12px] text-fg-muted">
+                        {draft.assumptionsList.map((a) => (
+                          <li key={a} className="flex gap-2">
+                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-fg-subtle" />
+                            <span>{a}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="label-caps mb-2">Exclusions</p>
+                      <ul className="space-y-1.5 text-[12px] text-fg-muted">
+                        {draft.exclusions.map((a) => (
+                          <li key={a} className="flex gap-2">
+                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-fg-subtle" />
+                            <span>{a}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="label-caps mb-2">Risks / watch</p>
+                      {draft.risks.length ? (
+                        <ul className="space-y-1.5 text-[12px] text-fg-muted">
+                          {draft.risks.map((a) => (
+                            <li key={a} className="flex gap-2">
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-fg-subtle" />
+                              <span>{a}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-[12px] text-fg-subtle">No extra risk flags from brief.</p>
+                      )}
+                      <p className="mt-3 text-[11px] text-fg-subtle">{draft.historySummary}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
           {/* Job-specific overhead presets */}
           <Card>
             <CardHeader>
@@ -167,6 +364,11 @@ function PricingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Hard costs</CardTitle>
+                {draftApplied ? (
+                  <p className="text-[12px] text-fg-muted">
+                    Seeded from draft — every line is editable.
+                  </p>
+                ) : null}
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 {COST_FIELDS.map((f) => (

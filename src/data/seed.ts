@@ -155,7 +155,7 @@ export const projects: Project[] = [
   },
   {
     id: "p5", name: "Commerce Park Shell", address: "410 Commerce Park, Boise", clientId: "c4", type: "commercial",
-    status: "in_progress", phase: "Structure", progress: 34, budget: 2100000, spent: 712000,
+    status: "in_progress", phase: "Framing", progress: 34, budget: 2100000, spent: 712000,
     startDate: "2026-03-01", endDate: "2026-12-15", superintendent: "Morgan Ellis", sqft: 18000,
     description: "18,000 sqft light industrial shell — tilt-up panels, clear-span bays, core restrooms, and fire riser room. Design-assist delivery.",
     milestones: [
