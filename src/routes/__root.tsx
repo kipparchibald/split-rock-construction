@@ -12,7 +12,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Split Rock Construction builds residential homes and commercial shells & TI in Boise — ops suite for jobs, subs, pay apps, and crews.",
+          "Split Rock Construction builds residential homes and commercial shells & TI in Rigby — ops suite for jobs, subs, pay apps, and crews.",
       },
       { name: "referrer", content: "strict-origin-when-cross-origin" },
       { name: "theme-color", content: "#1a1a18" },

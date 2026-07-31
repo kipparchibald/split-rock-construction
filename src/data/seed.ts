@@ -6,7 +6,7 @@ export const COMPANY = {
   name: "Split Rock Construction",
   shortName: "Split Rock",
   tagline: "Homes and commercial built on solid ground",
-  location: "Boise, ID",
+  location: "Rigby, ID",
   phone: "(208) 555-0142",
   email: "hello@splitrock.build",
   website: "splitrock.build",
@@ -34,11 +34,11 @@ export const dualRolePolicy: DualRolePolicy = {
 };
 
 export const clients: Client[] = [
-  { id: "c1", name: "James & Elena Hart", email: "elena.hart@email.com", phone: "(208) 555-2201", type: "homeowner", address: "1842 River Bend Dr, Boise, ID", notes: "Custom ranch, board-form concrete accent." },
-  { id: "c2", name: "Marcus Cole", email: "marcus@colehomes.dev", phone: "(208) 555-3344", type: "developer", address: "90 Market St, Boise, ID", notes: "3-lot speculative series in Meridian." },
-  { id: "c3", name: "Priya & Noah Bennett", email: "noah.b@email.com", phone: "(208) 555-1188", type: "homeowner", address: "22 Willow Creek Ln, Eagle, ID", notes: "Two-story modern farmhouse, ADU later." },
-  { id: "c4", name: "Treasure Valley Holdings", email: "ops@tvholdings.com", phone: "(208) 555-9001", type: "commercial", address: "410 Commerce Park, Boise, ID", notes: "Light industrial + retail shells. Primary commercial account." },
-  { id: "c5", name: "Diane Okonkwo", email: "diane.o@email.com", phone: "(208) 555-7720", type: "homeowner", address: "9 Crestview Ct, Meridian, ID", notes: "Accessible single-level with heated floors." },
+  { id: "c1", name: "James & Elena Hart", email: "elena.hart@email.com", phone: "(208) 555-2201", type: "homeowner", address: "1842 River Bend Dr, Rigby, ID", notes: "Custom ranch, board-form concrete accent." },
+  { id: "c2", name: "Marcus Cole", email: "marcus@colehomes.dev", phone: "(208) 555-3344", type: "developer", address: "90 Market St, Rigby, ID", notes: "3-lot speculative series in Rigby." },
+  { id: "c3", name: "Priya & Noah Bennett", email: "noah.b@email.com", phone: "(208) 555-1188", type: "homeowner", address: "22 Willow Creek Ln, Menan, ID", notes: "Two-story modern farmhouse, ADU later." },
+  { id: "c4", name: "Upper Valley Holdings", email: "ops@uppervalleyholdings.com", phone: "(208) 555-9001", type: "commercial", address: "410 Commerce Park, Rigby, ID", notes: "Light industrial + retail shells. Primary commercial account." },
+  { id: "c5", name: "Diane Okonkwo", email: "diane.o@email.com", phone: "(208) 555-7720", type: "homeowner", address: "9 Crestview Ct, Rigby, ID", notes: "Accessible single-level with heated floors." },
 ];
 
 export const members: CrewMember[] = [
@@ -70,7 +70,7 @@ export const equipment: Equipment[] = [
 
 export const projects: Project[] = [
   {
-    id: "p1", name: "Hart Residence", address: "1842 River Bend Dr, Boise", clientId: "c1", type: "residential",
+    id: "p1", name: "Hart Residence", address: "1842 River Bend Dr, Rigby", clientId: "c1", type: "residential",
     status: "in_progress", phase: "MEP Rough-In", progress: 62, budget: 685000, spent: 412400,
     startDate: "2025-11-03", endDate: "2026-09-18", superintendent: "Tyler Brooks", sqft: 2840, beds: 4, baths: 3,
     description: "Custom ranch with board-form concrete entry, open kitchen, and covered patio.",
@@ -114,7 +114,7 @@ export const projects: Project[] = [
     ],
   },
   {
-    id: "p3", name: "Crestview Accessible Home", address: "9 Crestview Ct, Meridian", clientId: "c5", type: "residential",
+    id: "p3", name: "Crestview Accessible Home", address: "9 Crestview Ct, Rigby", clientId: "c5", type: "residential",
     status: "punch_list", phase: "Final Walkthrough", progress: 94, budget: 518000, spent: 501200,
     startDate: "2025-06-02", endDate: "2026-08-08", superintendent: "Morgan Ellis", sqft: 1960, beds: 3, baths: 2,
     description: "Single-level accessible home with zero-threshold showers and radiant floors.",
@@ -136,7 +136,7 @@ export const projects: Project[] = [
     ],
   },
   {
-    id: "p4", name: "Cole Spec — Lot 7", address: "Meridian Ridge Plat, Lot 7", clientId: "c2", type: "residential",
+    id: "p4", name: "Cole Spec — Lot 7", address: "Teton Heights Plat, Lot 7", clientId: "c2", type: "residential",
     status: "planning", phase: "Site Work", progress: 8, budget: 425000, spent: 18200,
     startDate: "2026-09-01", endDate: "2027-04-15", superintendent: "Tyler Brooks", sqft: 2100, beds: 3, baths: 2.5,
     description: "Spec home in Cole series — efficient plan set, standard finishes package.",
@@ -154,7 +154,7 @@ export const projects: Project[] = [
     ],
   },
   {
-    id: "p5", name: "Commerce Park Shell", address: "410 Commerce Park, Boise", clientId: "c4", type: "commercial",
+    id: "p5", name: "Commerce Park Shell", address: "410 Commerce Park, Rigby", clientId: "c4", type: "commercial",
     status: "in_progress", phase: "Framing", progress: 34, budget: 2100000, spent: 712000,
     startDate: "2026-03-01", endDate: "2026-12-15", superintendent: "Morgan Ellis", sqft: 18000,
     description: "18,000 sqft light industrial shell — tilt-up panels, clear-span bays, core restrooms, and fire riser room. Design-assist delivery.",
@@ -414,7 +414,7 @@ export const closeoutPackages: CloseoutPackage[] = [
     items: [
       { key: "substantial_completion", label: "Substantial completion certificate (G704-style)", status: "complete", owner: "Morgan Ellis", completedAt: "2026-07-10", notes: "Owner accepted livable condition; punch list attached." },
       { key: "punch_list", label: "Punch list tracked to zero", status: "in_progress", owner: "Alex Rivera", dueDate: "2026-08-05", notes: "6 items open — paint touch, threshold adjust." },
-      { key: "certificate_of_occupancy", label: "Certificate of occupancy", status: "complete", owner: "City of Meridian", completedAt: "2026-07-08" },
+      { key: "certificate_of_occupancy", label: "Certificate of occupancy", status: "complete", owner: "City of Rigby", completedAt: "2026-07-08" },
       { key: "final_pay_app", label: "Final pay application / final draw", status: "in_progress", owner: "Morgan Ellis", dueDate: "2026-08-10", notes: "Retainage held until punch + lien waivers." },
       { key: "lien_waivers", label: "Final lien waivers (GC + subs)", status: "in_progress", owner: "Morgan Ellis", dueDate: "2026-08-10" },
       { key: "as_builts", label: "As-builts / O&M manuals", status: "complete", owner: "Morgan Ellis", completedAt: "2026-07-12" },
@@ -431,7 +431,7 @@ export const closeoutPackages: CloseoutPackage[] = [
     items: [
       { key: "substantial_completion", label: "Substantial completion certificate (G704-style)", status: "not_started", owner: "Tyler Brooks" },
       { key: "punch_list", label: "Punch list tracked to zero", status: "not_started", owner: "Tyler Brooks" },
-      { key: "certificate_of_occupancy", label: "Certificate of occupancy", status: "not_started", owner: "City of Boise" },
+      { key: "certificate_of_occupancy", label: "Certificate of occupancy", status: "not_started", owner: "City of Rigby" },
       { key: "final_pay_app", label: "Final pay application / final draw", status: "not_started", owner: "Tyler Brooks" },
       { key: "lien_waivers", label: "Final lien waivers (GC + subs)", status: "not_started", owner: "Tyler Brooks" },
       { key: "as_builts", label: "As-builts / O&M manuals", status: "not_started", owner: "Tyler Brooks" },
@@ -448,7 +448,7 @@ export const closeoutPackages: CloseoutPackage[] = [
     items: [
       { key: "substantial_completion", label: "Substantial completion certificate (G704-style)", status: "not_started", owner: "Northline Architects", notes: "Architect issues; starts LD / warranty clocks per contract." },
       { key: "punch_list", label: "Punch list tracked to zero", status: "not_started", owner: "Morgan Ellis" },
-      { key: "certificate_of_occupancy", label: "Certificate of occupancy / TCO", status: "not_started", owner: "City of Boise" },
+      { key: "certificate_of_occupancy", label: "Certificate of occupancy / TCO", status: "not_started", owner: "City of Rigby" },
       { key: "final_pay_app", label: "Final pay application", status: "not_started", owner: "Morgan Ellis" },
       { key: "lien_waivers", label: "Final lien waivers (GC + subs)", status: "not_started", owner: "Morgan Ellis" },
       { key: "as_builts", label: "As-builts / O&M manuals", status: "not_started", owner: "Morgan Ellis" },

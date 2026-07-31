@@ -16,7 +16,7 @@ describe("parseBrief", () => {
   });
 
   it("detects commercial shell", () => {
-    const p = parseBrief("18000 sf commercial shell, Meridian light industrial");
+    const p = parseBrief("18000 sf commercial shell, Rigby light industrial");
     expect(p.kind).toBe("commercial");
     expect(p.sqft).toBe(18000);
     expect(p.commercialSubtype).toBe("shell");
@@ -24,7 +24,7 @@ describe("parseBrief", () => {
   });
 
   it("detects TI", () => {
-    const p = parseBrief("4500 sf retail TI, Boise strip center");
+    const p = parseBrief("4500 sf retail TI, Rigby strip center");
     expect(p.kind).toBe("commercial");
     expect(p.commercialSubtype).toBe("ti");
     expect(p.sqft).toBe(4500);
@@ -50,7 +50,7 @@ describe("parseBrief", () => {
 
 describe("draftEstimateFromText", () => {
   it("produces a full draft with disclaimer and non-zero costs", () => {
-    const d = draftEstimateFromText("2400 sf semi-custom, Meridian, upgraded finishes", {
+    const d = draftEstimateFromText("2400 sf semi-custom, Rigby, upgraded finishes", {
       closedJobs: [],
     });
     expect(d.disclaimer.toLowerCase()).toContain("not a bid");
@@ -110,7 +110,7 @@ describe("draftEstimateFromText", () => {
   });
 
   it("commercial TI draft stays offline and uses TI-ish finishes", () => {
-    const d = draftEstimateFromText("4500 sf office TI downtown Boise", { closedJobs: [] });
+    const d = draftEstimateFromText("4500 sf office TI downtown Rigby", { closedJobs: [] });
     expect(d.parsed.kind).toBe("commercial");
     expect(d.costs.finishes).toBeGreaterThan(d.costs.foundation);
     expect(d.previewContractPrice).toBeGreaterThan(0);

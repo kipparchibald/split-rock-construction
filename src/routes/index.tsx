@@ -51,7 +51,7 @@ function LandingPage() {
             </h1>
             <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-fg-muted">
               Split Rock Construction builds custom homes and commercial shells and tenant
-              improvements across the Treasure Valley — one field system, one standard of craft.
+              improvements across Jefferson County and Eastern Idaho — one field system, one standard of craft.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               <Button size="lg" asChild><a href="#contact">Talk with us <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
@@ -131,9 +131,9 @@ function LandingPage() {
           </div>
           <div className="mt-6 grid gap-px border border-border bg-border md:grid-cols-3">
             {[
-              { name: "Hart Residence", meta: "Boise · Residential · 2,840 sqft", pct: 62 },
-              { name: "Commerce Park Shell", meta: "Boise · Commercial · 18,000 sqft", pct: 34 },
-              { name: "Crestview Accessible", meta: "Meridian · Residential · 1,960 sqft", pct: 94 },
+              { name: "Hart Residence", meta: "Rigby · Residential · 2,840 sqft", pct: 62 },
+              { name: "Commerce Park Shell", meta: "Rigby · Commercial · 18,000 sqft", pct: 34 },
+              { name: "Crestview Accessible", meta: "Rigby · Residential · 1,960 sqft", pct: 94 },
             ].map((job) => (
               <div key={job.name} className="bg-bg-elevated p-5">
                 <h3 className="text-[13px] font-medium">{job.name}</h3>

@@ -1,7 +1,7 @@
 /**
  * Closed-job cost history for the offline draft estimator.
  * Starts empty; record completed jobs as they finish so future drafts
- * bias toward your real Eastern Idaho / Treasure Valley numbers.
+ * bias toward your real Jefferson County / Eastern Idaho numbers.
  */
 
 import type { CostInputs } from "./pricing";

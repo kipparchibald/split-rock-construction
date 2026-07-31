@@ -1,6 +1,6 @@
 # Split Rock Construction — OS
 
-Full product suite for **Split Rock Construction** (Boise, ID residential builder).
+Full product suite for **Split Rock Construction** (Rigby, ID residential builder).
 
 ## What's inside
 - Marketing site + brand mark (split rock · home · stream)

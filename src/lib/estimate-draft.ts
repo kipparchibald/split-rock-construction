@@ -255,7 +255,7 @@ export function parseBrief(input: string): ParsedBrief {
 
   const locationHints: string[] = [];
   for (const place of [
-    "boise",
+    "rigby",
     "meridian",
     "nampa",
     "eagle",
@@ -520,7 +520,7 @@ export function draftEstimateFromText(
 /** Example prompts shown in the UI */
 export const DRAFT_EXAMPLES = [
   "1600 sf ranch + basement, 3-car, Teton Heights spec",
-  "2400 sf semi-custom, Meridian, upgraded finishes",
-  "18000 sf commercial shell, Meridian light industrial",
-  "4500 sf retail TI, Boise strip center",
+  "2400 sf semi-custom, Rigby, upgraded finishes",
+  "18000 sf commercial shell, Rigby light industrial",
+  "4500 sf retail TI, Rigby strip center",
 ] as const;
