@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" role="img" aria-label="Split Rock Construction">
-  <path fill="#121212" d="M20 160 L45 70 L90 30 L100 100 L100 160 Z"/>
-  <path fill="#121212" d="M100 30 L145 50 L180 160 L100 160 Z"/>
-  <path fill="#f0f0f0" d="M94 30 L110 32 L112 100 L88 100 Z"/>
-  <path fill="#f0f0f0" d="M72 105 L100 78 L128 105 L128 145 L72 145 Z"/>
-  <rect x="90" y="112" width="20" height="33" fill="#121212"/>
-  <path fill="#f0f0f0" d="M72 145 C85 130 95 125 100 145 C105 125 115 130 128 145 L128 160 L72 160 Z"/>
-  <path fill="#f0f0f0" d="M40 160 Q70 145 100 160 Q130 145 160 160 L180 160 L20 160 Z" opacity="0"/>
-  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M85 148 Q70 165 55 185"/>
-  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M100 150 Q100 168 100 190"/>
-  <path fill="none" stroke="#f0f0f0" stroke-width="6" d="M115 148 Q130 165 145 185"/>
-  <path fill="#121212" d="M20 155 L180 155 L180 165 L20 165 Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Split Rock Construction">
+  <rect width="64" height="64" rx="8" fill="#121212"/>
+  <path fill="#F5F3EE" d="M12 48 L22 28 L32 18 L32 48 Z"/>
+  <path fill="#F5F3EE" d="M32 18 L44 26 L52 48 L32 48 Z"/>
+  <path fill="#121212" d="M30 18 L34 19 L34 32 L30 32 Z"/>
+  <path fill="#121212" d="M26 34 L32 28 L38 34 L38 44 L26 44 Z"/>
+  <rect x="30" y="36" width="4" height="8" fill="#F5F3EE"/>
+  <path fill="#F5F3EE" d="M26 44 C28 40 30 39 32 44 C34 39 36 40 38 44 L38 48 L26 48 Z"/>
+  <path stroke="#F5F3EE" stroke-width="2" fill="none" d="M28 50 Q24 56 18 60"/>
+  <path stroke="#F5F3EE" stroke-width="2" fill="none" d="M32 50 L32 60"/>
+  <path stroke="#F5F3EE" stroke-width="2" fill="none" d="M36 50 Q40 56 46 60"/>
+  <rect x="10" y="47" width="44" height="3" fill="#F5F3EE"/>
 </svg>

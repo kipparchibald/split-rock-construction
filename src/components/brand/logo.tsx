@@ -5,6 +5,7 @@ interface LogoProps {
   markClassName?: string;
   showWordmark?: boolean;
   inverted?: boolean;
+  /** full = horizontal lockup image; mark = icon + optional text */
   variant?: "full" | "mark";
 }
 
@@ -15,31 +16,36 @@ export function Logo({
   inverted = false,
   variant = "full",
 }: LogoProps) {
-  // Prefer full lockup image for marketing fidelity.
-  // Use light version by default; dark version when inverted (for dark backgrounds).
-  const src =
-    variant === "mark"
-      ? "/logo-mark.jpg"
-      : inverted
-        ? "/logo-dark.jpg"
-        : "/logo.jpg";
+  // Full lockup is a real image (mark + wordmark). Dark variant for dark chrome.
+  // Mark uses the square app mark so nav stays crisp at small sizes.
+  if (variant === "full") {
+    const src = inverted ? "/logo-dark.jpg" : "/logo.jpg";
+    return (
+      <div className={cn("flex items-center", className)}>
+        <img
+          src={src}
+          alt="Split Rock Construction"
+          className={cn("h-9 w-auto max-w-[200px] shrink-0 object-contain object-left sm:h-10 sm:max-w-[240px]", markClassName)}
+          width={240}
+          height={84}
+          decoding="async"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <img
-        src={src}
-        alt="Split Rock Construction"
-        className={cn(
-          variant === "mark"
-            ? "h-8 w-auto shrink-0 object-contain"
-            : "h-9 w-auto shrink-0 object-contain",
-          markClassName,
-        )}
-        width={variant === "mark" ? 40 : 160}
-        height={variant === "mark" ? 38 : 81}
+        src="/logo-app-mark.jpg"
+        alt=""
+        aria-hidden={!showWordmark}
+        className={cn("h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover", markClassName)}
+        width={32}
+        height={32}
+        decoding="async"
       />
-      {/* Wordmark is baked into the full lockup image; only show text fallback for mark-only */}
-      {showWordmark && variant === "mark" && (
+      {showWordmark ? (
         <div className="min-w-0 leading-none">
           <div
             className={cn(
@@ -58,7 +64,7 @@ export function Logo({
             Construction
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

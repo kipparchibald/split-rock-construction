@@ -68,7 +68,14 @@ function LandingPage() {
           </div>
           <div className="border border-border bg-bg-elevated p-6 sm:p-8">
             <div className="flex items-center justify-center border border-border bg-bg px-6 py-12">
-              <img src="/logo.jpg" alt="Split Rock Construction — home built on split rock" className="h-44 w-auto object-contain sm:h-52" />
+              <img
+                src="/logo-hero.jpg"
+                alt="Split Rock Construction — home built on split rock with stream"
+                className="h-48 w-auto max-h-56 object-contain sm:h-56"
+                width={280}
+                height={417}
+                decoding="async"
+              />
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               {["Weekly owner walkthroughs", "Milestone billing & pay apps", "Licensed, insured & bonded", "Local Idaho crews"].map((item) => (
