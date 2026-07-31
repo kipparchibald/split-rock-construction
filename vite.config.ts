@@ -114,10 +114,8 @@ function securityHeadersPlugin(): Plugin {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-    "X-Frame-Options": "SAMEORIGIN",
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-    "Content-Security-Policy":
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws:; worker-src 'self' blob:; frame-ancestors 'self' https://*.grok.com https://*.x.ai https://*.grok-sandbox.com; base-uri 'self'; form-action 'self'; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
   };
   return {
     name: "app-builder:security-headers",
@@ -135,12 +133,10 @@ function securityHeadersPlugin(): Plugin {
 
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
   "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-  "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-ancestors 'self' https://*.grok.com https://*.x.ai https://*.grok-sandbox.com; base-uri 'self'; form-action 'self'; object-src 'none'",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
 };
 
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
