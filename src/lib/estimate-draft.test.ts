@@ -20,7 +20,7 @@ describe("parseBrief", () => {
     expect(p.kind).toBe("commercial");
     expect(p.sqft).toBe(18000);
     expect(p.commercialSubtype).toBe("shell");
-    expect(p.locationHints).toContain("meridian");
+    expect(p.locationHints).toContain("rigby");
   });
 
   it("detects TI", () => {

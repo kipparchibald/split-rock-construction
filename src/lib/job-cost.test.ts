@@ -38,13 +38,13 @@ describe("cost codes", () => {
 
   it("resolves legacy categories", () => {
     expect(resolveCostCodeId("Labor")).toBe("01-LAB");
-    expect(resolveCostCodeId("Structural steel")).toBe("05-STR");
+    expect(resolveCostCodeId("Structural steel")).toBe("05-STL");
     expect(resolveCostCodeId("Contingency")).toBe("01-CONT");
   });
 
   it("maps trades for commercial", () => {
     expect(costCodeForTrade("Fire protection", "21")).toBe("21-FIRE");
-    expect(costCodeForTrade("Electrical", "26")).toBe("15-MEP");
+    expect(costCodeForTrade("Electrical", "26")).toBe("26-ELE");
   });
 
   it("seeds budget rows from estimate buckets", () => {

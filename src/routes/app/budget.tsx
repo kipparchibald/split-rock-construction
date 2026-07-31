@@ -69,10 +69,15 @@ function BudgetPage() {
         title="Job cost"
         description="Cost codes · budget · committed · actual · job P&L. Spine for a future QuickBooks push — not a full GL."
         actions={
-          <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
-            <Download className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
-            Export CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link to="/app/cost-codes">Cost codes / QB export</Link>
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+              Job cost CSV
+            </Button>
+          </div>
         }
       />
 
