@@ -34,20 +34,12 @@ function pgliteBootstrapPlugin(): Plugin {
  * Live-preview OAuth popup — handled HERE so the agent never has to create a
  * `/auth/popup` route (and cannot break it by scaffolding a React page that
  * paints the full app shell in the popup).
- *
- * `signIn` (client.ts) opens `/auth/popup?providerId=…` in a top-level window.
- * This middleware runs before TanStack Start, calls `handleAuthPopupRequest`,
- * and returns the 302 / completion HTML. Deployed apps do not use the popup
- * (full-page OAuth redirect), so `apply: "serve"` is enough.
  */
 function authPopupPlugin(): Plugin {
   return {
     name: "app-builder:auth-popup",
     apply: "serve",
     configureServer(server) {
-      // Register immediately (not in a returned post-hook) so we run BEFORE
-      // TanStack Start / the SPA HTML fallback. A model-authored
-      // `src/routes/auth/popup.tsx` React page must never win this path.
       server.middlewares.use(async (req, res, next) => {
         try {
           const rawUrl = req.url ?? "";
@@ -77,8 +69,6 @@ function authPopupPlugin(): Plugin {
               requestHeaders.set(key, value);
             }
           }
-          // Ensure Host is the public preview host so Better Auth's dynamic
-          // baseURL / redirect_uri match the popup origin.
           if (!requestHeaders.has("host")) requestHeaders.set("host", host);
 
           const request = new Request(`${proto}://${host}${rawUrl}`, {
@@ -92,7 +82,6 @@ function authPopupPlugin(): Plugin {
           const response = await mod.handleAuthPopupRequest(request);
 
           res.statusCode = response.status;
-          // Preserve multiple Set-Cookie headers (OAuth state + session).
           const setCookies =
             typeof response.headers.getSetCookie === "function"
               ? response.headers.getSetCookie()
@@ -119,11 +108,44 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/** Dev-time security headers (prod uses vercel.json + nitro routeRules). */
+function securityHeadersPlugin(): Plugin {
+  const headers: Record<string, string> = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    "Content-Security-Policy":
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws:; worker-src 'self' blob:; frame-ancestors 'self' https://*.grok.com https://*.x.ai https://*.grok-sandbox.com; base-uri 'self'; form-action 'self'; object-src 'none'",
+  };
+  return {
+    name: "app-builder:security-headers",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        for (const [k, v] of Object.entries(headers)) {
+          res.setHeader(k, v);
+        }
+        next();
+      });
+    },
+  };
+}
+
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-ancestors 'self' https://*.grok.com https://*.x.ai https://*.grok-sandbox.com; base-uri 'self'; form-action 'self'; object-src 'none'",
+};
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // Keep `nitro` gated to `build` (the Vercel deploy target): enabled in dev it
 // opens a second dev-server port, which breaks the single-port preview.
-// The dev server starts once `src/router.tsx` and `src/routes/` exist — see
-// AGENTS.md § "First scaffold".
 export default defineConfig(({ command }) => ({
   server: {
     host: "0.0.0.0",
@@ -131,13 +153,38 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
+  // Faster cold starts / leaner client chunks for icon-heavy UI
+  optimizeDeps: {
+    include: ["zustand", "clsx", "tailwind-merge", "sonner"],
+  },
+  build: {
+    target: "es2022",
+    cssCodeSplit: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 900,
+  },
   plugins: [
     pgliteBootstrapPlugin(),
-    // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
+    securityHeadersPlugin(),
     tailwindcss(),
     tanstackStart(),
-    ...(command === "build" ? [nitro({ preset: "vercel" })] : []),
+    ...(command === "build"
+      ? [
+          nitro({
+            preset: "vercel",
+            routeRules: {
+              "/**": { headers: SECURITY_HEADERS },
+              "/assets/**": {
+                headers: {
+                  ...SECURITY_HEADERS,
+                  "Cache-Control": "public, max-age=31536000, immutable",
+                },
+              },
+            },
+          }),
+        ]
+      : []),
     viteReact(),
   ],
 }));

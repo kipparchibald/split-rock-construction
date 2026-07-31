@@ -9,7 +9,13 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Split Rock Construction — Homes built on solid ground" },
-      { name: "description", content: "Split Rock Construction builds residential homes and commercial shells & TI in Boise — ops suite for jobs, subs, pay apps, and crews." },
+      {
+        name: "description",
+        content:
+          "Split Rock Construction builds residential homes and commercial shells & TI in Boise — ops suite for jobs, subs, pay apps, and crews.",
+      },
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
+      { name: "theme-color", content: "#1a1a18" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -30,10 +36,15 @@ function RootComponent() {
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body className="antialiased">
         {children}
-        <Toaster position="bottom-right" toastOptions={{ className: "border border-border bg-bg-elevated text-fg" }} />
+        <Toaster
+          position="bottom-right"
+          toastOptions={{ className: "border border-border bg-bg-elevated text-fg" }}
+        />
         <Scripts />
       </body>
     </html>

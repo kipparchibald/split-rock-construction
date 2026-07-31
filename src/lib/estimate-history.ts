@@ -5,6 +5,7 @@
  */
 
 import type { CostInputs } from "./pricing";
+import { LIMITS, clampText, safeNonNegNumber } from "./security";
 
 const STORAGE_KEY = "src.closed-job-costs.v1";
 
@@ -24,6 +25,18 @@ export interface ClosedJobRecord {
   notes?: string;
 }
 
+const COST_KEYS: (keyof CostInputs)[] = [
+  "land",
+  "siteWork",
+  "foundation",
+  "structure",
+  "mep",
+  "finishes",
+  "landscaping",
+  "permitsFees",
+  "other",
+];
+
 export function emptyCosts(): CostInputs {
   return {
     land: 0,
@@ -35,6 +48,49 @@ export function emptyCosts(): CostInputs {
     landscaping: 0,
     permitsFees: 0,
     other: 0,
+  };
+}
+
+function sanitizeCosts(raw: unknown): CostInputs {
+  const src = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const out = emptyCosts();
+  for (const k of COST_KEYS) {
+    out[k] = safeNonNegNumber(src[k]);
+  }
+  return out;
+}
+
+/** Validate and normalize a single closed-job record from untrusted storage. */
+export function sanitizeClosedJob(raw: unknown): ClosedJobRecord | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const kind = o.kind === "commercial" ? "commercial" : o.kind === "residential" ? "residential" : null;
+  if (!kind) return null;
+  const sqft = safeNonNegNumber(o.sqft, 5_000_000);
+  if (sqft <= 0) return null;
+  const id = clampText(o.id, 64) || `cj-${Date.now()}`;
+  const name = clampText(o.name, LIMITS.closedJobName) || "Closed job";
+  const tags = Array.isArray(o.tags)
+    ? o.tags
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => clampText(t, 40).toLowerCase())
+        .filter(Boolean)
+        .slice(0, LIMITS.closedJobTags)
+    : [];
+  const closedAt =
+    typeof o.closedAt === "string" && /^\d{4}-\d{2}-\d{2}/.test(o.closedAt)
+      ? o.closedAt.slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+  const notes = o.notes != null ? clampText(o.notes, LIMITS.closedJobNotes) : undefined;
+  return {
+    id,
+    name,
+    kind,
+    sqft,
+    costs: sanitizeCosts(o.costs),
+    tags,
+    closedAt,
+    notes: notes || undefined,
   };
 }
 
@@ -59,9 +115,13 @@ export function loadClosedJobs(): ClosedJobRecord[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as ClosedJobRecord[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!raw || raw.length > 500_000) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(sanitizeClosedJob)
+      .filter((j): j is ClosedJobRecord => j != null)
+      .slice(0, LIMITS.closedJobsStored);
   } catch {
     return [];
   }
@@ -69,13 +129,21 @@ export function loadClosedJobs(): ClosedJobRecord[] {
 
 export function saveClosedJobs(jobs: ClosedJobRecord[]): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
+  const clean = jobs
+    .map(sanitizeClosedJob)
+    .filter((j): j is ClosedJobRecord => j != null)
+    .slice(0, LIMITS.closedJobsStored);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+  } catch {
+    /* quota / private mode — ignore */
+  }
 }
 
 export function recordClosedJob(
   job: Omit<ClosedJobRecord, "id" | "closedAt"> & { id?: string; closedAt?: string },
 ): ClosedJobRecord {
-  const record: ClosedJobRecord = {
+  const record = sanitizeClosedJob({
     id: job.id ?? `cj-${Date.now()}`,
     name: job.name,
     kind: job.kind,
@@ -84,16 +152,23 @@ export function recordClosedJob(
     tags: job.tags ?? [],
     closedAt: job.closedAt ?? new Date().toISOString().slice(0, 10),
     notes: job.notes,
-  };
+  });
+  if (!record) {
+    throw new Error("Invalid closed job record");
+  }
   const all = loadClosedJobs().filter((j) => j.id !== record.id);
   all.unshift(record);
-  saveClosedJobs(all.slice(0, 50));
+  saveClosedJobs(all);
   return record;
 }
 
 export function clearClosedJobs(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export interface HistoryBlend {
@@ -137,17 +212,16 @@ export function blendHistoryRates(
 
   const totalScore = scored.reduce((s, x) => s + x.score, 0);
   const rates = emptyCosts();
-  const keys = Object.keys(rates) as (keyof CostInputs)[];
 
   for (const { job, score } of scored) {
     const psf = costsToPerSqft(job.costs, job.sqft);
     const w = score / totalScore;
-    for (const k of keys) {
+    for (const k of COST_KEYS) {
       if (k === "land") continue;
       rates[k] += psf[k] * w;
     }
   }
-  for (const k of keys) {
+  for (const k of COST_KEYS) {
     rates[k] = Math.round(rates[k] * 100) / 100;
   }
 

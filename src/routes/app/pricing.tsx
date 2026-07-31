@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles, AlertTriangle, CheckCircle2, History } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -30,6 +30,7 @@ import {
   type EstimateDraft,
 } from "@/lib/estimate-draft";
 import { loadClosedJobs } from "@/lib/estimate-history";
+import { LIMITS, clampText } from "@/lib/security";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -58,11 +59,14 @@ function PricingPage() {
   const [salePrice, setSalePrice] = useState(0);
   const [sellingPct, setSellingPct] = useState(6);
 
-  // Offline smart draft
   const [brief, setBrief] = useState("");
   const [draft, setDraft] = useState<EstimateDraft | null>(null);
   const [draftApplied, setDraftApplied] = useState(false);
-  const closedCount = typeof window !== "undefined" ? loadClosedJobs().length : 0;
+  const [closedCount, setClosedCount] = useState(0);
+
+  useEffect(() => {
+    setClosedCount(loadClosedJobs().length);
+  }, []);
 
   const activePreset = useMemo(() => matchJobPreset(assumptions), [assumptions]);
   const activePresetMeta = activePreset
@@ -86,7 +90,8 @@ function PricingPage() {
   );
 
   function setCost(key: keyof CostInputs, v: string) {
-    setCosts((c) => ({ ...c, [key]: Number(v.replace(/[^0-9.]/g, "")) || 0 }));
+    const n = Number(v.replace(/[^0-9.]/g, ""));
+    setCosts((c) => ({ ...c, [key]: Number.isFinite(n) && n >= 0 ? n : 0 }));
   }
 
   function selectPreset(id: JobPresetId) {
@@ -94,7 +99,7 @@ function PricingPage() {
   }
 
   function runDraft() {
-    const text = brief.trim() || DRAFT_EXAMPLES[0];
+    const text = clampText(brief.trim() || DRAFT_EXAMPLES[0], LIMITS.estimateBrief);
     if (!brief.trim()) setBrief(text);
     const result = draftEstimateFromText(text);
     setDraft(result);
@@ -142,7 +147,6 @@ function PricingPage() {
         </TabsList>
 
         <TabsContent value="builder" className="space-y-4">
-          {/* Offline smart draft */}
           <Card className="border-border">
             <CardHeader className="pb-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -174,10 +178,14 @@ function PricingPage() {
                   id="estimate-brief"
                   className="mt-1"
                   rows={3}
+                  maxLength={LIMITS.estimateBrief}
                   placeholder="e.g. 1600 sf ranch + basement, 3-car, Teton Heights spec"
                   value={brief}
-                  onChange={(e) => setBrief(e.target.value)}
+                  onChange={(e) => setBrief(e.target.value.slice(0, LIMITS.estimateBrief))}
                 />
+                <p className="mt-1 text-[11px] text-fg-subtle">
+                  {brief.length}/{LIMITS.estimateBrief}
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {DRAFT_EXAMPLES.map((ex) => (
@@ -308,7 +316,6 @@ function PricingPage() {
             </CardContent>
           </Card>
 
-          {/* Job-specific overhead presets */}
           <Card>
             <CardHeader>
               <CardTitle>Job type presets</CardTitle>

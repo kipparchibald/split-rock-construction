@@ -1,6 +1,7 @@
 import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { GROK_PROVIDERS } from "./providers";
+import { safeInternalHref } from "@/lib/security";
 
 /**
  * Better Auth client for this React SPA (browser-side).
@@ -93,8 +94,9 @@ export async function signIn(
   providerId: string,
   opts: { callbackURL?: string; errorCallbackURL?: string } = {},
 ): Promise<void> {
-  const callbackURL = opts.callbackURL ?? "/";
-  const errorCallbackURL = opts.errorCallbackURL ?? "/";
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+  const callbackURL = safeInternalHref(opts.callbackURL ?? "/", origin, "/");
+  const errorCallbackURL = safeInternalHref(opts.errorCallbackURL ?? "/", origin, "/");
 
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
@@ -131,6 +133,7 @@ export async function signIn(
       const dest = new URL(callbackURL, window.location.origin);
       const here = window.location;
       if (dest.origin !== here.origin || dest.pathname !== here.pathname || dest.search !== here.search) {
+        // callbackURL is already same-origin relative from safeInternalHref
         window.location.href = callbackURL;
       }
     }
@@ -143,7 +146,17 @@ export async function signIn(
     errorCallbackURL,
   });
   if (error) throw new Error(error.message ?? "Sign-in failed");
-  if (data?.url) window.location.href = data.url;
+  // Broker returns an absolute URL on the trusted issuer — only navigate if https
+  if (data?.url) {
+    try {
+      const u = new URL(data.url);
+      if (u.protocol === "https:" || u.protocol === "http:") {
+        window.location.href = u.toString();
+      }
+    } catch {
+      /* ignore malformed broker URL */
+    }
+  }
 }
 
 /**
@@ -171,41 +184,54 @@ function waitForPopupToken(popup: Window): Promise<string | null> {
   return new Promise((resolve) => {
     const origin = window.location.origin;
     let settled = false;
-    let closeTimer: number | undefined;
-    const settle = (token: string | null) => {
+
+    const finish = (token: string | null) => {
       if (settled) return;
       settled = true;
-      cleanup();
+      window.removeEventListener("message", onMessage);
+      window.clearInterval(timer);
+      try {
+        popup.close();
+      } catch {
+        /* ignore */
+      }
       resolve(token);
     };
+
     const onMessage = (event: MessageEvent) => {
+      // Only accept same-origin completion messages (openers must not trust foreign windows).
       if (event.origin !== origin) return;
-      const data = event.data as PopupMessage | undefined;
+      const data = event.data as PopupMessage | null;
       if (!data || data.source !== "grok-auth-popup") return;
-      settle(data.token ?? null);
+      if (data.error) {
+        finish(null);
+        return;
+      }
+      finish(typeof data.token === "string" && data.token.length > 0 ? data.token : null);
     };
-    // Fallback when the user dismisses the popup. Grace period lets the
-    // completion page's postMessage win over a racing `popup.closed`.
-    const pollTimer = window.setInterval(() => {
-      if (!popup.closed) return;
-      window.clearInterval(pollTimer);
-      closeTimer = window.setTimeout(() => settle(null), 400);
-    }, 300);
-    function cleanup() {
-      window.clearInterval(pollTimer);
-      if (closeTimer !== undefined) window.clearTimeout(closeTimer);
-      window.removeEventListener("message", onMessage);
-    }
+
     window.addEventListener("message", onMessage);
+
+    // Poll closed: user dismissed without completing. Small delay so a fast
+    // completion page's postMessage win over a racing `popup.closed`.
+    const timer = window.setInterval(() => {
+      if (popup.closed) finish(null);
+    }, 400);
+
+    // Hard timeout — don't hang the UI forever.
+    window.setTimeout(() => finish(null), 5 * 60 * 1000);
   });
 }
 
 /** Sign out of THIS app's local session, clear the preview token, then redirect. */
 export async function signOut(redirectTo = "/"): Promise<void> {
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+  const dest = safeInternalHref(redirectTo, origin, "/");
   try {
     await authClient.signOut();
-  } finally {
-    setBearerToken(null);
+  } catch {
+    /* ignore */
   }
-  window.location.href = redirectTo;
+  setBearerToken(null);
+  window.location.href = dest;
 }

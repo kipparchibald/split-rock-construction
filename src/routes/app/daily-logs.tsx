@@ -33,16 +33,23 @@ function DailyLogsPage() {
 
   function postLog() {
     if (!projectId || !workDone.trim()) return;
+    const crew = Math.min(500, Math.max(0, Math.floor(Number(crewCount) || 0)));
+    const hrs = Math.min(24 * 31, Math.max(0, Number(hours) || 0));
+    // Only allow known static site-photo paths (no open path injection into img src)
+    const safePhoto =
+      photo !== "none" && PHOTO_OPTIONS.some((o) => o.value === photo && o.value.startsWith("/site-photos/"))
+        ? photo
+        : undefined;
     addDailyLog({
       projectId,
       date: new Date().toISOString().slice(0, 10),
       weather: "clear" as DailyLogWeather,
-      crewCount: Number(crewCount) || 0,
-      hours: Number(hours) || 0,
-      workDone: workDone.trim(),
-      blockers: blockers.trim() || undefined,
+      crewCount: crew,
+      hours: hrs,
+      workDone: workDone.trim().slice(0, 2000),
+      blockers: blockers.trim().slice(0, 1000) || undefined,
       author: "Field",
-      photos: photo !== "none" ? [photo] : undefined,
+      photos: safePhoto ? [safePhoto] : undefined,
     });
     setWorkDone("");
     setBlockers("");

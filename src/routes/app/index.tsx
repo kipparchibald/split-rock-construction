@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, CheckCircle2, Clock, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -13,9 +14,29 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
 function Dashboard() {
-  const { projects, draws, changeOrders, documents, safety, selections, dailyLogs, activity, clients, payApplications, subcontracts, closeoutPackages, realtyDeals } =
-    useAppStore();
+  const projects = useAppStore((s) => s.projects);
+  const draws = useAppStore((s) => s.draws);
+  const changeOrders = useAppStore((s) => s.changeOrders);
+  const documents = useAppStore((s) => s.documents);
+  const safety = useAppStore((s) => s.safety);
+  const selections = useAppStore((s) => s.selections);
+  const dailyLogs = useAppStore((s) => s.dailyLogs);
+  const activity = useAppStore((s) => s.activity);
+  const clients = useAppStore((s) => s.clients);
+  const payApplications = useAppStore((s) => s.payApplications);
+  const subcontracts = useAppStore((s) => s.subcontracts);
+  const closeoutPackages = useAppStore((s) => s.closeoutPackages);
+  const realtyDeals = useAppStore((s) => s.realtyDeals);
 
+  const {
+    active,
+    budget,
+    spent,
+    readyDraws,
+    openSafety,
+    commercialCount,
+    attention,
+  } = useMemo(() => {
   const active = projects.filter((p) => !["complete", "on_hold"].includes(p.status));
   const budget = active.reduce((s, p) => s + p.budget, 0);
   const spent = active.reduce((s, p) => s + p.spent, 0);
@@ -109,8 +130,22 @@ function Dashboard() {
     });
   });
 
+  return {
+    active,
+    budget,
+    spent,
+    readyDraws,
+    openSafety,
+    commercialCount,
+    attention,
+  };
+  }, [
+    projects, draws, changeOrders, documents, safety, selections,
+    payApplications, subcontracts, closeoutPackages, realtyDeals,
+  ]);
 
-  const todayLogs = dailyLogs.filter((l) => l.date === "2026-07-28");
+  // Latest field notes (not a hard-coded seed day — works as the calendar moves)
+  const todayLogs = useMemo(() => dailyLogs.slice(0, 4), [dailyLogs]);
 
   return (
     <div>
@@ -174,11 +209,11 @@ function Dashboard() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Today in the field</CardTitle>
+              <CardTitle>Recent field notes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {todayLogs.length === 0 ? (
-                <p className="text-[13px] text-fg-muted">No logs posted for today.</p>
+                <p className="text-[13px] text-fg-muted">No field notes yet.</p>
               ) : (
                 todayLogs.map((l) => {
                   const p = projects.find((x) => x.id === l.projectId);

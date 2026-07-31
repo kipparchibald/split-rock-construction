@@ -20,6 +20,7 @@ import {
   type ClosedJobRecord,
   type ProjectKind,
 } from "./estimate-history";
+import { LIMITS, clampText } from "./security";
 
 export type FinishLevel = "standard" | "upgraded" | "luxury";
 export type CommercialSubtype = "shell" | "ti" | "warehouse" | "retail" | "office" | "mixed";
@@ -70,7 +71,6 @@ export interface EstimateDraft {
 }
 
 // ── Baseline $/sf rates (Idaho residential / light commercial starting points) ─
-// Tuned for Treasure Valley + Eastern Idaho small GC. Land is separate.
 
 interface RateTable {
   siteWork: number;
@@ -127,8 +127,22 @@ const COMM_WAREHOUSE: RateTable = {
   other: 4,
 };
 
-function has(text: string, ...words: string[]): boolean {
-  return words.some((w) => text.includes(w));
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Phrase / token match with word boundaries for single tokens so
+ * "spec" ≠ "special", "star" ≠ "start", "shell" ≠ "eggshell".
+ */
+function has(text: string, ...phrases: string[]): boolean {
+  return phrases.some((p) => {
+    const needle = p.toLowerCase();
+    if (needle.includes(" ") || /[^a-z0-9]/.test(needle)) {
+      return text.includes(needle);
+    }
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(needle)}(?:[^a-z0-9]|$)`).test(text);
+  });
 }
 
 function extractNumberNear(text: string, patterns: RegExp[]): number | null {
@@ -144,31 +158,56 @@ function extractNumberNear(text: string, patterns: RegExp[]): number | null {
 
 /** Parse a free-text job brief into structured signals. */
 export function parseBrief(input: string): ParsedBrief {
-  const raw = input.trim();
+  const raw = clampText(input, LIMITS.estimateBrief);
   const t = raw.toLowerCase().replace(/\s+/g, " ");
 
   const commercial =
-    has(t, "commercial", "ti ", " t.i", "tenant improve", "shell", "warehouse", "industrial", "retail", "office build", "office ti", "csi", "pay app", "tilt-up", "tilt up", "metal building", "shop building", "flex space") ||
-    /\bti\b/.test(t);
+    has(
+      t,
+      "commercial",
+      "tenant improve",
+      "tenant improvement",
+      "warehouse",
+      "industrial",
+      "retail",
+      "office build",
+      "office ti",
+      "csi",
+      "pay app",
+      "tilt-up",
+      "tilt up",
+      "metal building",
+      "shop building",
+      "flex space",
+      "light industrial",
+    ) ||
+    has(t, "shell") ||
+    has(t, "ti") ||
+    /\bt\.i\.?\b/.test(t);
 
   const kind: ProjectKind = commercial ? "commercial" : "residential";
 
   let commercialSubtype: CommercialSubtype | null = null;
   if (kind === "commercial") {
-    if (has(t, "tenant improve", "ti ", " t.i") || /\bti\b/.test(t)) commercialSubtype = "ti";
-    else if (has(t, "shell", "core and shell", "core & shell")) commercialSubtype = "shell";
-    else if (has(t, "warehouse", "industrial", "tilt", "metal building", "shop")) commercialSubtype = "warehouse";
-    else if (has(t, "retail")) commercialSubtype = "retail";
+    if (has(t, "tenant improve", "tenant improvement") || has(t, "ti") || /\bt\.i\.?\b/.test(t)) {
+      commercialSubtype = "ti";
+    } else if (has(t, "shell", "core and shell", "core & shell")) {
+      commercialSubtype = "shell";
+    } else if (has(t, "warehouse", "industrial", "tilt-up", "tilt up", "metal building", "shop")) {
+      commercialSubtype = "warehouse";
+    } else if (has(t, "retail")) commercialSubtype = "retail";
     else if (has(t, "office")) commercialSubtype = "office";
     else commercialSubtype = "mixed";
   }
 
-  const sqft =
+  const sqftRaw =
     extractNumberNear(t, [
       /([\d,]{3,6})\s*(?:sf|sq\.?\s*ft|sqft|square\s*feet)/i,
       /(?:sf|sq\.?\s*ft|sqft)\s*([\d,]{3,6})/i,
       /([\d,]{3,6})\s*(?:sf|sqft)/i,
     ]) ?? (kind === "commercial" ? 12000 : 2400);
+  // Cap absurd sizes so a poisoned brief can't overflow pricing UI
+  const sqft = Math.min(Math.round(sqftRaw), kind === "commercial" ? 500_000 : 50_000);
 
   const beds = extractNumberNear(t, [/(\d+)\s*(?:bed|br|bedroom)/i]);
   const baths = extractNumberNear(t, [/(\d+(?:\.\d+)?)\s*(?:bath|ba\b)/i]);
@@ -183,7 +222,12 @@ export function parseBrief(input: string): ParsedBrief {
   const ranch = has(t, "ranch", "single story", "single-story", "1-story", "one story");
   const custom = has(t, "full custom", "custom home", "custom build", "owner design");
   const semiCustom = has(t, "semi-custom", "semi custom", "plan tweak", "upgraded finish");
-  const volume = has(t, "spec", "volume", "production", "tract", "multiple homes", "preferred sub");
+  // Word-boundary "spec" avoids matching "special" / "specification" mid-word issues for "spec "
+  const volume =
+    has(t, "volume", "production", "tract", "multiple homes", "preferred sub") ||
+    has(t, "spec") ||
+    t.includes("spec home") ||
+    t.includes("spec ranch");
   const earlyStage = has(t, "first job", "early stage", "startup", "first few");
   const highRisk = has(
     t,
@@ -227,7 +271,7 @@ export function parseBrief(input: string): ParsedBrief {
     "treasure valley",
     "eastern idaho",
   ]) {
-    if (t.includes(place)) locationHints.push(place);
+    if (has(t, place)) locationHints.push(place);
   }
 
   const tags: string[] = [kind];
@@ -244,7 +288,7 @@ export function parseBrief(input: string): ParsedBrief {
   return {
     kind,
     commercialSubtype,
-    sqft: Math.round(sqft),
+    sqft,
     beds,
     baths,
     garageBays,
@@ -268,7 +312,6 @@ function pickPreset(p: ParsedBrief): JobPresetId {
   if (p.highRisk) return "high_risk";
   if (p.earlyStage) return "early_stage";
   if (p.kind === "commercial") {
-    // Commercial uses higher OH bands via full_custom / high_risk / volume
     if (p.commercialSubtype === "ti") return "semi_custom";
     if (p.volume) return "volume_spec";
     return "full_custom";
@@ -305,14 +348,12 @@ function baseRatesFor(p: ParsedBrief): RateTable {
       r.foundation += 1.5;
     }
     if (p.ranch) {
-      // Single-story often cheaper structure, more foundation footprint
       r.structure *= 0.96;
       r.foundation *= 1.06;
     }
     return r;
   }
 
-  // Commercial
   let r: RateTable;
   switch (p.commercialSubtype) {
     case "ti":
@@ -376,7 +417,7 @@ function mixRates(base: RateTable, hist: CostInputs, weight: number): RateTable 
 function confidenceFor(p: ParsedBrief, historyMatched: number): number {
   let c = 0.42;
   if (p.raw.length >= 20) c += 0.08;
-  if (/\d{3,}/.test(p.raw)) c += 0.1; // has a number (likely sqft)
+  if (/\d{3,}/.test(p.raw)) c += 0.1;
   if (p.kind === "residential" && (p.ranch || p.custom || p.semiCustom || p.volume)) c += 0.08;
   if (p.kind === "commercial" && p.commercialSubtype) c += 0.1;
   if (p.locationHints.length) c += 0.05;
@@ -403,11 +444,13 @@ export function draftEstimateFromText(
 ): EstimateDraft {
   const parsed = parseBrief(text || "standard residential home");
   const presetId = pickPreset(parsed);
-  const assumptions = applyJobPreset(presetId, DEFAULT_ASSUMPTIONS);
+  const assumptions: PricingAssumptions = { ...applyJobPreset(presetId, DEFAULT_ASSUMPTIONS) };
 
-  // Slight commercial soft-cost bump for design/admin
   if (parsed.kind === "commercial" && assumptions.softCosts < 18000) {
-    assumptions.softCosts = Math.max(assumptions.softCosts, parsed.commercialSubtype === "ti" ? 16000 : 22000);
+    assumptions.softCosts = Math.max(
+      assumptions.softCosts,
+      parsed.commercialSubtype === "ti" ? 16000 : 22000,
+    );
   }
 
   let rates = baseRatesFor(parsed);
@@ -432,8 +475,7 @@ export function draftEstimateFromText(
   if (parsed.garageBays) assumptionsList.push(`Garage: ${parsed.garageBays}-car allowance`);
   if (parsed.beds) assumptionsList.push(`Beds mentioned: ${parsed.beds}`);
   if (parsed.locationHints.length) assumptionsList.push(`Location hints: ${parsed.locationHints.join(", ")}`);
-  if (history.weight > 0) assumptionsList.push(history.summary);
-  else assumptionsList.push(history.summary);
+  assumptionsList.push(history.summary);
 
   const risks: string[] = [];
   if (parsed.highRisk) risks.push("High-risk signals in brief — contingency/profit elevated via preset");

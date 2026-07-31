@@ -131,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="min-w-0 flex-1 lg:hidden">
-            <Logo showWordmark markClassName="h-7" />
+            <Logo variant="mark" showWordmark markClassName="h-7" />
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-[11px] uppercase tracking-[0.08em] text-fg-subtle sm:inline">Field system</span>

@@ -29,6 +29,23 @@ describe("parseBrief", () => {
     expect(p.commercialSubtype).toBe("ti");
     expect(p.sqft).toBe(4500);
   });
+
+  it("does not treat special as volume/spec", () => {
+    const p = parseBrief("2000 sf home with special finishes upgraded");
+    expect(p.volume).toBe(false);
+    expect(p.kind).toBe("residential");
+  });
+
+  it("does not match star city on winter start", () => {
+    const p = parseBrief("2200 sf custom hillside winter start");
+    expect(p.locationHints).not.toContain("star");
+    expect(p.highRisk).toBe(true);
+  });
+
+  it("matches star as a location with word boundary", () => {
+    const p = parseBrief("1800 sf ranch in Star Idaho");
+    expect(p.locationHints).toContain("star");
+  });
 });
 
 describe("draftEstimateFromText", () => {
@@ -85,7 +102,6 @@ describe("draftEstimateFromText", () => {
     });
     expect(blended.historyMatched).toBe(1);
     expect(blended.historySummary).toMatch(/closed job/i);
-    // History should move at least one major bucket
     const moved =
       blended.costs.structure !== base.costs.structure ||
       blended.costs.foundation !== base.costs.foundation ||
@@ -98,5 +114,10 @@ describe("draftEstimateFromText", () => {
     expect(d.parsed.kind).toBe("commercial");
     expect(d.costs.finishes).toBeGreaterThan(d.costs.foundation);
     expect(d.previewContractPrice).toBeGreaterThan(0);
+  });
+
+  it("clamps absurd brief length", () => {
+    const d = draftEstimateFromText("x".repeat(5000) + " 2400 sf ranch", { closedJobs: [] });
+    expect(d.parsed.raw.length).toBeLessThanOrEqual(500);
   });
 });

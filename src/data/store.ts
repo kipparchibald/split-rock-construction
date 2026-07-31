@@ -14,9 +14,21 @@ import type {
   PayApplication, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
   RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
 } from "./types";
+import { LIMITS, clampText } from "@/lib/security";
 
 function uid(prefix: string) {
-  return `${prefix}${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `${prefix}${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
+    }
+  } catch {
+    /* fall through */
+  }
+  return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function pushActivity(list: ActivityItem[], item: ActivityItem): ActivityItem[] {
+  return [item, ...list].slice(0, LIMITS.activityFeed);
 }
 
 interface AppState {
@@ -60,19 +72,48 @@ function createAppStore() {
     updateProjectStatus: (id, status) =>
       set((s) => ({
         projects: s.projects.map((p) => (p.id === id ? { ...p, status } : p)),
-        activity: [{ id: uid("a"), at: new Date().toISOString(), text: `Project status → ${status.replace(/_/g, " ")}`, kind: "project" }, ...s.activity],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Project status → ${status.replace(/_/g, " ")}`,
+          kind: "project",
+        }),
       })),
 
     addDailyLog: (log) =>
-      set((s) => ({
-        dailyLogs: [{ ...log, id: uid("dl") }, ...s.dailyLogs],
-        activity: [{ id: uid("a"), at: new Date().toISOString(), text: `Daily log: ${log.workDone.slice(0, 60)}`, kind: "project" }, ...s.activity],
-      })),
+      set((s) => {
+        const workDone = clampText(log.workDone, LIMITS.dailyLogWork);
+        const blockers = log.blockers ? clampText(log.blockers, LIMITS.dailyLogBlockers) : undefined;
+        return {
+          dailyLogs: [
+            {
+              ...log,
+              id: uid("dl"),
+              workDone,
+              blockers: blockers || undefined,
+              crewCount: Math.min(Math.max(0, Math.floor(log.crewCount) || 0), 500),
+              hours: Math.min(Math.max(0, Number(log.hours) || 0), 24 * 31),
+            },
+            ...s.dailyLogs,
+          ].slice(0, 200),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Daily log: ${workDone.slice(0, 60)}`,
+            kind: "project",
+          }),
+        };
+      }),
 
     submitDraw: (id) =>
       set((s) => ({
         draws: s.draws.map((d) => (d.id === id ? { ...d, status: "submitted" as const } : d)),
-        activity: [{ id: uid("a"), at: new Date().toISOString(), text: "Draw submitted for payment", kind: "project" }, ...s.activity],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: "Draw submitted for payment",
+          kind: "project",
+        }),
       })),
 
     markDrawPaid: (id) =>
@@ -90,7 +131,7 @@ function createAppStore() {
     setSelectionStatus: (id, status, choice) =>
       set((s) => ({
         selections: s.selections.map((sel) =>
-          sel.id === id ? { ...sel, status, ...(choice !== undefined ? { choice } : {}) } : sel,
+          sel.id === id ? { ...sel, status, ...(choice !== undefined ? { choice: clampText(choice, 200) } : {}) } : sel,
         ),
       })),
 
@@ -110,12 +151,39 @@ function createAppStore() {
         ),
       })),
 
-    addClient: (client) => set((s) => ({ clients: [{ ...client, id: uid("c") }, ...s.clients] })),
+    addClient: (client) =>
+      set((s) => ({
+        clients: [
+          {
+            ...client,
+            id: uid("c"),
+            name: clampText(client.name, LIMITS.clientName),
+            notes: clampText(client.notes, LIMITS.clientNotes),
+            email: clampText(client.email, 160),
+            phone: clampText(client.phone, 40),
+            address: clampText(client.address, 240),
+          },
+          ...s.clients,
+        ],
+      })),
 
     addSafetyIncident: (incident) =>
       set((s) => ({
-        safety: [{ ...incident, id: uid("s") }, ...s.safety],
-        activity: [{ id: uid("a"), at: new Date().toISOString(), text: `Safety: ${incident.title}`, kind: "safety" }, ...s.activity],
+        safety: [
+          {
+            ...incident,
+            id: uid("s"),
+            title: clampText(incident.title, 160),
+            description: clampText(incident.description, 2000),
+          },
+          ...s.safety,
+        ],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Safety: ${clampText(incident.title, 60)}`,
+          kind: "safety",
+        }),
       })),
 
     setSubStatus: (id, status) =>
@@ -130,7 +198,12 @@ function createAppStore() {
             ? { ...pa, status: "submitted" as const, submittedAt: new Date().toISOString().slice(0, 10) }
             : pa,
         ),
-        activity: [{ id: uid("a"), at: new Date().toISOString(), text: "Pay application submitted", kind: "project" }, ...s.activity],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: "Pay application submitted",
+          kind: "project",
+        }),
       })),
 
     certifyPayApp: (id) =>
@@ -204,7 +277,7 @@ function createAppStore() {
                 ...d,
                 dualCapacity: "disclosed" as const,
                 dualCapacityAcknowledgedAt: new Date().toISOString().slice(0, 10),
-                dualCapacityAcknowledgedBy: by,
+                dualCapacityAcknowledgedBy: clampText(by, 120),
                 items: d.items.map((it) =>
                   it.key === "dual_capacity_disclosure"
                     ? { ...it, status: "complete" as const, completedAt: new Date().toISOString().slice(0, 10) }
@@ -213,15 +286,12 @@ function createAppStore() {
               }
             : d,
         ),
-        activity: [
-          {
-            id: uid("a"),
-            at: new Date().toISOString(),
-            text: `Dual-capacity disclosure acknowledged by ${by}`,
-            kind: "doc",
-          },
-          ...s.activity,
-        ],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Dual-capacity disclosure acknowledged by ${clampText(by, 60)}`,
+          kind: "doc",
+        }),
       })),
   }));
 }
