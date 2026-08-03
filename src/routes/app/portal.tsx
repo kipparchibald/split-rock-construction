@@ -28,7 +28,7 @@ function PortalPage() {
     <div>
       <PageHeader
         title="Owner portal"
-        description="What clients see — progress, money, decisions. Modeled after Buildertrend / CoConstruct client portals."
+        description="What clients see — progress, money, decisions, and 3D tours. Modeled after Buildertrend / CoConstruct client portals."
       />
       <div className="mb-4 max-w-sm">
         <Select value={projectId} onValueChange={setProjectId}>
@@ -46,6 +46,28 @@ function PortalPage() {
         <Progress value={project.progress} className="mt-4" />
         <p className="mt-2 text-[12px] tabular-nums text-fg-subtle">{project.progress}% complete · {project.phase}</p>
       </div>
+
+      {project.matterportId ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>3D tour (Matterport)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="aspect-video w-full overflow-hidden border border-border bg-bg-subtle">
+              <iframe
+                title="Matterport 3D tour"
+                src={`https://my.matterport.com/show/?m=${project.matterportId}`}
+                className="h-full w-full"
+                allowFullScreen
+                allow="xr-spatial-tracking"
+              />
+            </div>
+            <p className="mt-2 text-[11px] text-fg-subtle">
+              Live Matterport space embed. Replace the space ID on the project record with your capture ID.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
