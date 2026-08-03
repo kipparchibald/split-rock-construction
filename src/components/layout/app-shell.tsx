@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
   LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
-  Factory, Scale, Layers, type LucideIcon,
+  Factory, Scale, Layers, BookOpen, type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ const groups: NavGroup[] = [
     label: "Jobs",
     items: [
       { to: "/app/projects", label: "All jobs", icon: Building2 },
+      { to: "/app/plans", label: "Book of Plans", icon: BookOpen },
       { to: "/app/commercial", label: "Commercial", icon: Factory },
       { to: "/app/closing", label: "Closing", icon: Scale },
       { to: "/app/schedule", label: "Schedule", icon: CalendarRange },
