@@ -3,7 +3,7 @@ export type ProjectType = "residential" | "commercial";
 export type BidStatus = "draft" | "submitted" | "won" | "lost" | "expired";
 export type EquipmentStatus = "available" | "on_site" | "maintenance" | "retired";
 export type SafetySeverity = "near_miss" | "minor" | "serious" | "critical";
-export type DocType = "rfi" | "submittal" | "drawing" | "permit" | "change_order" | "contract";
+export type DocType = "rfi" | "submittal" | "drawing" | "permit" | "change_order" | "contract" | "inspection" | "lien_waiver" | "warranty";
 export type Phase = "Site Work" | "Foundation" | "Framing" | "MEP Rough-In" | "Insulation" | "Drywall" | "Exterior" | "Interior Finishes" | "Landscaping" | "Final Walkthrough";
 
 export interface Client {
@@ -34,6 +34,10 @@ export interface Project {
   beds?: number; baths?: number; description: string;
   milestones: { name: string; date: string; done: boolean }[];
   schedule: { phase: Phase; start: string; end: string; pct: number }[];
+  /** Optional link to Book of Plans entry used to seed this job */
+  planId?: string;
+  /** Matterport space ID for owner portal / marketing tours (public embed) */
+  matterportId?: string;
 }
 export interface SafetyIncident {
   id: string; date: string; projectId: string; severity: SafetySeverity;
@@ -41,7 +45,11 @@ export interface SafetyIncident {
 }
 export interface DocumentItem {
   id: string; title: string; type: DocType; projectId: string;
-  status: "open" | "pending" | "approved" | "rejected"; updatedAt: string; author: string;
+  status: "open" | "pending" | "approved" | "rejected" | "scheduled" | "passed" | "failed";
+  updatedAt: string; author: string;
+  /** Optional agency / inspector / permit number */
+  reference?: string;
+  dueDate?: string;
 }
 export interface ActivityItem {
   id: string; at: string; text: string; kind: "project" | "bid" | "safety" | "doc" | "crew";
@@ -79,6 +87,35 @@ export interface DailyLog {
   id: string; projectId: string; date: string; weather: DailyLogWeather;
   crewCount: number; hours: number; workDone: string; blockers?: string;
   visitors?: string; author: string; photos?: string[];
+}
+
+/** Book of Plans — repeatable ranch / basement packages for Teton Heights & custom */
+export type PlanStyle = "ranch" | "modern_farmhouse" | "mountain_modern" | "traditional";
+export interface PlanAllowance {
+  category: string;
+  amount: number;
+  notes?: string;
+}
+export interface Plan {
+  id: string;
+  name: string;
+  code: string;
+  style: PlanStyle;
+  mainFloorSqft: number;
+  basementSqft: number;
+  beds: number;
+  baths: number;
+  garage: string;
+  basePrice: number;
+  description: string;
+  highlights: string[];
+  allowances: PlanAllowance[];
+  /** Suggested phase schedule template (relative weeks from ground break) */
+  phaseTemplate: { phase: Phase; weeks: number }[];
+  /** Typical draw schedule percentages */
+  drawTemplate: { name: string; pct: number; trigger: string }[];
+  elevationOptions: string[];
+  active: boolean;
 }
 
 /** Commercial construction extensions */
