@@ -1,22 +1,32 @@
 # Split Rock Construction — OS
 
-Full product suite for **Split Rock Construction** (Rigby, ID residential builder).
+Full product suite for **Split Rock Construction** (Rigby, ID residential + commercial GC).
 
 ## What's inside
 - Marketing site + brand mark (split rock · home · stream)
 - **Command center** — needs attention, field logs, cash draws
-- **Job hub** — schedule, job cost, draws, change orders, selections, daily logs, docs, owner view
+- **Job hub** — schedule, job cost, draws, change orders, selections, daily logs, docs, owner view, closeout, realty dual-capacity
+- **Book of Plans** — three core ranch + basement packages (Teton 1580, Jefferson 1520, Split Rock 1620) with allowances, elevation options, draw templates, and start-job-from-plan path
 - **Bid & price** — transparent fixed-price / cost-plus / build-to-close + draw schedules
-- **Owner portal** — client-facing progress & decisions
-- Crews, equipment, safety, documents, clients
+- **Owner portal** — client-facing progress, decisions, money, and **Matterport 3D tour** embed when a project has a `matterportId`
+- **Schedule** — multi-job phase timelines with crew assignments
+- Cost codes + QuickBooks-ready exports, cost alerts, lien-waiver tracking, commercial pay apps
+- Crews, equipment, safety, documents (permits / inspections / contracts), clients
+
+## Recent additions (Aug 2026)
+1. **Book of Plans** (`/app/plans`) — catalog, pricing, allowances, elevation options
+2. **Contract / DocuSign-ready surface** — types + closing package + lien-waiver status (generate package + e-sign handoff points live in Closing + job docs)
+3. **First-client / Teton Heights path** — Cole Spec Lot 7 + plan seeding model ready for live custom home
+4. **Matterport** — optional `matterportId` on projects; iframe tour in owner portal
+5. **Permits & inspections** — expanded `DocType` + status flow (scheduled / passed / failed)
+6. **Scheduling** — enhanced multi-job schedule view with crew context
 
 ## Run
 ```bash
 npm run dev   # 0.0.0.0:8080
 ```
 
-Inspired by strengths of Buildertrend (client + residential), CoConstruct (custom homes), and Procore (document/job cost spine) — simplified for a small GC.
-
+Inspired by strengths of Buildertrend (client + residential), CoConstruct (custom homes), and Procore (document/job cost spine) — simplified for a small GC in Eastern Idaho.
 
 ## Mobile screenshots
 
@@ -33,7 +43,6 @@ Phone viewport captures (390×844) live under `public/mobile/`:
 | Owner portal | `07-portal.png` |
 | Daily logs | `08-daily-logs.png` |
 | Nav drawer | `09-nav-drawer.png` |
-
 
 ## Testing
 
