@@ -140,6 +140,7 @@ export const projects: Project[] = [
     status: "planning", phase: "Site Work", progress: 8, budget: 425000, spent: 18200,
     startDate: "2026-09-01", endDate: "2027-04-15", superintendent: "Tyler Brooks", sqft: 2100, beds: 3, baths: 2.5,
     description: "Spec home in Cole series — efficient plan set, standard finishes package.",
+    planId: "plan-teton-1580",
     milestones: [
       { name: "Plan set locked", date: "2026-08-01", done: false },
       { name: "Permit submitted", date: "2026-08-15", done: false },
@@ -216,6 +217,9 @@ export const bids: Bid[] = [
   { id: "b5", title: "Riverside Addition (lost)", clientId: "c1", type: "residential", status: "lost", amount: 186000, submittedAt: "2025-04-02", dueDate: "2025-04-15", notes: "Client delayed.", lineItems: [
     { label: "Addition structure", amount: 110000 }, { label: "MEP & finishes", amount: 76000 },
   ]},
+  { id: "b7", title: "Okonkwo Detached Garage", clientId: "c5", type: "residential", status: "draft", amount: 68500, dueDate: "2026-08-20", notes: "Draft — 24×36 heated garage package.", lineItems: [
+    { label: "Foundation & slab", amount: 18000 }, { label: "Structure & doors", amount: 32000 }, { label: "Electrical & finishes", amount: 18500 },
+  ]},
 ];
 
 export const safetyIncidents: SafetyIncident[] = [
@@ -228,14 +232,19 @@ export const documents: DocumentItem[] = [
   { id: "d1", title: "RFI-014 Structural hold-down schedule", type: "rfi", projectId: "p1", status: "open", updatedAt: "2026-07-25", author: "Sam Ortega" },
   { id: "d2", title: "Submittal — Exterior windows package", type: "submittal", projectId: "p1", status: "pending", updatedAt: "2026-07-20", author: "Morgan Ellis" },
   { id: "d3", title: "A-series drawings Rev C", type: "drawing", projectId: "p2", status: "approved", updatedAt: "2026-06-18", author: "Morgan Ellis" },
-  { id: "d4", title: "Building permit BP-2026-8841", type: "permit", projectId: "p2", status: "approved", updatedAt: "2026-04-01", author: "Tyler Brooks" },
+  { id: "d4", title: "Building permit BP-2026-8841", type: "permit", projectId: "p2", status: "approved", updatedAt: "2026-04-01", author: "Tyler Brooks", reference: "BP-2026-8841" },
   { id: "d5", title: "CO-003 Kitchen island relocate", type: "change_order", projectId: "p1", status: "pending", updatedAt: "2026-07-18", author: "Tyler Brooks" },
   { id: "d6", title: "Owner contract — Crestview", type: "contract", projectId: "p3", status: "approved", updatedAt: "2025-05-22", author: "Morgan Ellis" },
   { id: "d7", title: "RFI-003 Soil report clarification", type: "rfi", projectId: "p2", status: "approved", updatedAt: "2026-05-10", author: "Riley Chen" },
+  { id: "d8", title: "Rough electrical inspection", type: "inspection", projectId: "p1", status: "scheduled", updatedAt: "2026-07-28", author: "Jordan Hale", reference: "JC-EL-4412", dueDate: "2026-08-05" },
+  { id: "d9", title: "Foundation inspection — Willow Creek", type: "inspection", projectId: "p2", status: "failed", updatedAt: "2026-07-18", author: "Riley Chen", reference: "JC-FN-2201", dueDate: "2026-07-18" },
+  { id: "d10", title: "Plumbing rough re-inspection", type: "inspection", projectId: "p1", status: "passed", updatedAt: "2026-07-10", author: "Tyler Brooks", reference: "JC-PL-3308" },
+  { id: "d11", title: "Building permit BP-2025-2104 — Crestview", type: "permit", projectId: "p3", status: "approved", updatedAt: "2025-05-18", author: "Morgan Ellis", reference: "BP-2025-2104" },
+  { id: "d12", title: "Conditional final / CO path", type: "permit", projectId: "p3", status: "pending", updatedAt: "2026-07-30", author: "Morgan Ellis", reference: "CO-REQ-882", dueDate: "2026-08-08" },
+  { id: "d13", title: "Unconditional lien waiver — cabinetry", type: "lien_waiver", projectId: "p3", status: "pending", updatedAt: "2026-07-29", author: "Morgan Ellis" },
 ];
 
 export const budgetLines: BudgetLine[] = [
-  // Hart Residence — phase-aligned + resource codes
   { id: "bl1", projectId: "p1", costCodeId: "01-LAB", category: "Self-perform labor", budgeted: 210000, committed: 198000, actual: 172400 },
   { id: "bl2", projectId: "p1", costCodeId: "01-MAT", category: "Materials", budgeted: 245000, committed: 230000, actual: 151200 },
   { id: "bl3", projectId: "p1", costCodeId: "01-SUB", category: "Subcontractors", budgeted: 160000, committed: 155000, actual: 72000 },
@@ -243,20 +252,17 @@ export const budgetLines: BudgetLine[] = [
   { id: "bl5", projectId: "p1", costCodeId: "01-CONT", category: "Contingency", budgeted: 35000, committed: 8000, actual: 7000 },
   { id: "bl1b", projectId: "p1", costCodeId: "15-MEP", category: "MEP", budgeted: 98000, committed: 92000, actual: 61000 },
   { id: "bl1c", projectId: "p1", costCodeId: "09-FIN", category: "Finishes", budgeted: 142000, committed: 118000, actual: 54000 },
-  // Willow Creek
   { id: "bl6", projectId: "p2", costCodeId: "01-LAB", category: "Self-perform labor", budgeted: 230000, committed: 95000, actual: 62000 },
   { id: "bl7", projectId: "p2", costCodeId: "01-MAT", category: "Materials", budgeted: 280000, committed: 140000, actual: 88000 },
   { id: "bl8", projectId: "p2", costCodeId: "01-SUB", category: "Subcontractors", budgeted: 170000, committed: 80000, actual: 38500 },
   { id: "bl9", projectId: "p2", costCodeId: "01-EQP", category: "Equipment", budgeted: 32000, committed: 18000, actual: 10000 },
   { id: "bl9b", projectId: "p2", costCodeId: "03-FND", category: "Foundation / concrete", budgeted: 78000, committed: 78000, actual: 52000 },
   { id: "bl9c", projectId: "p2", costCodeId: "01-CONT", category: "Contingency", budgeted: 28000, committed: 4000, actual: 0 },
-  // Crestview (near complete)
   { id: "bl10", projectId: "p3", costCodeId: "01-LAB", category: "Self-perform labor", budgeted: 165000, committed: 165000, actual: 162000 },
   { id: "bl11", projectId: "p3", costCodeId: "01-MAT", category: "Materials", budgeted: 190000, committed: 188000, actual: 186500 },
   { id: "bl12", projectId: "p3", costCodeId: "01-SUB", category: "Subcontractors", budgeted: 120000, committed: 120000, actual: 118200 },
   { id: "bl13", projectId: "p3", costCodeId: "01-EQP", category: "Equipment", budgeted: 18000, committed: 16000, actual: 15500 },
   { id: "bl14", projectId: "p3", costCodeId: "01-CONT", category: "Contingency", budgeted: 25000, committed: 20000, actual: 19000 },
-  // Commerce Park Shell — commercial CSI-aligned
   { id: "bl15", projectId: "p5", costCodeId: "01-GC", category: "General conditions", budgeted: 120000, committed: 95000, actual: 82000 },
   { id: "bl16", projectId: "p5", costCodeId: "03-FND", category: "Foundation / concrete", budgeted: 285000, committed: 285000, actual: 278000 },
   { id: "bl17", projectId: "p5", costCodeId: "05-STL", category: "Structural steel", budgeted: 520000, committed: 520000, actual: 210000 },
@@ -264,7 +270,6 @@ export const budgetLines: BudgetLine[] = [
   { id: "bl19", projectId: "p5", costCodeId: "15-MEP", category: "MEP", budgeted: 445000, committed: 443000, actual: 45000 },
   { id: "bl20", projectId: "p5", costCodeId: "01-OHP", category: "Overhead & profit (fee)", budgeted: 240000, committed: 80000, actual: 55000 },
   { id: "bl20b", projectId: "p5", costCodeId: "21-FIRE", category: "Fire protection", budgeted: 95000, committed: 0, actual: 0 },
-  // Teton Heights ranch
   { id: "bl21", projectId: "p6", costCodeId: "01-LAB", category: "Self-perform labor", budgeted: 95000, committed: 12000, actual: 8000 },
   { id: "bl22", projectId: "p6", costCodeId: "01-MAT", category: "Materials", budgeted: 180000, committed: 20000, actual: 9000 },
   { id: "bl23", projectId: "p6", costCodeId: "01-SUB", category: "Subcontractors", budgeted: 160000, committed: 72000, actual: 0 },
@@ -276,7 +281,6 @@ export const budgetLines: BudgetLine[] = [
 export const activity: ActivityItem[] = [
   { id: "a0", at: "2026-07-28T10:00:00", text: "Pay app #3 submitted — Commerce Park Shell", kind: "project" },
   { id: "a0b", at: "2026-07-27T09:00:00", text: "Sub buyout: FireGuard bid received for fire protection", kind: "bid" },
-
   { id: "a1", at: "2026-07-28T09:15:00", text: "Rough electrical inspection scheduled for Hart Residence", kind: "project" },
   { id: "a2", at: "2026-07-27T16:40:00", text: "Bid package submitted: Cole Spec Series — 3 Lots", kind: "bid" },
   { id: "a3", at: "2026-07-27T11:05:00", text: "Safety: minor rebar cut logged at Willow Creek", kind: "safety" },
@@ -284,7 +288,6 @@ export const activity: ActivityItem[] = [
   { id: "a5", at: "2026-07-26T08:00:00", text: "Framing Alpha assigned to Hart Residence week of Aug 4", kind: "crew" },
   { id: "a6", at: "2026-07-25T15:30:00", text: "Crestview punch list items reduced to 6 remaining", kind: "project" },
 ];
-
 
 export const progressDraws: ProgressDraw[] = [
   { id: "pd1", projectId: "p1", name: "Contract deposit", pct: 0.1, amount: 68500, status: "paid", paidDate: "2025-10-25", trigger: "Signed contract" },
@@ -298,7 +301,6 @@ export const progressDraws: ProgressDraw[] = [
   { id: "pd9", projectId: "p2", name: "Foundation complete", pct: 0.15, amount: 111300, status: "ready", dueDate: "2026-08-05", trigger: "Foundation inspected" },
   { id: "pd10", projectId: "p3", name: "Final retainage", pct: 0.05, amount: 25900, status: "held", trigger: "Punch list sign-off" },
 ];
-
 export const changeOrders: ChangeOrder[] = [
   { id: "co1", projectId: "p1", number: "CO-003", title: "Kitchen island relocate + quartz upgrade", amount: 12800, daysImpact: 5, status: "pending_owner", requestedBy: "Elena Hart", date: "2026-07-18", description: "Move island 18in and upgrade countertop package." },
   { id: "co2", projectId: "p1", number: "CO-002", title: "Add exterior gas stub for grill", amount: 2400, daysImpact: 1, status: "approved", requestedBy: "James Hart", date: "2026-05-02", description: "Gas line rough to patio." },

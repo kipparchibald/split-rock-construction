@@ -8,18 +8,21 @@ Full product suite for **Split Rock Construction** (Rigby, ID residential + comm
 - **Job hub** — schedule, job cost, draws, change orders, selections, daily logs, docs, owner view, closeout, realty dual-capacity
 - **Book of Plans** — three core ranch + basement packages (Teton 1580, Jefferson 1520, Split Rock 1620) with allowances, elevation options, draw templates, and start-job-from-plan path
 - **Bid & price** — transparent fixed-price / cost-plus / build-to-close + draw schedules
+- **Bid board** — kanban pipeline (draft → submitted → won/lost) with pipeline value
 - **Owner portal** — client-facing progress, decisions, money, and **Matterport 3D tour** embed when a project has a `matterportId`
-- **Schedule** — multi-job phase timelines with crew assignments
+- **Schedule** — multi-job Gantt phase timeline with late flags and crew context
+- **Crews & equipment** — assign people/crews/assets to jobs, service-due alerts, daily labor burn
 - Cost codes + QuickBooks-ready exports, cost alerts, lien-waiver tracking, commercial pay apps
-- Crews, equipment, safety, documents (permits / inspections / contracts), clients
+- Clients CRM cards (jobs + bids), safety, documents (permits / inspections / contracts)
 
-## Recent additions (Aug 2026)
+## Recent additions
 1. **Book of Plans** (`/app/plans`) — catalog, pricing, allowances, elevation options
-2. **Contract / DocuSign-ready surface** — types + closing package + lien-waiver status (generate package + e-sign handoff points live in Closing + job docs)
-3. **First-client / Teton Heights path** — Cole Spec Lot 7 + plan seeding model ready for live custom home
-4. **Matterport** — optional `matterportId` on projects; iframe tour in owner portal
-5. **Permits & inspections** — expanded `DocType` + status flow (scheduled / passed / failed)
-6. **Scheduling** — enhanced multi-job schedule view with crew context
+2. **Contract / DocuSign-ready surface** — types + closing package + lien-waiver status
+3. **First-client / Teton Heights path** — Cole Spec Lot 7 + plan seeding model
+4. **Matterport** — optional `matterportId` on projects; iframe tour in owner portal (Hart + Crestview seeded)
+5. **Permits & inspections** — expanded `DocType` + pass/fail actions in Documents
+6. **Scheduling** — multi-job Gantt with today line, late phases, residential/commercial filter
+7. **Ops depth (Aug 2026)** — bid kanban, crew/equipment assignment, client CRM cards, service windows
 
 ## Run
 ```bash

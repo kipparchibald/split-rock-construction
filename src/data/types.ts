@@ -295,3 +295,77 @@ export interface DualRolePolicy {
   licenseNote: string;
   rules: string[];
 }
+
+/** Job-cost / cash / insurance alerts shown in command center */
+export type CostAlertKind =
+  | "over_budget"
+  | "burn_rate"
+  | "commitment_risk"
+  | "draw_gap"
+  | "insurance_expiry";
+export type CostAlertSeverity = "critical" | "warning" | "watch" | "info";
+
+export interface CostAlert {
+  id: string;
+  projectId?: string;
+  kind: CostAlertKind;
+  severity: CostAlertSeverity;
+  title: string;
+  detail: string;
+  metric?: string;
+  createdAt: string;
+  acknowledged: boolean;
+}
+
+/** Subcontractor / vendor insurance COI tracking */
+export type InsurancePolicyType =
+  | "general_liability"
+  | "auto"
+  | "workers_comp"
+  | "umbrella"
+  | "builders_risk"
+  | "professional";
+export type InsurancePolicyStatus = "active" | "expiring_soon" | "expired" | "missing";
+
+export interface InsurancePolicy {
+  id: string;
+  vendorId?: string;
+  projectId?: string;
+  type: InsurancePolicyType;
+  carrier: string;
+  policyNumber: string;
+  expirationDate: string;
+  status: InsurancePolicyStatus;
+  additionalInsured: boolean;
+  additionalInsuredNamed?: string;
+}
+
+export type LienWaiverType =
+  | "conditional_progress"
+  | "unconditional_progress"
+  | "conditional_final"
+  | "unconditional_final";
+
+export type LienWaiverStatus = "draft" | "sent" | "signed" | "void";
+
+export interface LienWaiver {
+  id: string;
+  projectId: string;
+  vendorId: string;
+  type: LienWaiverType;
+  status: LienWaiverStatus;
+  amount: number;
+  throughDate: string;
+  drawId?: string;
+  notes?: string;
+}
+
+export interface Vendor {
+  id: string;
+  company: string;
+  trade: string;
+  contact: string;
+  email: string;
+  phone: string;
+  w9OnFile: boolean;
+}

@@ -9,7 +9,7 @@ import {
   selections as seedSelections, subcontracts as seedSubs,
 } from "./seed";
 import type {
-  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
+  ActivityItem, Bid, BidStatus, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
   CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
   PayApplication, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
   RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
@@ -52,6 +52,10 @@ interface AppState {
   closeSafety: (id: string) => void;
   updateDocStatus: (id: string, status: DocumentItem["status"]) => void;
   assignEquipment: (id: string, projectId: string | undefined) => void;
+  assignMember: (id: string, projectId: string | undefined) => void;
+  assignCrew: (id: string, projectId: string | undefined) => void;
+  setBidStatus: (id: string, status: BidStatus) => void;
+  setEquipmentStatus: (id: string, status: Equipment["status"]) => void;
   addClient: (client: Omit<Client, "id">) => void;
   addSafetyIncident: (incident: Omit<SafetyIncident, "id">) => void;
   setSubStatus: (id: string, status: SubStatus) => void;
@@ -162,6 +166,82 @@ function createAppStore() {
       set((s) => ({
         equipment: s.equipment.map((e) =>
           e.id === id ? { ...e, projectId, status: projectId ? ("on_site" as const) : ("available" as const) } : e,
+        ),
+      })),
+
+    assignMember: (id, projectId) =>
+      set((s) => {
+        const member = s.members.find((m) => m.id === id);
+        const job = projectId ? s.projects.find((p) => p.id === projectId) : undefined;
+        return {
+          members: s.members.map((m) => (m.id === id ? { ...m, projectId } : m)),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: projectId
+              ? `${member?.name ?? "Crew"} assigned to ${job?.name ?? "job"}`
+              : `${member?.name ?? "Crew"} released to yard`,
+            kind: "crew",
+          }),
+        };
+      }),
+
+    assignCrew: (id, projectId) =>
+      set((s) => {
+        const crew = s.crews.find((c) => c.id === id);
+        const job = projectId ? s.projects.find((p) => p.id === projectId) : undefined;
+        const memberIds = new Set(crew?.memberIds ?? []);
+        return {
+          crews: s.crews.map((c) => (c.id === id ? { ...c, projectId } : c)),
+          members: s.members.map((m) =>
+            memberIds.has(m.id) ? { ...m, projectId: projectId ?? undefined } : m,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: projectId
+              ? `${crew?.name ?? "Crew"} staged on ${job?.name ?? "job"}`
+              : `${crew?.name ?? "Crew"} unassigned`,
+            kind: "crew",
+          }),
+        };
+      }),
+
+    setBidStatus: (id, status) =>
+      set((s) => {
+        const bid = s.bids.find((b) => b.id === id);
+        return {
+          bids: s.bids.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  status,
+                  submittedAt:
+                    status === "submitted" && !b.submittedAt
+                      ? new Date().toISOString().slice(0, 10)
+                      : b.submittedAt,
+                }
+              : b,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Bid ${bid?.title ?? id} → ${status}`,
+            kind: "bid",
+          }),
+        };
+      }),
+
+    setEquipmentStatus: (id, status) =>
+      set((s) => ({
+        equipment: s.equipment.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                status,
+                projectId: status === "available" || status === "retired" || status === "maintenance" ? undefined : e.projectId,
+              }
+            : e,
         ),
       })),
 
