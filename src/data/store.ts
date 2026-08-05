@@ -8,6 +8,8 @@ import {
   projects as seedProjects, realtyDeals as seedRealty, safetyIncidents as seedSafety,
   selections as seedSelections, subcontracts as seedSubs,
 } from "./seed";
+import { liveEmpty } from "./live-empty";
+import { isDemoDataEnabled } from "@/lib/runtime-config";
 import type {
   ActivityItem, Bid, BidStatus, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
   CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
@@ -22,7 +24,7 @@ import type { PricingAssumptions } from "@/lib/pricing";
 
 function uid(prefix: string) {
   try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    if (typeof window !== "undefined" && typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
       return `${prefix}${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
     }
   } catch {
@@ -34,6 +36,52 @@ function uid(prefix: string) {
 function pushActivity(list: ActivityItem[], item: ActivityItem): ActivityItem[] {
   return [item, ...list].slice(0, LIMITS.activityFeed);
 }
+
+const initial = isDemoDataEnabled
+  ? {
+      projects: seedProjects,
+      clients: seedClients,
+      members: seedMembers,
+      crews: seedCrews,
+      equipment: seedEquipment,
+      bids: seedBids,
+      safety: seedSafety,
+      documents: seedDocs,
+      budgetLines: seedBudget,
+      activity: seedActivity,
+      draws: seedDraws,
+      changeOrders: seedCOs,
+      selections: seedSelections,
+      dailyLogs: seedLogs,
+      subcontracts: seedSubs,
+      payApplications: seedPayApps,
+      commercialMeta: seedCommercialMeta,
+      closeoutPackages: seedCloseout,
+      realtyDeals: seedRealty,
+      dualRolePolicy: seedDualPolicy,
+    }
+  : {
+      projects: liveEmpty.projects,
+      clients: liveEmpty.clients,
+      members: liveEmpty.members,
+      crews: liveEmpty.crews,
+      equipment: liveEmpty.equipment,
+      bids: liveEmpty.bids,
+      safety: liveEmpty.safety,
+      documents: liveEmpty.documents,
+      budgetLines: liveEmpty.budgetLines,
+      activity: liveEmpty.activity,
+      draws: liveEmpty.draws,
+      changeOrders: liveEmpty.changeOrders,
+      selections: liveEmpty.selections,
+      dailyLogs: liveEmpty.dailyLogs,
+      subcontracts: liveEmpty.subcontracts,
+      payApplications: liveEmpty.payApplications,
+      commercialMeta: liveEmpty.commercialMeta,
+      closeoutPackages: liveEmpty.closeoutPackages,
+      realtyDeals: liveEmpty.realtyDeals,
+      dualRolePolicy: liveEmpty.dualRolePolicy,
+    };
 
 interface AppState {
   projects: Project[]; clients: Client[]; members: CrewMember[]; crews: Crew[];
@@ -70,7 +118,6 @@ interface AppState {
     id: string,
     patch: Partial<Pick<BudgetLine, "budgeted" | "committed" | "actual" | "costCodeId" | "category">>,
   ) => void;
-  /** Replace project budget lines from Bid & Price cost buckets (estimate → job cost). */
   seedBudgetFromEstimate: (
     projectId: string,
     costs: CostInputs,
@@ -80,12 +127,7 @@ interface AppState {
 
 function createAppStore() {
   return create<AppState>((set) => ({
-    projects: seedProjects, clients: seedClients, members: seedMembers, crews: seedCrews,
-    equipment: seedEquipment, bids: seedBids, safety: seedSafety, documents: seedDocs,
-    budgetLines: seedBudget, activity: seedActivity, draws: seedDraws,
-    changeOrders: seedCOs, selections: seedSelections, dailyLogs: seedLogs,
-    subcontracts: seedSubs, payApplications: seedPayApps, commercialMeta: seedCommercialMeta,
-    closeoutPackages: seedCloseout, realtyDeals: seedRealty, dualRolePolicy: seedDualPolicy,
+    ...initial,
 
     updateProjectStatus: (id, status) =>
       set((s) => ({
@@ -431,9 +473,7 @@ function createAppStore() {
           }),
         };
       }),
-
   }));
 }
 
-// Always create from current seed so commercial data stays in sync on reload
 export const useAppStore = createAppStore();
