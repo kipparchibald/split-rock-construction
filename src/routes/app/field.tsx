@@ -6,10 +6,16 @@ import {
   CalendarRange,
   CheckCircle2,
   ClipboardList,
+  Cloud,
+  CloudRain,
   HardHat,
   NotebookPen,
   Shield,
+  Snowflake,
+  Sun,
+  Wind,
 } from "lucide-react";
+import { PhotoDropzone } from "@/components/field/photo-dropzone";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +38,14 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/field")({ component: FieldBoardPage });
 
+const WEATHER: { value: DailyLogWeather; label: string; icon: typeof Sun }[] = [
+  { value: "clear", label: "Clear", icon: Sun },
+  { value: "overcast", label: "Overcast", icon: Cloud },
+  { value: "rain", label: "Rain", icon: CloudRain },
+  { value: "snow", label: "Snow", icon: Snowflake },
+  { value: "wind", label: "Wind", icon: Wind },
+];
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -41,7 +55,6 @@ function FieldBoardPage() {
   const dailyLogs = useAppStore((s) => s.dailyLogs);
   const changeOrders = useAppStore((s) => s.changeOrders);
   const safety = useAppStore((s) => s.safety);
-  const schedule = useAppStore((s) => s.projects); // phase from project
   const addDailyLog = useAppStore((s) => s.addDailyLog);
 
   const active = useMemo(
@@ -74,7 +87,6 @@ function FieldBoardPage() {
 
   const openSafety = safety.filter((s) => s.status !== "closed");
   const pendingCO = changeOrders.filter((c) => c.status === "pending_owner");
-
   const missingLogJobs = active.filter((p) => !logsTodayByJob.has(p.id));
 
   const [jobId, setJobId] = useState(active[0]?.id ?? "");
@@ -82,6 +94,8 @@ function FieldBoardPage() {
   const [blockerNote, setBlockerNote] = useState("");
   const [crewCount, setCrewCount] = useState("4");
   const [hours, setHours] = useState("8");
+  const [weather, setWeather] = useState<DailyLogWeather>("clear");
+  const [photos, setPhotos] = useState<string[]>([]);
 
   function quickPost() {
     if (!jobId || !workDone.trim()) {
@@ -91,15 +105,17 @@ function FieldBoardPage() {
     addDailyLog({
       projectId: jobId,
       date: today,
-      weather: "clear" as DailyLogWeather,
+      weather,
       crewCount: Math.min(500, Math.max(0, Math.floor(Number(crewCount) || 0))),
       hours: Math.min(24, Math.max(0, Number(hours) || 0)),
       workDone: workDone.trim().slice(0, 2000),
       blockers: blockerNote.trim().slice(0, 1000) || undefined,
       author: "Field",
+      photos: photos.length ? photos : undefined,
     });
     setWorkDone("");
     setBlockerNote("");
+    setPhotos([]);
     toast.success("Field update posted");
   }
 
@@ -107,11 +123,11 @@ function FieldBoardPage() {
     <div>
       <PageHeader
         title="Field board"
-        description="GC & foreman view — keep every job moving. Post today’s update, clear blockers, jump to schedule and safety."
+        description="GC & foreman — weather, photos, and today's update on one screen. Keep every job moving."
         actions={
           <>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/app/daily-logs">Full daily log</Link>
+              <Link to="/app/daily-logs">All logs</Link>
             </Button>
             <Button size="sm" asChild>
               <Link to="/app/schedule">Schedule</Link>
@@ -120,13 +136,8 @@ function FieldBoardPage() {
         }
       />
 
-      {/* Pulse strip */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Pulse
-          label="Active jobs"
-          value={String(active.length)}
-          tone="default"
-        />
+        <Pulse label="Active jobs" value={String(active.length)} tone="default" />
         <Pulse
           label="No log today"
           value={String(missingLogJobs.length)}
@@ -145,13 +156,12 @@ function FieldBoardPage() {
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        {/* Quick update — phone-first */}
         <section className="border border-border bg-bg-elevated p-4">
           <div className="mb-3 flex items-center gap-2">
             <NotebookPen className="h-4 w-4 text-fg-subtle" strokeWidth={1.75} />
-            <h2 className="text-[14px] font-medium">Quick field update</h2>
+            <h2 className="text-sm font-medium">Log today</h2>
             <Badge variant="outline" className="ml-auto text-[10px]">
-              Today {formatDate(today)}
+              {formatDate(today)}
             </Badge>
           </div>
           <div className="space-y-3">
@@ -171,6 +181,33 @@ function FieldBoardPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label>Weather</Label>
+              <div className="mt-1 grid grid-cols-5 gap-1">
+                {WEATHER.map((w) => {
+                  const Icon = w.icon;
+                  const on = weather === w.value;
+                  return (
+                    <button
+                      key={w.value}
+                      type="button"
+                      onClick={() => setWeather(w.value)}
+                      className={cn(
+                        "flex min-h-11 flex-col items-center justify-center gap-0.5 border px-1 py-1.5 text-center transition-colors",
+                        on
+                          ? "border-primary bg-primary text-primary-fg"
+                          : "border-border bg-bg text-fg-muted hover:bg-bg-subtle hover:text-fg",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      <span className="text-[10px] font-medium leading-none">{w.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label>Crew on site</Label>
@@ -191,58 +228,60 @@ function FieldBoardPage() {
                 />
               </div>
             </div>
+
             <div>
               <Label>What got done</Label>
               <Textarea
-                className="mt-1 min-h-[5rem]"
+                className="mt-1 min-h-20"
                 placeholder="Framing north wall, MEP rough in garage…"
                 value={workDone}
                 onChange={(e) => setWorkDone(e.target.value)}
               />
             </div>
+
             <div>
               <Label>Blocker (optional)</Label>
               <Textarea
-                className="mt-1 min-h-[3rem]"
+                className="mt-1 min-h-14"
                 placeholder="Waiting on window delivery / inspection…"
                 value={blockerNote}
                 onChange={(e) => setBlockerNote(e.target.value)}
               />
             </div>
-            <Button type="button" className="w-full" onClick={quickPost}>
+
+            <div>
+              <Label>Site photos</Label>
+              <PhotoDropzone className="mt-1" photos={photos} onChange={setPhotos} compact />
+            </div>
+
+            <Button type="button" className="w-full min-h-11" onClick={quickPost}>
               Post update
             </Button>
-            <p className="text-[11px] text-fg-subtle">
-              Need photos? Use{" "}
-              <Link to="/app/daily-logs" className="underline">
-                Daily logs
-              </Link>{" "}
-              drag-and-drop after posting notes here.
-            </p>
           </div>
         </section>
 
-        {/* Keep moving */}
         <section className="space-y-4">
           <div className="border border-border bg-bg-elevated">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-              <h2 className="text-[14px] font-medium">Keep moving</h2>
-              <span className="text-[11px] text-fg-subtle">Priorities</span>
+              <h2 className="text-sm font-medium">Keep moving</h2>
+              <span className="text-xs text-fg-subtle">Priorities</span>
             </div>
             <ul className="divide-y divide-border">
               {missingLogJobs.slice(0, 5).map((p) => (
                 <li key={p.id}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-bg-subtle"
+                    className="flex w-full min-h-11 items-center gap-3 px-4 py-3 text-left hover:bg-bg-subtle"
                     onClick={() => setJobId(p.id)}
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium">No daily log yet</p>
-                      <p className="text-[12px] text-fg-muted">{p.name} · {p.phase}</p>
+                      <p className="text-sm font-medium">No daily log yet</p>
+                      <p className="text-xs text-fg-muted">
+                        {p.name} · {p.phase}
+                      </p>
                     </div>
-                    <span className="text-[11px] text-primary">Update</span>
+                    <span className="text-xs text-fg">Update</span>
                   </button>
                 </li>
               ))}
@@ -251,12 +290,12 @@ function FieldBoardPage() {
                   <Link
                     to="/app/projects/$projectId"
                     params={{ projectId: c.projectId }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-bg-subtle"
+                    className="flex min-h-11 items-center gap-3 px-4 py-3 hover:bg-bg-subtle"
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium">Owner decision · {c.number}</p>
-                      <p className="text-[12px] text-fg-muted">{c.title}</p>
+                      <p className="text-sm font-medium">Owner decision · {c.number}</p>
+                      <p className="text-xs text-fg-muted">{c.title}</p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-fg-subtle" strokeWidth={1.75} />
                   </Link>
@@ -266,21 +305,19 @@ function FieldBoardPage() {
                 <li key={s.id}>
                   <Link
                     to="/app/safety"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-bg-subtle"
+                    className="flex min-h-11 items-center gap-3 px-4 py-3 hover:bg-bg-subtle"
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium">Safety · {s.title}</p>
-                      <p className="text-[12px] text-fg-muted">{formatDate(s.date)}</p>
+                      <p className="text-sm font-medium">Safety · {s.title}</p>
+                      <p className="text-xs text-fg-muted">{formatDate(s.date)}</p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-fg-subtle" strokeWidth={1.75} />
                   </Link>
                 </li>
               ))}
-              {missingLogJobs.length === 0 &&
-              pendingCO.length === 0 &&
-              openSafety.length === 0 ? (
-                <li className="flex items-center gap-2 px-4 py-6 text-[13px] text-fg-muted">
+              {missingLogJobs.length === 0 && pendingCO.length === 0 && openSafety.length === 0 ? (
+                <li className="flex items-center gap-2 px-4 py-6 text-sm text-fg-muted">
                   <CheckCircle2 className="h-4 w-4 text-success" strokeWidth={1.75} />
                   Field is current — no urgent gaps.
                 </li>
@@ -292,14 +329,14 @@ function FieldBoardPage() {
             <div className="border border-border bg-bg-elevated">
               <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning" strokeWidth={1.75} />
-                <h2 className="text-[14px] font-medium">Open blockers</h2>
+                <h2 className="text-sm font-medium">Open blockers</h2>
               </div>
               <ul className="divide-y divide-border">
                 {blockers.slice(0, 6).map((b) => (
                   <li key={b.id} className="px-4 py-3">
-                    <p className="text-[12px] font-medium text-fg">{b.job}</p>
-                    <p className="mt-0.5 text-[12px] text-warning">{b.text}</p>
-                    <p className="mt-1 text-[11px] text-fg-subtle">{formatDate(b.date)}</p>
+                    <p className="text-xs font-medium text-fg">{b.job}</p>
+                    <p className="mt-0.5 text-xs text-warning">{b.text}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{formatDate(b.date)}</p>
                   </li>
                 ))}
               </ul>
@@ -310,15 +347,14 @@ function FieldBoardPage() {
             <QuickLink to="/app/schedule" icon={CalendarRange} label="Schedule" />
             <QuickLink to="/app/crews" icon={HardHat} label="Crews" />
             <QuickLink to="/app/safety" icon={Shield} label="Safety" />
-            <QuickLink to="/app/daily-logs" icon={ClipboardList} label="Logs + photos" />
+            <QuickLink to="/app/daily-logs" icon={ClipboardList} label="All logs" />
           </div>
         </section>
       </div>
 
-      {/* Job cards */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[14px] font-medium">Jobs in motion</h2>
+          <h2 className="text-sm font-medium">Jobs in motion</h2>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/app/projects">All jobs</Link>
           </Button>
@@ -333,7 +369,7 @@ function FieldBoardPage() {
             />
           ))}
           {active.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">No active jobs yet.</p>
+            <p className="text-sm text-fg-muted">No active jobs yet.</p>
           ) : null}
         </div>
       </section>
@@ -355,7 +391,7 @@ function Pulse({
       <p className="text-[10px] uppercase tracking-[0.06em] text-fg-subtle">{label}</p>
       <p
         className={cn(
-          "mt-0.5 text-[20px] font-medium tabular-nums",
+          "mt-0.5 text-xl font-medium tabular-nums",
           tone === "ok" && "text-success",
           tone === "warn" && "text-warning",
           tone === "danger" && "text-danger",
@@ -379,10 +415,10 @@ function QuickLink({
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-1.5 border border-border bg-bg-elevated px-2 py-3 text-center transition-colors hover:bg-bg-subtle"
+      className="flex min-h-14 flex-col items-center justify-center gap-1.5 border border-border bg-bg-elevated px-2 py-3 text-center transition-colors hover:bg-bg-subtle"
     >
       <Icon className="h-4 w-4 text-fg-muted" strokeWidth={1.75} />
-      <span className="text-[11px] font-medium">{label}</span>
+      <span className="text-xs font-medium">{label}</span>
     </Link>
   );
 }
@@ -393,9 +429,19 @@ function JobCard({
   onLog,
 }: {
   project: Project;
-  todayLog?: { workDone: string; blockers?: string; crewCount: number; hours: number };
+  todayLog?: {
+    workDone: string;
+    blockers?: string;
+    crewCount: number;
+    hours: number;
+    weather: DailyLogWeather;
+    photos?: string[];
+  };
   onLog: () => void;
 }) {
+  const w = WEATHER.find((x) => x.value === todayLog?.weather);
+  const WIcon = w?.icon ?? Sun;
+
   return (
     <div className="border border-border bg-bg-elevated p-4">
       <div className="flex items-start justify-between gap-2">
@@ -403,18 +449,18 @@ function JobCard({
           <Link
             to="/app/projects/$projectId"
             params={{ projectId: project.id }}
-            className="text-[13px] font-medium hover:underline"
+            className="text-sm font-medium hover:underline"
           >
             {project.name}
           </Link>
-          <p className="mt-0.5 text-[11px] text-fg-muted">
+          <p className="mt-0.5 text-xs text-fg-muted">
             {project.phase} · {project.superintendent || "—"}
           </p>
         </div>
         <ProjectStatusBadge status={project.status} />
       </div>
       <Progress value={project.progress} className="mt-3" />
-      <div className="mt-1.5 flex justify-between text-[11px] tabular-nums text-fg-subtle">
+      <div className="mt-1.5 flex justify-between text-xs tabular-nums text-fg-subtle">
         <span>{project.progress}%</span>
         <span>
           {formatCurrency(project.spent)} / {formatCurrency(project.budget)}
@@ -422,17 +468,36 @@ function JobCard({
       </div>
       {todayLog ? (
         <div className="mt-3 border border-border bg-bg px-2.5 py-2">
-          <p className="text-[10px] uppercase tracking-[0.06em] text-success">Logged today</p>
-          <p className="mt-1 line-clamp-2 text-[12px] text-fg-muted">{todayLog.workDone}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] uppercase tracking-[0.06em] text-success">Logged today</p>
+            <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
+              <WIcon className="h-3 w-3" strokeWidth={1.75} />
+              {w?.label ?? todayLog.weather}
+            </span>
+          </div>
+          <p className="mt-1 line-clamp-2 text-xs text-fg-muted">{todayLog.workDone}</p>
           {todayLog.blockers ? (
-            <p className="mt-1 text-[11px] text-warning">Blocker: {todayLog.blockers}</p>
+            <p className="mt-1 text-xs text-warning">Blocker: {todayLog.blockers}</p>
           ) : null}
-          <p className="mt-1 text-[11px] text-fg-subtle">
+          <p className="mt-1 text-xs text-fg-subtle">
             {todayLog.crewCount} crew · {todayLog.hours}h
+            {todayLog.photos?.length ? ` · ${todayLog.photos.length} photo${todayLog.photos.length > 1 ? "s" : ""}` : ""}
           </p>
+          {todayLog.photos?.length ? (
+            <div className="mt-2 flex gap-1.5 overflow-x-auto">
+              {todayLog.photos.slice(0, 4).map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  className="h-12 w-16 shrink-0 border border-border object-cover"
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : (
-        <Button type="button" size="sm" variant="outline" className="mt-3 w-full" onClick={onLog}>
+        <Button type="button" size="sm" variant="outline" className="mt-3 w-full min-h-10" onClick={onLog}>
           Log today
         </Button>
       )}
