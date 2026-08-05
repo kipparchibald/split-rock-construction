@@ -33,7 +33,7 @@ const groups: NavGroup[] = [
       { to: "/app/daily-logs", label: "Daily logs", icon: NotebookPen },
       { to: "/app/documents", label: "Documents", icon: FileText },
       { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
-      { to: "/app/design", label: "Design studio", icon: Palette },
+      { to: "/app/design", label: "Design center", icon: Palette },
       { to: "/app/finish-partners", label: "Finish partners", icon: ShoppingBag },
     ],
   },
