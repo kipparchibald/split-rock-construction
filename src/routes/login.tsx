@@ -1,19 +1,20 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, Navigate } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { Navigate } from "@tanstack/react-router";
+import { OPERATOR_AUTH, COMPANY } from "@/lib/company";
+import { isDemoDataEnabled } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
   const navigate = useNavigate();
   const { user, isPending } = useCurrentUserState();
-  const [email, setEmail] = useState("kipp@splitrock.construction");
+  const [email, setEmail] = useState(OPERATOR_AUTH.kipp.email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -31,7 +32,7 @@ function LoginPage() {
     setBusy(true);
     try {
       const { error: signErr } = await authClient.signIn.email({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
       if (signErr) {
@@ -48,11 +49,12 @@ function LoginPage() {
   }
 
   function fill(operator: "kipp" | "kyle") {
+    if (!isDemoDataEnabled) return;
     if (operator === "kipp") {
-      setEmail("kipp@splitrock.construction");
+      setEmail(OPERATOR_AUTH.kipp.email);
       setPassword("SplitRock-Kipp-2026!");
     } else {
-      setEmail("kyle@splitrock.construction");
+      setEmail(OPERATOR_AUTH.kyle.email);
       setPassword("SplitRock-Kyle-2026!");
     }
     setError(null);
@@ -75,7 +77,8 @@ function LoginPage() {
         <p className="label-caps mb-2">Split Rock OS</p>
         <h1 className="text-xl font-medium tracking-[-0.02em] text-fg">Operator sign-in</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">
-          Field suite access for owners and ops. Email and password for Kipp and Kyle are pre-seeded.
+          Field suite for {COMPANY.legalName}. Use your operator email
+          ({OPERATOR_AUTH.kipp.email} / {OPERATOR_AUTH.kyle.email}).
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4 border border-border bg-bg-elevated p-5">
@@ -112,18 +115,22 @@ function LoginPage() {
             {busy ? "Signing in…" : "Sign in"}
           </Button>
 
-          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-            <Button type="button" size="sm" variant="outline" onClick={() => fill("kipp")}>
-              Fill Kipp
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => fill("kyle")}>
-              Fill Kyle
-            </Button>
-          </div>
+          {isDemoDataEnabled ? (
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <Button type="button" size="sm" variant="outline" onClick={() => fill("kipp")}>
+                Fill Kipp (demo)
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => fill("kyle")}>
+                Fill Kyle (demo)
+              </Button>
+            </div>
+          ) : null}
         </form>
 
         <p className="mt-6 text-[11px] leading-relaxed text-fg-subtle">
-          Demo credentials are for internal ops and sandbox only. Rotate passwords before any public or production deploy.
+          {isDemoDataEnabled
+            ? "Demo fill helpers are on. Rotate passwords and set VITE_SPLIT_ROCK_DEMO=false before public production."
+            : "Live mode: password fill helpers are disabled. Use rotated credentials only."}
         </p>
       </main>
     </div>
