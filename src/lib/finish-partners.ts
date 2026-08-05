@@ -1,17 +1,14 @@
 /**
  * Preferred finish suppliers with slots for Split Rock affiliate / referral IDs.
  *
- * How commissions work for a GC:
- * 1) Apply to each network (CJ, Impact, FlexOffers, or merchant direct).
- * 2) Paste your tracking ID or full affiliate URL into PARTNER_AFFILIATE_IDS.
- * 3) Owners / PMs click Shop from Selections or Finish Partners — purchases
- *    within the cookie window can pay referral commission to Split Rock.
- *
- * Trade accounts (Wayfair Pro, Ferguson, local yards) often give *discounts*
- * rather than affiliate commission — still list them for controlled buying.
- *
- * Disclose affiliate relationships on any client-facing surface (FTC).
+ * Referral income is governed by contract-fee-policy.ts based on ContractModel:
+ * - cost_plus → credit to Job Cost (no hidden fee)
+ * - fixed_price → disclosed; may be builder income inside the lump sum
+ * - spec_build_close → builder program income; buyer pays purchase + options only
  */
+
+import type { ContractModel } from "@/lib/pricing";
+import { shopDisclosureFor } from "@/lib/contract-fee-policy";
 
 export type FinishCategory =
   | "lighting"
@@ -207,5 +204,11 @@ export function shopUrl(partner: FinishPartner, category?: FinishCategory): stri
   return partner.baseUrl;
 }
 
+/** Generic disclosure when contract model is unknown */
 export const AFFILIATE_DISCLOSURE =
-  "Split Rock Construction may earn a commission or referral fee when you purchase through partner links. This does not change your price. Trade discounts and local dealer referrals are separate from online affiliate programs.";
+  "Partner links may involve supplier referral programs. Treatment of any referral income follows the contract type selected for this job (cost-plus credits Job Cost; fixed-price / spec are disclosed and do not add hidden fees beyond the agreed price and written upgrades).";
+
+export function affiliateDisclosureFor(model?: ContractModel): string {
+  if (!model) return AFFILIATE_DISCLOSURE;
+  return shopDisclosureFor(model);
+}
