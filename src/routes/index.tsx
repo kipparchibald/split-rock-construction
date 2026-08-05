@@ -1,217 +1,390 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Building2, CheckCircle2, Factory, HardHat, MapPin, Phone, Shield, Ruler } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  MapPin,
+  Phone,
+  Ruler,
+  Home,
+  LandPlot,
+  Layers,
+  Mail,
+} from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { COMPANY } from "@/data/seed";
 
 export const Route = createFileRoute("/")({ component: LandingPage });
 
-const services = [
-  { title: "Custom homes", body: "Ranch to two-story farmhouse — craft and schedule discipline for Idaho families.", icon: Building2 },
-  { title: "Spec & production", body: "Efficient plan sets for developers who need quality without drama.", icon: Ruler },
-  { title: "Commercial shell & TI", body: "Light industrial shells, retail TI, design-assist GC — CSI buyout and pay apps.", icon: Factory },
-  { title: "Safety-first sites", body: "Daily briefings, documented near-misses, crews who look out for each other.", icon: Shield },
+/** Public marketing contact — aligned with Teton Heights / Archibald-Bagley field presence */
+const CONTACT = {
+  phone: "(208) 200-0605",
+  phoneHref: "2082000605",
+  email: "kipparchibald@gmail.com",
+  location: "Rigby · Jefferson County, Idaho",
+  lotsUrl: "https://www.rigbylots.com/",
+};
+
+const pathways = [
+  {
+    title: "Buy a lot",
+    body: "Build-ready parcels in Teton Heights Division #6 — 0.6+ acres, utilities to the lot line, owner financing available.",
+    icon: LandPlot,
+    cta: "View available lots",
+    href: CONTACT.lotsUrl,
+    external: true,
+  },
+  {
+    title: "Build to suit",
+    body: "We design and build your custom home on a lot you choose — one team from site walk to keys, schedule, and budget you can trust.",
+    icon: Home,
+    cta: "Start a build conversation",
+    href: "#contact",
+    external: false,
+  },
+  {
+    title: "Land + home package",
+    body: "Pair a Teton Heights lot with a Split Rock plan. Ranch and basement packages sized for these parcels — selections, permits, and construction under one roof.",
+    icon: Layers,
+    cta: "Ask about packages",
+    href: "#contact",
+    external: false,
+  },
 ];
-const process = [
-  { step: "01", title: "Listen", body: "Walk the lot or shell, map priorities, lock a budget you can trust." },
-  { step: "02", title: "Plan", body: "Permits, buyout, selections, and a schedule with real milestones." },
-  { step: "03", title: "Build", body: "Superintendent-led crews, sub management, weekly owner updates." },
-  { step: "04", title: "Hand off", body: "Punch list closed, pay apps reconciled, CO and keys in hand." },
+
+const lotHighlights = [
+  "0.6+ acre flat, buildable parcels",
+  "Paved roads; power, gas & fiber to the lot",
+  "Private well sites pre-approved · simple septic",
+  "No HOA fees — Jefferson County rural taxes",
+  "Basements practical — no high groundwater",
+  "Owner financing available — skip the bank",
+];
+
+const whyUs = [
+  {
+    title: "Land and build, together",
+    body: "Most buyers juggle a land agent and a separate builder. We sell the ground and build the home — fewer handoffs, clearer accountability.",
+  },
+  {
+    title: "Eastern Idaho focus",
+    body: "Rigby, Jefferson County, Idaho Falls, and the Upper Valley. We know the county process, EIPH, and what it actually costs to put a house on these lots.",
+  },
+  {
+    title: "Clear process",
+    body: "Written budgets, milestone draws, weekly updates, and a defined path from lot reservation through certificate of occupancy.",
+  },
 ];
 
 function LandingPage() {
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="sticky top-0 z-40 border-b border-border bg-bg-elevated">
+      <header className="sticky top-0 z-40 border-b border-border bg-bg-elevated/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-6 text-[13px] font-medium text-fg-muted md:flex">
-            <a href="#services" className="hover:text-fg">Services</a>
-            <a href="#process" className="hover:text-fg">Process</a>
-            <a href="#work" className="hover:text-fg">Work</a>
-            <a href="#product" className="hover:text-fg">Product</a>
-            <a href="#contact" className="hover:text-fg">Contact</a>
+            <a href="#lots" className="hover:text-fg">
+              Lots
+            </a>
+            <a href="#build" className="hover:text-fg">
+              Build
+            </a>
+            <a href="#coming" className="hover:text-fg">
+              Coming soon
+            </a>
+            <a href="#why" className="hover:text-fg">
+              Why us
+            </a>
+            <a href="#contact" className="hover:text-fg">
+              Contact
+            </a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex"><Link to="/login">Ops suite</Link></Button>
-            <Button size="sm" asChild><a href="#contact">Start a project <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+              <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                Lot inventory
+              </a>
+            </Button>
+            <Button size="sm" asChild>
+              <a href={`tel:${CONTACT.phoneHref}`}>Call {CONTACT.phone}</a>
+            </Button>
           </div>
         </div>
       </header>
 
+      {/* Hero */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-16">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-14">
           <div>
             <p className="label-caps mb-4 inline-flex items-center gap-2">
               <MapPin className="h-3 w-3" strokeWidth={1.75} />
-              {COMPANY.location} · Residential & commercial
+              {CONTACT.location}
             </p>
-            <h1 className="max-w-xl text-3xl font-medium tracking-[-0.03em] text-fg sm:text-4xl lg:text-[2.75rem] lg:leading-[1.12]">
-              Homes and commercial — built on solid ground.
+            <h1 className="max-w-xl text-3xl font-medium tracking-[-0.03em] text-fg sm:text-4xl lg:text-[2.65rem] lg:leading-[1.12]">
+              Lots to build on. Homes built to suit.
             </h1>
             <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-fg-muted">
-              Split Rock Construction builds custom homes and commercial shells and tenant
-              improvements across Jefferson County and Eastern Idaho — one field system, one standard of craft.
+              Split Rock brings land and construction together for families in Rigby and Eastern Idaho.
+              Choose a build-ready lot in Teton Heights Division #6 — or let us design and build your
+              home on the ground you pick.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
-              <Button size="lg" asChild><a href="#contact">Talk with us <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
-              <Button size="lg" variant="outline" asChild><Link to="/login">Open field suite</Link></Button>
+              <Button size="lg" asChild>
+                <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                  Browse Teton Heights lots
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <a href="#contact">Talk build-to-suit</a>
+              </Button>
             </div>
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6">
-              {[{ k: "Active builds", v: "5" }, { k: "Commercial volume", v: "$2.6M" }, { k: "Lost-time", v: "0" }].map((s) => (
-                <div key={s.k}>
-                  <p className="label-caps">{s.k}</p>
-                  <p className="mt-1 text-lg font-medium tabular-nums text-fg">{s.v}</p>
-                </div>
-              ))}
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-6 text-[13px] text-fg-muted">
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-fg" strokeWidth={1.75} />
+                Lots available now
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-fg" strokeWidth={1.75} />
+                Custom & package builds
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-fg" strokeWidth={1.75} />
+                Hunter Chase — coming soon
+              </span>
             </div>
           </div>
           <div className="border border-border bg-bg-elevated p-6 sm:p-8">
-            <div className="flex items-center justify-center border border-border bg-bg px-6 py-12">
+            <div className="flex items-center justify-center border border-border bg-bg px-6 py-10">
               <img
                 src="/logo-hero.jpg"
-                alt="Split Rock Construction — home built on split rock with stream"
-                className="h-48 w-auto max-h-56 object-contain sm:h-56"
+                alt="Split Rock Construction"
+                className="h-40 w-auto max-h-48 object-contain sm:h-48"
                 width={280}
-                height={417}
+                height={360}
                 decoding="async"
               />
             </div>
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {["Weekly owner walkthroughs", "Milestone billing & pay apps", "Licensed, insured & bonded", "Local Idaho crews"].map((item) => (
-                <div key={item} className="flex items-start gap-2 text-[13px] text-fg-muted">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fg" strokeWidth={1.75} />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
+            <p className="mt-5 text-[12px] leading-relaxed text-fg-muted">
+              Real estate experience meets a new construction company focused on Jefferson County
+              lots and build-to-suit homes — not a portfolio of old jobs. We start with your land and
+              your plan.
+            </p>
           </div>
         </div>
       </section>
 
-      <section id="services" className="border-b border-border bg-bg-elevated">
+      {/* Pathways */}
+      <section id="build" className="border-b border-border bg-bg-elevated">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <p className="label-caps">What we build</p>
-          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Residential homes. Commercial shells & TI.</h2>
-          <div className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-            {services.map((s) => (
-              <div key={s.title} className="bg-bg-elevated p-5">
-                <s.icon className="mb-3 h-4 w-4 text-fg" strokeWidth={1.75} />
-                <h3 className="text-[13px] font-medium">{s.title}</h3>
-                <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{s.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="process" className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Process</h2>
-          <div className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-            {process.map((p) => (
-              <div key={p.step} className="bg-bg-elevated p-5">
-                <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{p.step}</span>
-                <h3 className="mt-2 text-[13px] font-medium">{p.title}</h3>
-                <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{p.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="work" className="border-b border-border bg-bg-elevated">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Active work</h2>
-              <p className="mt-1 text-[13px] text-fg-muted">Snapshot from the field suite.</p>
-            </div>
-            <Button variant="outline" size="sm" asChild><Link to="/login">All projects</Link></Button>
-          </div>
-          <div className="mt-6 grid gap-px border border-border bg-border md:grid-cols-3">
-            {[
-              { name: "Hart Residence", meta: "Rigby · Residential · 2,840 sqft", pct: 62 },
-              { name: "Commerce Park Shell", meta: "Rigby · Commercial · 18,000 sqft", pct: 34 },
-              { name: "Crestview Accessible", meta: "Rigby · Residential · 1,960 sqft", pct: 94 },
-            ].map((job) => (
-              <div key={job.name} className="bg-bg-elevated p-5">
-                <h3 className="text-[13px] font-medium">{job.name}</h3>
-                <p className="mt-1 text-[12px] text-fg-muted">{job.meta}</p>
-                <div className="mt-4 h-1 bg-bg-subtle"><div className="h-full bg-primary" style={{ width: `${job.pct}%` }} /></div>
-                <p className="mt-2 text-[11px] tabular-nums text-fg-subtle">{job.pct}%</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      <section id="product" className="border-b border-border bg-bg-elevated">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <p className="label-caps">Field system · mobile</p>
+          <p className="label-caps">How we work with you</p>
           <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
-            Built for the truck seat and the job trailer.
+            Three clear paths into a home on solid ground.
           </h2>
-          <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-fg-muted">
-            Command center, job hub, draws, pricing, and owner portal — captured on a phone viewport.
-          </p>
-          <div className="mt-8 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-            {[
-              { src: "/mobile/02-command-center.png", label: "Command center" },
-              { src: "/mobile/04-job-hub.png", label: "Job hub" },
-              { src: "/mobile/06-draws.png", label: "Progress draws" },
-              { src: "/mobile/05-pricing.png", label: "Bid & price" },
-              { src: "/mobile/07-portal.png", label: "Owner portal" },
-              { src: "/mobile/09-nav-drawer.png", label: "Navigation" },
-              { src: "/mobile/08-daily-logs.png", label: "Daily logs" },
-              { src: "/mobile/01-marketing.png", label: "Marketing" },
-            ].map((s) => (
-              <figure key={s.src} className="w-[220px] shrink-0 snap-start sm:w-[240px]">
-                <div className="overflow-hidden rounded-[1.25rem] border border-border bg-bg shadow-[0_12px_40px_-20px_rgba(0,0,0,0.35)]">
-                  <div className="flex items-center justify-center border-b border-border bg-bg-subtle py-1.5">
-                    <span className="h-1 w-10 rounded-full bg-border-strong" />
-                  </div>
-                  <img
-                    src={s.src}
-                    alt={`Split Rock mobile — ${s.label}`}
-                    className="h-[420px] w-full object-cover object-top sm:h-[460px]"
-                    loading="lazy"
-                  />
-                </div>
-                <figcaption className="mt-2 text-center text-[11px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
-                  {s.label}
-                </figcaption>
-              </figure>
+          <div className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-3">
+            {pathways.map((p) => (
+              <div key={p.title} className="flex flex-col bg-bg-elevated p-5 sm:p-6">
+                <p.icon className="mb-3 h-4 w-4 text-fg" strokeWidth={1.75} />
+                <h3 className="text-[14px] font-medium">{p.title}</h3>
+                <p className="mt-2 flex-1 text-[12px] leading-relaxed text-fg-muted">{p.body}</p>
+                <a
+                  href={p.href}
+                  {...(p.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-fg hover:underline"
+                >
+                  {p.cta}
+                  <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+                </a>
+              </div>
             ))}
-          </div>
-          <div className="mt-8">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/login">Open the suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
-            </Button>
           </div>
         </div>
       </section>
 
+      {/* Teton Heights Div 6 */}
+      <section id="lots" className="border-b border-border">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-14">
+            <div>
+              <p className="label-caps">Available now</p>
+              <h2 className="mt-2 text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+                Teton Heights Division #6
+              </h2>
+              <p className="mt-1 text-[13px] text-fg-muted">Rigby, Idaho · Jefferson County</p>
+              <p className="mt-4 max-w-md text-[14px] leading-relaxed text-fg-muted">
+                Spacious residential lots priced at <strong className="text-fg">$99,500</strong> —
+                minimum 0.6 acres, many larger. Roads, power, gas, and fiber are in. Pre-approved well
+                sites and straightforward septic keep the path to a building permit clear.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button asChild>
+                  <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                    Open rigbylots.com
+                    <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </a>
+                </Button>
+                <Button variant="outline" asChild>
+                  <a href="#contact">Reserve a lot · talk build</a>
+                </Button>
+              </div>
+            </div>
+            <div className="border border-border bg-bg-elevated p-5 sm:p-6">
+              <p className="label-caps mb-4">What each lot includes</p>
+              <ul className="space-y-2.5">
+                {lotHighlights.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-[13px] text-fg-muted">
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fg" strokeWidth={1.75} />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 border-t border-border pt-4 text-[11px] leading-relaxed text-fg-subtle">
+                Live inventory, plats, and documents are maintained at{" "}
+                <a
+                  href={CONTACT.lotsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-fg underline-offset-2 hover:underline"
+                >
+                  rigbylots.com
+                </a>
+                . No forced builder — bring your own or build with Split Rock.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hunter Chase coming soon */}
+      <section id="coming" className="border-b border-border bg-bg-elevated">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="border border-border bg-bg p-6 sm:p-8 lg:flex lg:items-center lg:justify-between lg:gap-10">
+            <div className="max-w-xl">
+              <span className="inline-flex items-center rounded-sm border border-border bg-bg-elevated px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-fg-muted">
+                Coming soon
+              </span>
+              <h2 className="mt-3 text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+                Hunter Chase
+              </h2>
+              <p className="mt-1 text-[13px] text-fg-muted">
+                Preliminary plat · ~160 residential lots · ±1-acre average · near 3800 E & 100 N, Rigby
+              </p>
+              <p className="mt-4 text-[14px] leading-relaxed text-fg-muted">
+                A larger-lot community in the entitlement pipeline. When lots release, the same Split
+                Rock offer applies: buy the ground, or pair it with a build-to-suit or land-home
+                package. Join the interest list for first notice.
+              </p>
+            </div>
+            <div className="mt-6 shrink-0 lg:mt-0">
+              <Button size="lg" asChild>
+                <a href="#contact">
+                  Get on the interest list
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why us */}
+      <section id="why" className="border-b border-border">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps">Why Split Rock</p>
+          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+            Real estate background. Construction company. Local accountability.
+          </h2>
+          <div className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-3">
+            {whyUs.map((w) => (
+              <div key={w.title} className="bg-bg-elevated p-5 sm:p-6">
+                <h3 className="text-[13px] font-medium">{w.title}</h3>
+                <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{w.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="flex gap-3 border border-border p-4">
+              <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-fg" strokeWidth={1.75} />
+              <div>
+                <p className="text-[13px] font-medium">Custom & package homes</p>
+                <p className="mt-1 text-[12px] text-fg-muted">
+                  Ranch and basement plans suited to 0.6–1 acre parcels. Selections, permits, and field
+                  supervision in one process.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 border border-border p-4">
+              <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-fg" strokeWidth={1.75} />
+              <div>
+                <p className="text-[13px] font-medium">Numbers before dirt moves</p>
+                <p className="mt-1 text-[12px] text-fg-muted">
+                  Clear scope, written allowances, and a draw schedule tied to real milestones — so
+                  you always know where the money and the schedule stand.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
       <section id="contact" className="border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="grid gap-8 border border-border bg-primary px-6 py-10 text-primary-fg sm:px-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="grid gap-8 border border-border bg-primary px-6 py-10 text-primary-fg sm:px-10 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
             <div>
-              <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Ready to build?</h2>
-              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-primary-fg/75">Lot, plan, timeline. Response within one business day.</p>
+              <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+                Ready to pick a lot or plan a build?
+              </h2>
+              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-primary-fg/75">
+                Tell us whether you want land only, a land-home package, or a custom build-to-suit.
+                We respond within one business day.
+              </p>
               <div className="mt-6 flex flex-col gap-2 text-[13px]">
-                <a href={`tel:${COMPANY.phone.replace(/\D/g, "")}`} className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg">
-                  <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />{COMPANY.phone}
+                <a
+                  href={`tel:${CONTACT.phoneHref}`}
+                  className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
+                >
+                  <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {CONTACT.phone}
                 </a>
-                <a href={`mailto:${COMPANY.email}`} className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg">{COMPANY.email}</a>
-                <span className="inline-flex items-center gap-2 text-primary-fg/65"><MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />{COMPANY.location}</span>
+                <a
+                  href={`mailto:${CONTACT.email}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
+                >
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {CONTACT.email}
+                </a>
+                <span className="inline-flex items-center gap-2 text-primary-fg/65">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {CONTACT.location}
+                </span>
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Button size="lg" variant="secondary" className="bg-bg-elevated text-fg hover:bg-bg" asChild>
-                <Link to="/login">Launch ops suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-bg-elevated text-fg hover:bg-bg"
+                asChild
+              >
+                <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                  See lots at rigbylots.com
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </a>
               </Button>
-              <p className="text-[11px] text-primary-fg/55">Projects, bids, pricing, crews, documents.</p>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-primary-fg/30 text-primary-fg hover:bg-primary-fg/10"
+                asChild
+              >
+                <a href={`mailto:${CONTACT.email}?subject=Hunter%20Chase%20interest%20list`}>
+                  Hunter Chase interest list
+                </a>
+              </Button>
+              <p className="text-[11px] text-primary-fg/55">
+                Kipp Archibald · land, lots & build conversations
+              </p>
             </div>
           </div>
         </div>
@@ -219,8 +392,20 @@ function LandingPage() {
 
       <footer className="bg-bg-elevated">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <Logo />
-          <p className="text-[11px] text-fg-subtle">© {new Date().getFullYear()} {COMPANY.name}</p>
+          <div className="flex flex-col gap-1">
+            <Logo />
+            <p className="text-[11px] text-fg-subtle">
+              Lots · build-to-suit · land-home packages · Rigby & Jefferson County
+            </p>
+          </div>
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            <Link to="/login" className="text-[11px] text-fg-subtle hover:text-fg">
+              Operator sign-in
+            </Link>
+            <p className="text-[11px] text-fg-subtle">
+              © {new Date().getFullYear()} Split Rock Construction
+            </p>
+          </div>
         </div>
       </footer>
     </div>
