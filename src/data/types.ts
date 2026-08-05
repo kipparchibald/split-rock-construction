@@ -423,16 +423,24 @@ export interface PermitPackage {
   updatedAt: string;
 }
 
-/** Virtual design studio finish catalog */
+/** Virtual design studio — full interior + exterior finish catalog */
 export type DesignCategory =
   | "paint"
   | "flooring"
   | "cabinets"
   | "countertops"
+  | "backsplash"
   | "fixtures"
   | "hardware"
+  | "lighting"
+  | "appliances"
+  | "tile"
   | "exterior"
-  | "lighting";
+  | "roofing"
+  | "doors";
+
+/** base = midrange included in allowance; upgrade / trendy / premium = deltas */
+export type DesignTier = "base" | "upgrade" | "trendy" | "premium";
 
 export interface DesignOption {
   id: string;
@@ -442,9 +450,14 @@ export interface DesignOption {
   finish?: string;
   woodSpecies?: string;
   colorHex?: string;
+  /** $ relative to midrange base allowance (0 = included) */
   priceDelta: number;
   allowanceBucket: string;
   imageHint: string;
+  tier: DesignTier;
+  /** interior | exterior | both */
+  zone: "interior" | "exterior" | "both";
+  tags?: string[];
 }
 
 export interface DesignSelection {
