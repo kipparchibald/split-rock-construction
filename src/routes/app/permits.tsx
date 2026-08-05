@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/data/store";
 import { createPermitPackage, packageStatus } from "@/lib/permits-idaho";
 import type { PermitChecklistItem, PermitPackage, PermitStatus } from "@/data/types";
+import { LEGAL_DRAFT_DISCLAIMER } from "@/lib/company";
 
 export const Route = createFileRoute("/app/permits")({ component: PermitsPage });
 
@@ -65,7 +66,7 @@ function PermitsPage() {
     <div>
       <PageHeader
         title="Permits & health sign-off"
-        description="Jefferson County Building Department and Eastern Idaho Public Health (District 7) packages — AI drafts, you review and sign."
+        description="Jefferson County Building Department and Eastern Idaho Public Health (District 7). AI generates drafts only — you complete, review, and file."
       />
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <div className="space-y-3">
@@ -145,8 +146,12 @@ function PermitsPage() {
               </div>
             </>
           ) : (
-            <p className="text-[13px] text-fg-muted">No residential jobs to package yet.</p>
+            <p className="text-[13px] text-fg-muted">No residential jobs to package yet. Add a residential project first.</p>
           )}
+          <p className="text-[11px] leading-relaxed text-fg-subtle border border-border bg-bg-elevated p-3">
+            {LEGAL_DRAFT_DISCLAIMER} Jefferson County and EIPH filings must use current official forms; these drafts are
+            worksheets only.
+          </p>
         </div>
       </div>
     </div>
