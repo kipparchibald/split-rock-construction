@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles, AlertTriangle, CheckCircle2, History } from "lucide-react";
+import { Sparkles, AlertTriangle, CheckCircle2, History, Copy, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,16 @@ import {
   calcBuilderFinance,
   calcPrice,
   matchJobPreset,
+  type ContractModel,
   type CostInputs,
   type JobPresetId,
   type PricingAssumptions,
 } from "@/lib/pricing";
+import {
+  CONTRACT_FEE_POLICIES,
+  DEFAULT_CONTRACT_MODEL,
+  feePolicyFor,
+} from "@/lib/contract-fee-policy";
 import {
   DRAFT_EXAMPLES,
   draftEstimateFromText,
@@ -33,6 +39,7 @@ import { loadClosedJobs } from "@/lib/estimate-history";
 import { LIMITS, clampText } from "@/lib/security";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
 import { useAppStore } from "@/data/store";
 import { toast } from "sonner";
 
@@ -51,6 +58,9 @@ const COST_FIELDS: { key: keyof CostInputs; label: string }[] = [
 ];
 
 function PricingPage() {
+  const [contractModel, setContractModel] = useState<ContractModel>(() =>
+    loadJson<ContractModel>(PERSIST_KEYS.contractModel, DEFAULT_CONTRACT_MODEL),
+  );
   const [costs, setCosts] = useState<CostInputs>(DEFAULT_COSTS);
   const [assumptions, setAssumptions] = useState<PricingAssumptions>(DEFAULT_ASSUMPTIONS);
   const [sqft, setSqft] = useState(2400);
@@ -72,6 +82,13 @@ function PricingPage() {
   useEffect(() => {
     setClosedCount(loadClosedJobs().length);
   }, []);
+
+  function selectContractModel(model: ContractModel) {
+    setContractModel(model);
+    saveJson(PERSIST_KEYS.contractModel, model);
+  }
+
+  const feePolicy = feePolicyFor(contractModel);
 
   const activePreset = useMemo(() => matchJobPreset(assumptions), [assumptions]);
   const activePresetMeta = activePreset
@@ -119,30 +136,128 @@ function PricingPage() {
     setDraftApplied(true);
   }
 
+  function copyClause() {
+    void navigator.clipboard.writeText(feePolicy.contractClause);
+    toast.success("Fee transparency clause copied");
+  }
+
   return (
     <div>
       <PageHeader
         title="Bid & price"
-        description="Transparent pricing that protects both parties — draft from a short brief, apply a job preset, then fine-tune every line."
+        description="Select the contract type first — fee rules and finish-referral policy lock to that model so nothing is hidden from the owner."
       />
 
-      <div className="mb-6 grid gap-3 lg:grid-cols-3">
-        {(Object.keys(CONTRACT_GUIDANCE) as Array<keyof typeof CONTRACT_GUIDANCE>).map((k) => {
-          const g = CONTRACT_GUIDANCE[k];
-          return (
-            <div key={k} className="border border-border bg-bg-elevated p-4">
-              <p className="text-[13px] font-medium">{g.title}</p>
-              <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{g.summary}</p>
-              <p className="mt-3 text-[11px] text-fg-subtle">
-                <span className="font-medium text-fg-muted">You:</span> {g.protectsYou}
-              </p>
-              <p className="mt-1 text-[11px] text-fg-subtle">
-                <span className="font-medium text-fg-muted">Owner:</span> {g.protectsOwner}
+      {/* Contract type selection */}
+      <div className="mb-4">
+        <p className="label-caps mb-2">Contract type (select before signing)</p>
+        <div className="grid gap-3 lg:grid-cols-3">
+          {(Object.keys(CONTRACT_GUIDANCE) as ContractModel[]).map((k) => {
+            const g = CONTRACT_GUIDANCE[k];
+            const policy = CONTRACT_FEE_POLICIES[k];
+            const selected = contractModel === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => selectContractModel(k)}
+                className={cn(
+                  "border p-4 text-left transition-colors",
+                  selected
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-bg-elevated hover:border-fg-subtle",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[13px] font-medium">{g.title}</p>
+                  {selected ? (
+                    <Badge variant="success" className="shrink-0 gap-1">
+                      <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
+                      Active
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{g.summary}</p>
+                <p className="mt-3 text-[11px] text-fg-subtle">
+                  <span className="font-medium text-fg-muted">Referrals:</span>{" "}
+                  {policy.referralHandlingLabel}
+                </p>
+                <p className="mt-1 text-[11px] text-fg-subtle">
+                  <span className="font-medium text-fg-muted">You:</span> {g.protectsYou}
+                </p>
+                <p className="mt-1 text-[11px] text-fg-subtle">
+                  <span className="font-medium text-fg-muted">Owner:</span> {g.protectsOwner}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* No hidden fees panel */}
+      <Card className="mb-6 border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-[15px]">
+            <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />
+            Fee transparency · {feePolicy.title}
+          </CardTitle>
+          <p className="text-[12px] leading-relaxed text-fg-muted">{feePolicy.noHiddenFeesPromise}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="border border-border bg-bg p-3">
+              <p className="label-caps">Finish referrals / affiliate</p>
+              <p className="mt-1 text-[13px] font-medium">{feePolicy.referralHandlingLabel}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">
+                {feePolicy.referralHandlingDetail}
               </p>
             </div>
-          );
-        })}
-      </div>
+            <div className="border border-border bg-bg p-3">
+              <p className="label-caps">How finishes are billed</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">{feePolicy.finishCostRule}</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">
+                <span className="font-medium text-fg">Builder compensation:</span>{" "}
+                {feePolicy.builderCompensation}
+              </p>
+            </div>
+          </div>
+
+          <div className="border border-border bg-bg p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="label-caps">Clause for contract / selection addendum</p>
+              <Button type="button" size="sm" variant="outline" onClick={copyClause}>
+                <Copy className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+                Copy clause
+              </Button>
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{feePolicy.contractClause}</p>
+            <p className="mt-2 text-[11px] text-fg-subtle">
+              Draft language for your counsel to adapt — not a substitute for a licensed attorney review in
+              Idaho.
+            </p>
+          </div>
+
+          <div>
+            <p className="label-caps mb-2">Ops checklist (this model)</p>
+            <ul className="space-y-1.5 text-[12px] text-fg-muted">
+              {feePolicy.opsRules.map((r) => (
+                <li key={r} className="flex gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-fg-subtle" />
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {contractModel === "cost_plus" ? (
+            <div className="border border-border bg-bg-elevated px-3 py-2 text-[12px] leading-relaxed text-fg-muted">
+              <span className="font-medium text-fg">Cost-plus lock:</span> Design Center and Finish Partners
+              will state that any referral on billed Job Cost is credited to the owner. Do not keep supplier
+              commissions on top of the GC fee.
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="builder">
         <TabsList>
@@ -462,7 +577,9 @@ function PricingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Contract price</CardTitle>
-                <p className="text-[12px] text-fg-muted">Total OH&P = {price.totalOhpPct}%</p>
+                <p className="text-[12px] text-fg-muted">
+                  Model: {feePolicy.title} · Total OH&P = {price.totalOhpPct}%
+                </p>
               </CardHeader>
               <CardContent className="space-y-2 text-[13px]">
                 {[
@@ -482,7 +599,9 @@ function PricingPage() {
                   <span className="tabular-nums">{formatCurrency(price.markup)}</span>
                 </div>
                 <div className="flex justify-between py-3">
-                  <span className="font-medium">Contract price</span>
+                  <span className="font-medium">
+                    {contractModel === "cost_plus" ? "Estimated total (open book)" : "Contract price"}
+                  </span>
                   <span className="text-xl font-medium tabular-nums">
                     {formatCurrency(price.contractPrice)}
                   </span>
@@ -642,15 +761,17 @@ function PricingPage() {
               ))}
             </select>
             <p className="mt-1.5 text-[11px] text-fg-subtle">
-              Replaces that job's cost codes with this estimate's buckets + soft costs, contingency, and OH&P.
-              Existing actuals are cleared — use early, before field spend is recorded.
+              Replaces that job's cost codes with this estimate's buckets + soft costs, contingency, and
+              OH&P. Existing actuals are cleared — use early, before field spend is recorded. Active
+              contract model ({feePolicy.title}) is saved for Design Center / Finish Partners disclosures.
             </p>
           </div>
           <Button
             type="button"
             onClick={() => {
               seedBudgetFromEstimate(seedProjectId, costs, assumptions);
-              toast.success("Job cost seeded from estimate");
+              saveJson(PERSIST_KEYS.contractModel, contractModel);
+              toast.success("Job cost seeded · fee policy locked to " + feePolicy.title);
             }}
           >
             Seed job cost codes
