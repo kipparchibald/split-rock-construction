@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
   LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
-  Factory, Scale, Layers, BookOpen, type LucideIcon,
+  Factory, Scale, Layers, Bell, FileSignature, Landmark, Palette, BookOpen, type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ const groups: NavGroup[] = [
       { to: "/app/schedule", label: "Schedule", icon: CalendarRange },
       { to: "/app/daily-logs", label: "Daily logs", icon: NotebookPen },
       { to: "/app/documents", label: "Documents", icon: FileText },
+      { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
+      { to: "/app/design", label: "Design studio", icon: Palette },
     ],
   },
   {
@@ -40,6 +42,8 @@ const groups: NavGroup[] = [
       { to: "/app/budget", label: "Job cost", icon: Wallet },
       { to: "/app/cost-codes", label: "Cost codes / QB", icon: Layers },
       { to: "/app/draws", label: "Draws", icon: Banknote },
+      { to: "/app/alerts", label: "Cost alerts", icon: Bell },
+      { to: "/app/waivers", label: "Lien waivers", icon: FileSignature },
     ],
   },
   {
@@ -48,6 +52,7 @@ const groups: NavGroup[] = [
       { to: "/app/crews", label: "Crews", icon: HardHat },
       { to: "/app/equipment", label: "Equipment", icon: Wrench },
       { to: "/app/safety", label: "Safety", icon: Shield },
+      { to: "/app/subs", label: "Sub insurance", icon: FileSignature },
     ],
   },
   {
