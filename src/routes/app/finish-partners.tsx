@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, ShoppingBag } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  AFFILIATE_DISCLOSURE,
+  DEFAULT_CONTRACT_MODEL,
+  feePolicyFor,
+} from "@/lib/contract-fee-policy";
+import {
+  affiliateDisclosureFor,
   CATEGORY_LABELS,
   FINISH_PARTNERS,
   PARTNER_AFFILIATE_IDS,
@@ -13,6 +17,8 @@ import {
   partnersForCategory,
   shopUrl,
 } from "@/lib/finish-partners";
+import { loadJson, PERSIST_KEYS } from "@/lib/local-persist";
+import type { ContractModel } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/finish-partners")({ component: FinishPartnersPage });
@@ -21,6 +27,9 @@ const ALL_CATS = Object.keys(CATEGORY_LABELS) as FinishCategory[];
 
 function FinishPartnersPage() {
   const [cat, setCat] = useState<FinishCategory | "all">("all");
+  const contractModel = loadJson<ContractModel>(PERSIST_KEYS.contractModel, DEFAULT_CONTRACT_MODEL);
+  const feePolicy = feePolicyFor(contractModel);
+  const disclosure = affiliateDisclosureFor(contractModel);
 
   const list = useMemo(() => {
     if (cat === "all") return FINISH_PARTNERS;
@@ -33,11 +42,19 @@ function FinishPartnersPage() {
     <div>
       <PageHeader
         title="Finish partners"
-        description="Shop lighting, appliances, plumbing, hardware, window coverings, and water treatment through preferred partners. Paste your affiliate IDs in finish-partners.ts to earn referral commissions."
+        description="Preferred suppliers for finishes. Referral treatment follows the contract type set on Bid & price — never a hidden fee."
       />
 
       <div className="mb-4 border border-border bg-bg-elevated px-4 py-3 text-[12px] leading-relaxed text-fg-muted">
-        <p className="font-medium text-fg">{AFFILIATE_DISCLOSURE}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{feePolicy.title}</Badge>
+          <span className="text-[11px] text-fg-subtle">{feePolicy.referralHandlingLabel}</span>
+          <Button size="sm" variant="ghost" className="ml-auto h-7 px-2" asChild>
+            <Link to="/app/pricing">Change on Bid & price</Link>
+          </Button>
+        </div>
+        <p className="mt-2 font-medium text-fg">{disclosure}</p>
+        <p className="mt-2 text-[11px] text-fg-subtle">{feePolicy.noHiddenFeesPromise}</p>
         <p className="mt-2 text-[11px] text-fg-subtle">
           {tracked.length > 0
             ? `${tracked.length} partner ID(s) configured: ${tracked.join(", ")}.`
@@ -111,12 +128,10 @@ function FinishPartnersPage() {
       <div className="mt-6 border border-border bg-bg-elevated p-4 text-[12px] leading-relaxed text-fg-muted">
         <p className="font-medium text-fg">Setup checklist</p>
         <ol className="mt-2 list-decimal space-y-1 pl-4">
-          <li>Create publisher accounts on CJ Affiliate and Impact (Home Depot, Wayfair, Lowe's live there).</li>
-          <li>Apply to each merchant; use your live site / app URL for approval.</li>
-          <li>Generate deep links and paste into <code className="text-fg">PARTNER_AFFILIATE_IDS</code> in finish-partners.ts.</li>
-          <li>Open Wayfair Professional + Ferguson trade accounts for job buys (discount path, not always commission).</li>
-          <li>Negotiate written referral fees with local water and window-covering dealers.</li>
-          <li>Keep the disclosure visible on owner portal / selection sheets.</li>
+          <li>Set contract type on Bid & price so disclosures match the signed deal.</li>
+          <li>On cost-plus, prefer trade discounts; credit any referral to Job Cost.</li>
+          <li>Paste tracking URLs into PARTNER_AFFILIATE_IDS only after network approval.</li>
+          <li>Copy the fee transparency clause into the owner agreement.</li>
         </ol>
       </div>
     </div>
