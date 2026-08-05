@@ -4,7 +4,7 @@ import {
   Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
   LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
   Factory, Scale, Layers, Bell, FileSignature, Landmark, Palette, BookOpen,
-  ShoppingBag, type LucideIcon,
+  ShoppingBag, Radio, type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const groups: NavGroup[] = [
     label: "Home",
     items: [
       { to: "/app", label: "Command center", icon: LayoutDashboard, exact: true },
+      { to: "/app/field", label: "Field board", icon: Radio },
     ],
   },
   {
@@ -52,6 +53,7 @@ const groups: NavGroup[] = [
   {
     label: "Field",
     items: [
+      { to: "/app/field", label: "Field board", icon: Radio },
       { to: "/app/crews", label: "Crews", icon: HardHat },
       { to: "/app/equipment", label: "Equipment", icon: Wrench },
       { to: "/app/safety", label: "Safety", icon: Shield },
@@ -81,7 +83,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.to}
+                  key={`${g.label}-${item.to}`}
                   to={item.to}
                   onClick={onNavigate}
                   className={cn(
