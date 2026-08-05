@@ -1,10 +1,16 @@
 /**
- * Design Center catalog — curated options for client selection meetings.
- * priceDelta is relative to the plan allowance baseline (0 = standard).
- * partnerCategory maps to Finish Partners for purchase links.
+ * Full Design Center catalog for Split Rock Construction.
+ *
+ * Tier model:
+ *  - base     → midrange finishes included in plan allowances (priceDelta 0)
+ *  - upgrade  → common step-ups
+ *  - trendy   → current-market design (matte black, mixed metals, oak, etc.)
+ *  - premium  → full custom / high-end
+ *
+ * Allowance amounts align with Book of Plans (Teton / Jefferson midrange).
  */
 
-import type { DesignCategory, DesignOption } from "@/data/types";
+import type { DesignCategory, DesignOption, DesignTier } from "@/data/types";
 import type { FinishCategory } from "@/lib/finish-partners";
 
 export type DesignRoom =
@@ -13,7 +19,9 @@ export type DesignRoom =
   | "primary_bath"
   | "hall_bath"
   | "primary_suite"
-  | "exterior";
+  | "laundry"
+  | "exterior"
+  | "garage_front";
 
 export const ROOM_LABELS: Record<DesignRoom, string> = {
   great_room: "Great room",
@@ -21,7 +29,9 @@ export const ROOM_LABELS: Record<DesignRoom, string> = {
   primary_bath: "Primary bath",
   hall_bath: "Hall bath",
   primary_suite: "Primary suite",
-  exterior: "Exterior",
+  laundry: "Laundry / mud",
+  exterior: "Exterior elevation",
+  garage_front: "Front / garage",
 };
 
 export const DESIGN_CATEGORY_LABELS: Record<DesignCategory, string> = {
@@ -29,69 +39,97 @@ export const DESIGN_CATEGORY_LABELS: Record<DesignCategory, string> = {
   flooring: "Flooring",
   cabinets: "Cabinets",
   countertops: "Countertops",
+  backsplash: "Backsplash",
   fixtures: "Plumbing fixtures",
   hardware: "Hardware",
-  exterior: "Exterior",
   lighting: "Lighting",
+  appliances: "Appliances",
+  tile: "Tile",
+  exterior: "Siding / trim",
+  roofing: "Roofing",
+  doors: "Doors / garage",
 };
 
-/** Which catalog categories apply in each room (client UX). */
+export const TIER_LABELS: Record<DesignTier, string> = {
+  base: "Base (included)",
+  upgrade: "Upgrade",
+  trendy: "Trendy",
+  premium: "Premium custom",
+};
+
+/** Midrange allowance package — matches typical Teton Heights ranch build. */
+export const BASE_ALLOWANCES: { bucket: string; amount: number; notes: string }[] = [
+  { bucket: "Paint", amount: 4500, notes: "Interior eggshell + exterior body/trim" },
+  { bucket: "Flooring", amount: 14000, notes: "LVP main + carpet beds" },
+  { bucket: "Cabinets", amount: 22000, notes: "Painted shaker, soft-close" },
+  { bucket: "Countertops", amount: 8500, notes: "Quartz standard" },
+  { bucket: "Backsplash", amount: 1800, notes: "Subway or equivalent" },
+  { bucket: "Plumbing fixtures", amount: 4800, notes: "Chrome / brushed nickel package" },
+  { bucket: "Hardware", amount: 900, notes: "Satin nickel pulls + stops" },
+  { bucket: "Lighting", amount: 3200, notes: "Builder flush + vanity bars" },
+  { bucket: "Appliances", amount: 7500, notes: "Stainless midrange package" },
+  { bucket: "Tile", amount: 3200, notes: "Bath floors + shower walls standard" },
+  { bucket: "Exterior", amount: 0, notes: "Lap or board-batten in base elevation" },
+  { bucket: "Roofing", amount: 0, notes: "Architectural shingle included in shell" },
+  { bucket: "Doors", amount: 0, notes: "Painted interior + standard entry" },
+];
+
 export const ROOM_CATEGORIES: Record<DesignRoom, DesignCategory[]> = {
-  great_room: ["paint", "flooring", "lighting", "hardware"],
-  kitchen: ["paint", "flooring", "cabinets", "countertops", "fixtures", "hardware", "lighting"],
-  primary_bath: ["paint", "flooring", "cabinets", "countertops", "fixtures", "hardware", "lighting"],
-  hall_bath: ["paint", "flooring", "fixtures", "hardware", "lighting"],
-  primary_suite: ["paint", "flooring", "lighting", "hardware"],
-  exterior: ["exterior", "paint"],
+  great_room: ["paint", "flooring", "lighting", "hardware", "doors"],
+  kitchen: [
+    "paint",
+    "flooring",
+    "cabinets",
+    "countertops",
+    "backsplash",
+    "fixtures",
+    "hardware",
+    "lighting",
+    "appliances",
+  ],
+  primary_bath: ["paint", "flooring", "tile", "cabinets", "countertops", "fixtures", "hardware", "lighting"],
+  hall_bath: ["paint", "flooring", "tile", "fixtures", "hardware", "lighting"],
+  primary_suite: ["paint", "flooring", "lighting", "hardware", "doors"],
+  laundry: ["paint", "flooring", "cabinets", "fixtures", "hardware", "lighting"],
+  exterior: ["exterior", "roofing", "doors", "paint"],
+  garage_front: ["exterior", "doors", "paint"],
 };
 
 export function partnerCategoryForDesign(cat: DesignCategory): FinishCategory {
   switch (cat) {
     case "paint":
+    case "cabinets":
+    case "countertops":
+    case "backsplash":
+    case "tile":
+    case "exterior":
+    case "roofing":
+    case "doors":
       return "general";
     case "flooring":
       return "flooring";
-    case "cabinets":
-    case "countertops":
-      return "general";
     case "fixtures":
       return "plumbing";
     case "hardware":
       return "hardware";
-    case "exterior":
-      return "general";
     case "lighting":
       return "lighting";
+    case "appliances":
+      return "appliances";
     default:
       return "general";
   }
 }
 
+function o(
+  partial: Omit<DesignOption, "zone"> & { zone?: DesignOption["zone"] },
+): DesignOption {
+  return { zone: "interior", ...partial };
+}
+
 export const DESIGN_OPTIONS: DesignOption[] = [
-  // Paint — walls
-  {
-    id: "paint-swiss-coffee",
-    category: "paint",
-    name: "Swiss Coffee",
-    brand: "Benjamin Moore",
-    finish: "Eggshell",
-    colorHex: "#F5F2E9",
-    priceDelta: 0,
-    allowanceBucket: "Paint",
-    imageHint: "warm off-white walls",
-  },
-  {
-    id: "paint-agreeable-gray",
-    category: "paint",
-    name: "Agreeable Gray",
-    brand: "Sherwin-Williams",
-    finish: "Eggshell",
-    colorHex: "#D1CBC1",
-    priceDelta: 0,
-    allowanceBucket: "Paint",
-    imageHint: "soft warm gray",
-  },
-  {
+  // ── Paint ──────────────────────────────────────────────
+  o({
     id: "paint-alabaster",
     category: "paint",
     name: "Alabaster",
@@ -101,8 +139,34 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Paint",
     imageHint: "clean warm white",
-  },
-  {
+    tier: "base",
+    tags: ["neutral"],
+  }),
+  o({
+    id: "paint-agreeable-gray",
+    category: "paint",
+    name: "Agreeable Gray",
+    brand: "Sherwin-Williams",
+    finish: "Eggshell",
+    colorHex: "#D1CBC1",
+    priceDelta: 0,
+    allowanceBucket: "Paint",
+    imageHint: "soft warm gray",
+    tier: "base",
+  }),
+  o({
+    id: "paint-swiss-coffee",
+    category: "paint",
+    name: "Swiss Coffee",
+    brand: "Benjamin Moore",
+    finish: "Eggshell",
+    colorHex: "#F5F2E9",
+    priceDelta: 0,
+    allowanceBucket: "Paint",
+    imageHint: "warm off-white",
+    tier: "base",
+  }),
+  o({
     id: "paint-accessible-beige",
     category: "paint",
     name: "Accessible Beige",
@@ -112,19 +176,9 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Paint",
     imageHint: "taupe beige",
-  },
-  {
-    id: "paint-naval",
-    category: "paint",
-    name: "Naval (accent)",
-    brand: "Sherwin-Williams",
-    finish: "Eggshell",
-    colorHex: "#2C3E50",
-    priceDelta: 150,
-    allowanceBucket: "Paint",
-    imageHint: "deep navy accent",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "paint-evergreen-fog",
     category: "paint",
     name: "Evergreen Fog",
@@ -134,10 +188,49 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Paint",
     imageHint: "sage green-gray",
-  },
+    tier: "trendy",
+    tags: ["sage", "2024-2026"],
+  }),
+  o({
+    id: "paint-naval",
+    category: "paint",
+    name: "Naval accent",
+    brand: "Sherwin-Williams",
+    finish: "Eggshell",
+    colorHex: "#2C3E50",
+    priceDelta: 175,
+    allowanceBucket: "Paint",
+    imageHint: "deep navy accent wall",
+    tier: "trendy",
+  }),
+  o({
+    id: "paint-black-magic",
+    category: "paint",
+    name: "Black Magic accent",
+    brand: "Sherwin-Williams",
+    finish: "Eggshell",
+    colorHex: "#2B2B2B",
+    priceDelta: 200,
+    allowanceBucket: "Paint",
+    imageHint: "near-black accent",
+    tier: "trendy",
+  }),
+  o({
+    id: "paint-roman-clay",
+    category: "paint",
+    name: "Roman clay texture",
+    brand: "Portola",
+    finish: "Limewash / clay",
+    colorHex: "#C9B8A4",
+    priceDelta: 2400,
+    allowanceBucket: "Paint",
+    imageHint: "textured plaster look",
+    tier: "premium",
+    tags: ["custom"],
+  }),
 
-  // Flooring
-  {
+  // ── Flooring ───────────────────────────────────────────
+  o({
     id: "fl-lvp-oak",
     category: "flooring",
     name: "LVP — Natural Oak",
@@ -147,19 +240,45 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Flooring",
     imageHint: "light oak plank",
-  },
-  {
+    tier: "base",
+  }),
+  o({
+    id: "fl-lvp-greige",
+    category: "flooring",
+    name: "LVP — Greige Oak",
+    brand: "CoreTec",
+    finish: "Rigid core",
+    colorHex: "#B5A99A",
+    priceDelta: 0,
+    allowanceBucket: "Flooring",
+    imageHint: "warm greige plank",
+    tier: "base",
+  }),
+  o({
+    id: "fl-carpet-neutral",
+    category: "flooring",
+    name: "Carpet — Neutral Twist",
+    brand: "Mohawk",
+    finish: "Soft",
+    colorHex: "#C9C2B8",
+    priceDelta: 0,
+    allowanceBucket: "Flooring",
+    imageHint: "bedroom carpet",
+    tier: "base",
+  }),
+  o({
     id: "fl-lvp-walnut",
     category: "flooring",
-    name: "LVP — Walnut",
+    name: "LVP — Deep Walnut",
     brand: "CoreTec",
     finish: "Rigid core",
     colorHex: "#6B4E31",
-    priceDelta: 1.25,
+    priceDelta: 1800,
     allowanceBucket: "Flooring",
-    imageHint: "medium walnut plank",
-  },
-  {
+    imageHint: "medium-dark walnut",
+    tier: "upgrade",
+  }),
+  o({
     id: "fl-hardwood-white-oak",
     category: "flooring",
     name: "Engineered white oak",
@@ -167,35 +286,40 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     finish: "Matte",
     woodSpecies: "White oak",
     colorHex: "#D4C4A8",
-    priceDelta: 4.5,
+    priceDelta: 6500,
     allowanceBucket: "Flooring",
-    imageHint: "premium white oak",
-  },
-  {
-    id: "fl-tile-porcelain-gray",
+    imageHint: "wide-plank white oak",
+    tier: "trendy",
+    tags: ["hardwood", "wide plank"],
+  }),
+  o({
+    id: "fl-hardwood-smoked",
     category: "flooring",
-    name: "Porcelain tile — Soft Gray",
+    name: "Smoked European oak",
+    brand: "Kahrs",
+    finish: "Oil matte",
+    woodSpecies: "Oak",
+    colorHex: "#8B7355",
+    priceDelta: 9800,
+    allowanceBucket: "Flooring",
+    imageHint: "smoked oak",
+    tier: "premium",
+  }),
+  o({
+    id: "fl-tile-large-format",
+    category: "flooring",
+    name: "Porcelain 24×48 soft gray",
     brand: "Daltile",
-    finish: "Matte 12x24",
+    finish: "Matte",
     colorHex: "#B8B5B0",
-    priceDelta: 2,
+    priceDelta: 3200,
     allowanceBucket: "Flooring",
-    imageHint: "gray porcelain",
-  },
-  {
-    id: "fl-carpet-neutral",
-    category: "flooring",
-    name: "Carpet — Neutral Twist",
-    brand: "Mohawk",
-    finish: "Soft",
-    colorHex: "#C9C2B8",
-    priceDelta: -1.5,
-    allowanceBucket: "Flooring",
-    imageHint: "beige carpet",
-  },
+    imageHint: "large-format tile",
+    tier: "trendy",
+  }),
 
-  // Cabinets
-  {
+  // ── Cabinets ───────────────────────────────────────────
+  o({
     id: "cab-shaker-white",
     category: "cabinets",
     name: "Shaker — Painted White",
@@ -205,30 +329,34 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Cabinets",
     imageHint: "white shaker",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "cab-shaker-greige",
     category: "cabinets",
     name: "Shaker — Greige",
     brand: "Mid Continent",
     finish: "Painted",
     colorHex: "#B7A99A",
-    priceDelta: 800,
+    priceDelta: 900,
     allowanceBucket: "Cabinets",
     imageHint: "greige shaker",
-  },
-  {
-    id: "cab-shaker-navy",
+    tier: "upgrade",
+  }),
+  o({
+    id: "cab-two-tone-navy",
     category: "cabinets",
-    name: "Shaker — Navy island",
+    name: "Two-tone — white + navy island",
     brand: "Mid Continent",
     finish: "Painted",
     colorHex: "#2F3E4C",
-    priceDelta: 1200,
+    priceDelta: 1800,
     allowanceBucket: "Cabinets",
     imageHint: "navy island",
-  },
-  {
+    tier: "trendy",
+    tags: ["two-tone"],
+  }),
+  o({
     id: "cab-stained-oak",
     category: "cabinets",
     name: "Stained white oak",
@@ -236,94 +364,193 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     finish: "Clear stain",
     woodSpecies: "White oak",
     colorHex: "#C9B896",
-    priceDelta: 2800,
+    priceDelta: 4200,
     allowanceBucket: "Cabinets",
     imageHint: "natural oak cabinets",
-  },
+    tier: "trendy",
+    tags: ["wood", "organic modern"],
+  }),
+  o({
+    id: "cab-flat-panel-walnut",
+    category: "cabinets",
+    name: "Flat panel walnut",
+    brand: "Custom",
+    finish: "Veneer",
+    woodSpecies: "Walnut",
+    colorHex: "#5C4033",
+    priceDelta: 7800,
+    allowanceBucket: "Cabinets",
+    imageHint: "modern walnut",
+    tier: "premium",
+  }),
 
-  // Countertops
-  {
+  // ── Countertops ────────────────────────────────────────
+  o({
     id: "ct-quartz-calacatta",
     category: "countertops",
     name: "Quartz — Calacatta look",
-    brand: "Cambria",
+    brand: "Cambria / MSI",
     finish: "Polished",
     colorHex: "#F2EFEA",
     priceDelta: 0,
     allowanceBucket: "Countertops",
     imageHint: "white quartz",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "ct-quartz-concrete",
     category: "countertops",
     name: "Quartz — Soft concrete",
     brand: "Silestone",
     finish: "Matte",
     colorHex: "#A8A6A1",
-    priceDelta: 400,
+    priceDelta: 600,
     allowanceBucket: "Countertops",
-    imageHint: "gray quartz",
-  },
-  {
-    id: "ct-granite-absolute",
+    imageHint: "gray matte quartz",
+    tier: "upgrade",
+  }),
+  o({
+    id: "ct-quartz-leathered-black",
     category: "countertops",
-    name: "Granite — Absolute Black",
-    brand: "Local slab",
-    finish: "Honed",
-    colorHex: "#1A1A1A",
-    priceDelta: -200,
+    name: "Quartz — Leathered black",
+    brand: "Caesarstone",
+    finish: "Leathered",
+    colorHex: "#1C1C1C",
+    priceDelta: 1400,
     allowanceBucket: "Countertops",
-    imageHint: "black granite",
-  },
+    imageHint: "black leathered",
+    tier: "trendy",
+  }),
+  o({
+    id: "ct-porcelain-slab",
+    category: "countertops",
+    name: "Porcelain slab waterfall",
+    brand: "Neolith",
+    finish: "Matte",
+    colorHex: "#E8E4DC",
+    priceDelta: 5200,
+    allowanceBucket: "Countertops",
+    imageHint: "waterfall island",
+    tier: "premium",
+    tags: ["waterfall"],
+  }),
 
-  // Plumbing fixtures
-  {
+  // ── Backsplash ─────────────────────────────────────────
+  o({
+    id: "bs-subway-white",
+    category: "backsplash",
+    name: "Subway 3×6 white",
+    brand: "Daltile",
+    finish: "Gloss",
+    colorHex: "#F5F5F5",
+    priceDelta: 0,
+    allowanceBucket: "Backsplash",
+    imageHint: "classic subway",
+    tier: "base",
+  }),
+  o({
+    id: "bs-vertical-stack",
+    category: "backsplash",
+    name: "Vertical stack greige",
+    brand: "Daltile",
+    finish: "Matte",
+    colorHex: "#C4BBB0",
+    priceDelta: 450,
+    allowanceBucket: "Backsplash",
+    imageHint: "vertical stack",
+    tier: "trendy",
+  }),
+  o({
+    id: "bs-zellige",
+    category: "backsplash",
+    name: "Zellige look — soft white",
+    brand: "Cle",
+    finish: "Handmade look",
+    colorHex: "#EDE8E0",
+    priceDelta: 1600,
+    allowanceBucket: "Backsplash",
+    imageHint: "zellige",
+    tier: "trendy",
+    tags: ["artisan"],
+  }),
+  o({
+    id: "bs-full-height-slab",
+    category: "backsplash",
+    name: "Full-height slab match",
+    brand: "Same as counter",
+    finish: "Polished / matte",
+    colorHex: "#F2EFEA",
+    priceDelta: 2800,
+    allowanceBucket: "Backsplash",
+    imageHint: "slab splash",
+    tier: "premium",
+  }),
+
+  // ── Plumbing fixtures ──────────────────────────────────
+  o({
     id: "fx-chrome-standard",
     category: "fixtures",
-    name: "Chrome — builder package",
+    name: "Chrome builder package",
     brand: "Moen",
     finish: "Chrome",
     colorHex: "#C0C0C0",
     priceDelta: 0,
     allowanceBucket: "Plumbing fixtures",
     imageHint: "chrome faucet",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "fx-brushed-nickel",
     category: "fixtures",
-    name: "Brushed nickel",
+    name: "Brushed nickel package",
     brand: "Moen",
     finish: "Brushed nickel",
     colorHex: "#A8A9AD",
-    priceDelta: 350,
+    priceDelta: 0,
     allowanceBucket: "Plumbing fixtures",
     imageHint: "brushed nickel",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "fx-matte-black",
     category: "fixtures",
-    name: "Matte black",
+    name: "Matte black package",
     brand: "Delta",
     finish: "Matte black",
     colorHex: "#2B2B2B",
-    priceDelta: 650,
+    priceDelta: 850,
     allowanceBucket: "Plumbing fixtures",
-    imageHint: "matte black faucet",
-  },
-  {
+    imageHint: "matte black",
+    tier: "trendy",
+  }),
+  o({
     id: "fx-champagne-bronze",
     category: "fixtures",
     name: "Champagne bronze",
     brand: "Kohler",
     finish: "Champagne bronze",
     colorHex: "#B08D57",
-    priceDelta: 900,
+    priceDelta: 1200,
     allowanceBucket: "Plumbing fixtures",
     imageHint: "warm bronze",
-  },
+    tier: "trendy",
+  }),
+  o({
+    id: "fx-mixed-metal",
+    category: "fixtures",
+    name: "Mixed metal (black + brass)",
+    brand: "Kohler / custom",
+    finish: "Mixed",
+    colorHex: "#8B7355",
+    priceDelta: 1800,
+    allowanceBucket: "Plumbing fixtures",
+    imageHint: "mixed metals",
+    tier: "premium",
+    tags: ["mixed metal"],
+  }),
 
-  // Hardware
-  {
+  // ── Hardware ───────────────────────────────────────────
+  o({
     id: "hw-satin-nickel",
     category: "hardware",
     name: "Satin nickel pulls",
@@ -333,32 +560,47 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Hardware",
     imageHint: "satin nickel",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "hw-matte-black",
     category: "hardware",
-    name: "Matte black pulls",
+    name: "Matte black bar pulls",
     brand: "Amerock",
     finish: "Matte black",
     colorHex: "#2B2B2B",
-    priceDelta: 120,
+    priceDelta: 180,
     allowanceBucket: "Hardware",
     imageHint: "black hardware",
-  },
-  {
+    tier: "trendy",
+  }),
+  o({
     id: "hw-brass",
     category: "hardware",
     name: "Aged brass",
     brand: "Top Knobs",
     finish: "Aged brass",
     colorHex: "#B5A642",
-    priceDelta: 280,
+    priceDelta: 320,
     allowanceBucket: "Hardware",
     imageHint: "brass hardware",
-  },
+    tier: "trendy",
+  }),
+  o({
+    id: "hw-leather-tab",
+    category: "hardware",
+    name: "Leather tab pulls",
+    brand: "Custom",
+    finish: "Leather + brass",
+    colorHex: "#6B5344",
+    priceDelta: 680,
+    allowanceBucket: "Hardware",
+    imageHint: "leather tabs",
+    tier: "premium",
+  }),
 
-  // Lighting
-  {
+  // ── Lighting ───────────────────────────────────────────
+  o({
     id: "lt-flush-white",
     category: "lighting",
     name: "Flush mount — white",
@@ -368,30 +610,9 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Lighting",
     imageHint: "simple flush",
-  },
-  {
-    id: "lt-pendant-black",
-    category: "lighting",
-    name: "Pendant — matte black",
-    brand: "Kichler",
-    finish: "Matte black",
-    colorHex: "#2B2B2B",
-    priceDelta: 220,
-    allowanceBucket: "Lighting",
-    imageHint: "black pendant",
-  },
-  {
-    id: "lt-chandelier-brass",
-    category: "lighting",
-    name: "Chandelier — brushed brass",
-    brand: "Visual Comfort",
-    finish: "Brushed brass",
-    colorHex: "#C5A572",
-    priceDelta: 850,
-    allowanceBucket: "Lighting",
-    imageHint: "brass chandelier",
-  },
-  {
+    tier: "base",
+  }),
+  o({
     id: "lt-vanity-bar",
     category: "lighting",
     name: "Vanity bar — chrome",
@@ -401,10 +622,147 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     priceDelta: 0,
     allowanceBucket: "Lighting",
     imageHint: "vanity bar",
-  },
+    tier: "base",
+  }),
+  o({
+    id: "lt-pendant-black",
+    category: "lighting",
+    name: "Kitchen pendants — matte black",
+    brand: "Kichler",
+    finish: "Matte black",
+    colorHex: "#2B2B2B",
+    priceDelta: 420,
+    allowanceBucket: "Lighting",
+    imageHint: "black pendants",
+    tier: "trendy",
+  }),
+  o({
+    id: "lt-chandelier-brass",
+    category: "lighting",
+    name: "Chandelier — brushed brass",
+    brand: "Visual Comfort",
+    finish: "Brushed brass",
+    colorHex: "#C5A572",
+    priceDelta: 1100,
+    allowanceBucket: "Lighting",
+    imageHint: "brass chandelier",
+    tier: "trendy",
+  }),
+  o({
+    id: "lt-linear-modern",
+    category: "lighting",
+    name: "Linear LED modern",
+    brand: "Tech Lighting",
+    finish: "Black / brass",
+    colorHex: "#3A3A3A",
+    priceDelta: 1600,
+    allowanceBucket: "Lighting",
+    imageHint: "linear fixture",
+    tier: "premium",
+  }),
 
-  // Exterior
-  {
+  // ── Appliances ─────────────────────────────────────────
+  o({
+    id: "ap-ss-mid",
+    category: "appliances",
+    name: "Stainless midrange package",
+    brand: "GE / Whirlpool",
+    finish: "Stainless",
+    colorHex: "#C5C8CA",
+    priceDelta: 0,
+    allowanceBucket: "Appliances",
+    imageHint: "SS range + DW + micro",
+    tier: "base",
+  }),
+  o({
+    id: "ap-ss-upgrade",
+    category: "appliances",
+    name: "Stainless upgrade (gas range)",
+    brand: "GE Profile",
+    finish: "Stainless",
+    colorHex: "#C5C8CA",
+    priceDelta: 1800,
+    allowanceBucket: "Appliances",
+    imageHint: "gas range package",
+    tier: "upgrade",
+  }),
+  o({
+    id: "ap-black-stainless",
+    category: "appliances",
+    name: "Black stainless package",
+    brand: "Samsung",
+    finish: "Black stainless",
+    colorHex: "#3D3D3D",
+    priceDelta: 2200,
+    allowanceBucket: "Appliances",
+    imageHint: "black SS",
+    tier: "trendy",
+  }),
+  o({
+    id: "ap-pro-range",
+    category: "appliances",
+    name: "Pro-style range + hood",
+    brand: "Café / Thermador entry",
+    finish: "Stainless / custom",
+    colorHex: "#B0B0B0",
+    priceDelta: 6500,
+    allowanceBucket: "Appliances",
+    imageHint: "pro range",
+    tier: "premium",
+  }),
+
+  // ── Tile (baths) ───────────────────────────────────────
+  o({
+    id: "tile-std-ceramic",
+    category: "tile",
+    name: "Ceramic bath package",
+    brand: "Daltile",
+    finish: "Gloss / matte",
+    colorHex: "#E8E6E1",
+    priceDelta: 0,
+    allowanceBucket: "Tile",
+    imageHint: "standard bath tile",
+    tier: "base",
+  }),
+  o({
+    id: "tile-porcelain-rectified",
+    category: "tile",
+    name: "Rectified porcelain",
+    brand: "Daltile",
+    finish: "Matte",
+    colorHex: "#C8C4BC",
+    priceDelta: 900,
+    allowanceBucket: "Tile",
+    imageHint: "modern porcelain",
+    tier: "upgrade",
+  }),
+  o({
+    id: "tile-herringbone",
+    category: "tile",
+    name: "Herringbone marble look",
+    brand: "MSI",
+    finish: "Polished",
+    colorHex: "#EDE8E2",
+    priceDelta: 2400,
+    allowanceBucket: "Tile",
+    imageHint: "herringbone shower",
+    tier: "trendy",
+  }),
+  o({
+    id: "tile-slab-shower",
+    category: "tile",
+    name: "Slab shower walls",
+    brand: "Porcelain slab",
+    finish: "Matte",
+    colorHex: "#D9D4CC",
+    priceDelta: 4800,
+    allowanceBucket: "Tile",
+    imageHint: "slab shower",
+    tier: "premium",
+  }),
+
+  // ── Exterior siding ────────────────────────────────────
+  o({
     id: "ext-lap-siding-white",
     category: "exterior",
     name: "Lap siding — white",
@@ -413,50 +771,201 @@ export const DESIGN_OPTIONS: DesignOption[] = [
     colorHex: "#F4F1EA",
     priceDelta: 0,
     allowanceBucket: "Exterior",
-    imageHint: "white siding",
-  },
-  {
+    imageHint: "white lap",
+    tier: "base",
+    zone: "exterior",
+  }),
+  o({
     id: "ext-board-batten-charcoal",
     category: "exterior",
     name: "Board & batten — charcoal",
     brand: "LP SmartSide",
     finish: "Painted",
     colorHex: "#4A4A48",
-    priceDelta: 1800,
+    priceDelta: 2200,
     allowanceBucket: "Exterior",
     imageHint: "charcoal b&b",
-  },
-  {
+    tier: "trendy",
+    zone: "exterior",
+  }),
+  o({
+    id: "ext-mixed-farmhouse",
+    category: "exterior",
+    name: "Mixed lap + board-batten",
+    brand: "LP SmartSide",
+    finish: "Painted",
+    colorHex: "#E8E2D6",
+    priceDelta: 2800,
+    allowanceBucket: "Exterior",
+    imageHint: "modern farmhouse",
+    tier: "trendy",
+    zone: "exterior",
+    tags: ["farmhouse"],
+  }),
+  o({
     id: "ext-stone-wainscot",
     category: "exterior",
     name: "Cultured stone wainscot",
     brand: "Cultured Stone",
     finish: "Natural",
     colorHex: "#8B7D6B",
-    priceDelta: 4200,
+    priceDelta: 5200,
     allowanceBucket: "Exterior",
     imageHint: "stone base",
-  },
+    tier: "premium",
+    zone: "exterior",
+  }),
+  o({
+    id: "ext-metal-accent",
+    category: "exterior",
+    name: "Standing-seam metal accents",
+    brand: "Local metal",
+    finish: "Matte black / bronze",
+    colorHex: "#3A3A3A",
+    priceDelta: 4800,
+    allowanceBucket: "Exterior",
+    imageHint: "metal mountain modern",
+    tier: "premium",
+    zone: "exterior",
+    tags: ["mountain modern"],
+  }),
+
+  // ── Roofing ────────────────────────────────────────────
+  o({
+    id: "roof-arch-shingle",
+    category: "roofing",
+    name: "Architectural shingle — charcoal",
+    brand: "Owens Corning",
+    finish: "Dimensional",
+    colorHex: "#4A4A4A",
+    priceDelta: 0,
+    allowanceBucket: "Roofing",
+    imageHint: "arch shingle",
+    tier: "base",
+    zone: "exterior",
+  }),
+  o({
+    id: "roof-weathered-wood",
+    category: "roofing",
+    name: "Architectural — weathered wood",
+    brand: "Owens Corning",
+    finish: "Dimensional",
+    colorHex: "#6B5E4F",
+    priceDelta: 0,
+    allowanceBucket: "Roofing",
+    imageHint: "weathered wood tone",
+    tier: "base",
+    zone: "exterior",
+  }),
+  o({
+    id: "roof-metal",
+    category: "roofing",
+    name: "Standing seam metal",
+    brand: "Local",
+    finish: "Matte",
+    colorHex: "#5A5A5A",
+    priceDelta: 12000,
+    allowanceBucket: "Roofing",
+    imageHint: "metal roof",
+    tier: "premium",
+    zone: "exterior",
+  }),
+
+  // ── Doors ──────────────────────────────────────────────
+  o({
+    id: "door-painted-6panel",
+    category: "doors",
+    name: "Interior 6-panel painted",
+    brand: "Jeld-Wen",
+    finish: "Painted",
+    colorHex: "#F5F5F5",
+    priceDelta: 0,
+    allowanceBucket: "Doors",
+    imageHint: "standard interior",
+    tier: "base",
+    zone: "both",
+  }),
+  o({
+    id: "door-shaker-flat",
+    category: "doors",
+    name: "Flat / shaker interior",
+    brand: "Jeld-Wen",
+    finish: "Painted",
+    colorHex: "#F0EDE4",
+    priceDelta: 600,
+    allowanceBucket: "Doors",
+    imageHint: "modern flat",
+    tier: "upgrade",
+    zone: "interior",
+  }),
+  o({
+    id: "door-entry-craftsman",
+    category: "doors",
+    name: "Craftsman entry with glass",
+    brand: "Therma-Tru",
+    finish: "Stained / painted",
+    colorHex: "#5C4033",
+    priceDelta: 1800,
+    allowanceBucket: "Doors",
+    imageHint: "entry door",
+    tier: "upgrade",
+    zone: "exterior",
+  }),
+  o({
+    id: "door-garage-carriage",
+    category: "doors",
+    name: "Carriage-style garage doors",
+    brand: "Clopay",
+    finish: "Painted",
+    colorHex: "#3D3D3D",
+    priceDelta: 2400,
+    allowanceBucket: "Doors",
+    imageHint: "carriage garage",
+    tier: "trendy",
+    zone: "exterior",
+  }),
+  o({
+    id: "door-pivot-entry",
+    category: "doors",
+    name: "Modern pivot entry",
+    brand: "Custom",
+    finish: "Wood / metal",
+    colorHex: "#2B2B2B",
+    priceDelta: 8500,
+    allowanceBucket: "Doors",
+    imageHint: "pivot door",
+    tier: "premium",
+    zone: "exterior",
+  }),
 ];
 
 export function optionsForCategory(cat: DesignCategory): DesignOption[] {
-  return DESIGN_OPTIONS.filter((o) => o.category === cat);
+  return DESIGN_OPTIONS.filter((x) => x.category === cat);
 }
 
 export function optionById(id: string): DesignOption | undefined {
-  return DESIGN_OPTIONS.find((o) => o.id === id);
+  return DESIGN_OPTIONS.find((x) => x.id === id);
 }
 
-/** Default starter package for a new design session */
+export function optionsByTier(tier: DesignTier): DesignOption[] {
+  return DESIGN_OPTIONS.filter((x) => x.tier === tier);
+}
+
+/** Midrange starter package — all priceDelta 0 bases */
 export const DEFAULT_SELECTIONS: Partial<Record<DesignCategory, string>> = {
   paint: "paint-alabaster",
   flooring: "fl-lvp-oak",
   cabinets: "cab-shaker-white",
   countertops: "ct-quartz-calacatta",
+  backsplash: "bs-subway-white",
   fixtures: "fx-chrome-standard",
   hardware: "hw-satin-nickel",
   lighting: "lt-flush-white",
+  appliances: "ap-ss-mid",
+  tile: "tile-std-ceramic",
   exterior: "ext-lap-siding-white",
+  roofing: "roof-arch-shingle",
+  doors: "door-painted-6panel",
 };
 
 export function formatDelta(n: number): string {
@@ -467,4 +976,8 @@ export function formatDelta(n: number): string {
       ? `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
       : `$${abs.toFixed(abs % 1 ? 2 : 0)}`;
   return n > 0 ? `+${formatted}` : `−${formatted}`;
+}
+
+export function allowanceTotal(): number {
+  return BASE_ALLOWANCES.reduce((s, a) => s + a.amount, 0);
 }
