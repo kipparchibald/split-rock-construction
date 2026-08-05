@@ -328,6 +328,25 @@ export type InsurancePolicyType =
 export type InsurancePolicyStatus = "active" | "expiring_soon" | "expired" | "missing";
 export type CoiStatus = "valid" | "expiring_soon" | "expired" | "missing" | "pending_review";
 
+export type CoiCheckResult = "pass" | "fail" | "warn";
+export type CoiVerificationOverall = "passed" | "failed" | "needs_review";
+
+export interface CoiVerificationCheck {
+  id: string;
+  label: string;
+  result: CoiCheckResult;
+  detail: string;
+}
+
+/** Result of automated COI verification against Split Rock requirements */
+export interface CoiVerification {
+  verifiedAt: string;
+  overall: CoiVerificationOverall;
+  checks: CoiVerificationCheck[];
+  /** 0–100 verification score (distinct from vendor compliance score) */
+  score: number;
+}
+
 export interface InsurancePolicy {
   id: string;
   vendorId?: string;
@@ -343,6 +362,8 @@ export interface InsurancePolicy {
   effectiveDate?: string;
   certificateUrl?: string;
   notes?: string;
+  /** Latest automated verification run */
+  verification?: CoiVerification;
 }
 
 export type LienWaiverType =
