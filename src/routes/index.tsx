@@ -33,7 +33,7 @@ function LandingPage() {
             <a href="#contact" className="hover:text-fg">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex"><Link to="/app">Ops suite</Link></Button>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex"><Link to="/login">Ops suite</Link></Button>
             <Button size="sm" asChild><a href="#contact">Start a project <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
           </div>
         </div>
@@ -55,7 +55,7 @@ function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               <Button size="lg" asChild><a href="#contact">Talk with us <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></a></Button>
-              <Button size="lg" variant="outline" asChild><Link to="/app">Open field suite</Link></Button>
+              <Button size="lg" variant="outline" asChild><Link to="/login">Open field suite</Link></Button>
             </div>
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6">
               {[{ k: "Active builds", v: "5" }, { k: "Commercial volume", v: "$2.6M" }, { k: "Lost-time", v: "0" }].map((s) => (
@@ -127,7 +127,7 @@ function LandingPage() {
               <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">Active work</h2>
               <p className="mt-1 text-[13px] text-fg-muted">Snapshot from the field suite.</p>
             </div>
-            <Button variant="outline" size="sm" asChild><Link to="/app/projects">All projects</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link to="/login">All projects</Link></Button>
           </div>
           <div className="mt-6 grid gap-px border border-border bg-border md:grid-cols-3">
             {[
@@ -187,7 +187,7 @@ function LandingPage() {
           </div>
           <div className="mt-8">
             <Button variant="outline" size="sm" asChild>
-              <Link to="/app">Open the suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
+              <Link to="/login">Open the suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
             </Button>
           </div>
         </div>
@@ -209,7 +209,7 @@ function LandingPage() {
             </div>
             <div className="flex flex-col gap-2">
               <Button size="lg" variant="secondary" className="bg-bg-elevated text-fg hover:bg-bg" asChild>
-                <Link to="/app">Launch ops suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
+                <Link to="/login">Launch ops suite <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>
               </Button>
               <p className="text-[11px] text-primary-fg/55">Projects, bids, pricing, crews, documents.</p>
             </div>
