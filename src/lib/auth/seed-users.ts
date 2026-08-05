@@ -5,23 +5,24 @@
  * sign-up so passwords are hashed correctly — never insert raw password hashes.
  *
  * Credentials (ops only — rotate after first production deploy):
- *   Kipp Archibald  ·  kipp@splitrock.construction  ·  SplitRock-Kipp-2026!
- *   Kyle            ·  kyle@splitrock.construction  ·  SplitRock-Kyle-2026!
+ *   Kipp Archibald  ·  kipp@splitrockconst.com  ·  SplitRock-Kipp-2026!
+ *   Kyle            ·  kyle@splitrockconst.com  ·  SplitRock-Kyle-2026!
  */
 import { auth } from "./server";
+import { OPERATOR_AUTH } from "@/lib/company";
 
 export const SPLIT_ROCK_OPERATORS = [
   {
-    name: "Kipp Archibald",
-    email: "kipp@splitrock.construction",
+    name: OPERATOR_AUTH.kipp.name,
+    email: OPERATOR_AUTH.kipp.email,
     password: "SplitRock-Kipp-2026!",
-    role: "owner",
+    role: OPERATOR_AUTH.kipp.role,
   },
   {
-    name: "Kyle",
-    email: "kyle@splitrock.construction",
+    name: OPERATOR_AUTH.kyle.name,
+    email: OPERATOR_AUTH.kyle.email,
     password: "SplitRock-Kyle-2026!",
-    role: "ops",
+    role: OPERATOR_AUTH.kyle.role,
   },
 ] as const;
 
