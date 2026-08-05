@@ -7,12 +7,18 @@ import { useAppStore } from "@/data/store";
 import { SAMPLE_VENDORS } from "@/lib/sub-insurance";
 import { draftLienWaiverText, suggestWaiverForDraw, waiverTypeLabel } from "@/lib/lien-waivers";
 import type { LienWaiver, LienWaiverType } from "@/data/types";
+import { LEGAL_DRAFT_DISCLAIMER } from "@/lib/company";
+import { loadJson, saveJson, PERSIST_KEYS } from "@/lib/local-persist";
 
 export const Route = createFileRoute("/app/waivers")({ component: WaiversPage });
 
 function WaiversPage() {
   const { projects, draws } = useAppStore();
-  const [waivers, setWaivers] = useState<LienWaiver[]>([]);
+  const [waivers, setWaivers] = useState<LienWaiver[]>(() => loadJson(PERSIST_KEYS.waivers, []));
+  function persistWaivers(next: LienWaiver[]) {
+    setWaivers(next);
+    saveJson(PERSIST_KEYS.waivers, next);
+  }
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const project = projects[0];
   const vendor = SAMPLE_VENDORS[0];
@@ -43,12 +49,12 @@ function WaiversPage() {
       drawId: draw?.id,
       createdAt: new Date().toISOString(),
     };
-    setWaivers((prev) => [w, ...prev]);
+    persistWaivers([w, ...waivers]);
     setSelectedId(w.id);
   }
 
   function setStatus(id: string, status: LienWaiver["status"]) {
-    setWaivers((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
+    persistWaivers(waivers.map((w) => (w.id === id ? { ...w, status } : w)));
   }
 
   return (
@@ -105,7 +111,17 @@ function WaiversPage() {
                 <Button size="sm" variant="outline" onClick={() => setStatus(selectedId, "signed")}>
                   Mark signed
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(draftPreview);
+                  }}
+                >
+                  Copy text
+                </Button>
               </div>
+              <p className="mb-2 text-[11px] leading-relaxed text-fg-subtle">{LEGAL_DRAFT_DISCLAIMER}</p>
               <pre className="max-h-[480px] overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-fg-muted">
                 {draftPreview}
               </pre>
