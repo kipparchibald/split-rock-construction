@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { isDemoDataEnabled, DEMO_BANNER } from "@/lib/runtime-config";
 
 type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
@@ -145,7 +146,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex h-7 w-7 items-center justify-center bg-primary text-[10px] font-medium tracking-[0.06em] text-primary-fg">SR</div>
           </div>
         </header>
-        <main className="px-4 py-5 sm:px-6 sm:py-6">{children}</main>
+        <main className="px-4 py-5 sm:px-6 sm:py-6">
+          {isDemoDataEnabled ? (
+            <div className="mb-4 border border-border bg-bg-elevated px-3 py-2 text-[11px] leading-relaxed text-fg-muted">
+              {DEMO_BANNER}
+            </div>
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );
