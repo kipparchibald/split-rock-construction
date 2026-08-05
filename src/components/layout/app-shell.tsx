@@ -3,7 +3,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Building2, Calculator, CalendarRange, ClipboardList, Eye, FileText, HardHat,
   LayoutDashboard, Menu, NotebookPen, Banknote, Shield, Users, Wallet, Wrench,
-  Factory, Scale, Layers, Bell, FileSignature, Landmark, Palette, BookOpen, type LucideIcon,
+  Factory, Scale, Layers, Bell, FileSignature, Landmark, Palette, BookOpen,
+  ShoppingBag, type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const groups: NavGroup[] = [
       { to: "/app/documents", label: "Documents", icon: FileText },
       { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
       { to: "/app/design", label: "Design studio", icon: Palette },
+      { to: "/app/finish-partners", label: "Finish partners", icon: ShoppingBag },
     ],
   },
   {
