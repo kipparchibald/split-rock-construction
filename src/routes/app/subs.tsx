@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   CheckCircle2,
+  FileText,
   FileUp,
   Plus,
   ScanSearch,
@@ -27,6 +28,12 @@ import {
   vendorComplianceScore,
   verifyCoi,
 } from "@/lib/sub-insurance";
+import {
+  SAMPLE_ACORD_25_TEXT,
+  acordPoliciesForVendor,
+  parseAcord25Text,
+  type Acord25ParseResult,
+} from "@/lib/acord-25";
 import type { CoiStatus, InsurancePolicy, InsurancePolicyType, Vendor } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +72,7 @@ function SubsInsurancePage() {
   const [expandedPolicyId, setExpandedPolicyId] = useState<string | null>(null);
   const [showAddPolicy, setShowAddPolicy] = useState(false);
   const [showAddVendor, setShowAddVendor] = useState(false);
+  const [showAcord, setShowAcord] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const [formType, setFormType] = useState<InsurancePolicyType>("general_liability");
@@ -74,6 +82,9 @@ function SubsInsurancePage() {
   const [formLimit, setFormLimit] = useState("");
   const [formAI, setFormAI] = useState(true);
   const [formFileName, setFormFileName] = useState<string | null>(null);
+
+  const [acordText, setAcordText] = useState("");
+  const [acordResult, setAcordResult] = useState<Acord25ParseResult | null>(null);
 
   const [vCompany, setVCompany] = useState("");
   const [vTrade, setVTrade] = useState("");
@@ -127,6 +138,30 @@ function SubsInsurancePage() {
     setFormAI(true);
   }
 
+  function runAcordParse() {
+    const result = parseAcord25Text(acordText);
+    setAcordResult(result);
+  }
+
+  function applyAcordPolicies() {
+    if (!selectedVendorId || !acordResult) return;
+    const drafts = acordPoliciesForVendor(
+      acordResult,
+      selectedVendorId,
+      formFileName ? `local://${formFileName}` : "local://acord-25-paste.txt",
+    );
+    if (drafts.length === 0) return;
+    const types = new Set(drafts.map((d) => d.type));
+    setPolicies((prev) => {
+      const kept = prev.filter((p) => !(p.vendorId === selectedVendorId && types.has(p.type)));
+      return refreshPolicyStatuses([...drafts, ...kept]);
+    });
+    setExpandedPolicyId(drafts[0]?.id ?? null);
+    setShowAcord(false);
+    setAcordResult(null);
+    setAcordText("");
+  }
+
   function reVerify(id: string) {
     setVerifyingId(id);
     window.setTimeout(() => {
@@ -134,8 +169,7 @@ function SubsInsurancePage() {
         refreshPolicyStatuses(
           prev.map((p) => {
             if (p.id !== id) return p;
-            const verification = verifyCoi(p);
-            return { ...p, verification };
+            return { ...p, verification: verifyCoi(p) };
           }),
         ),
       );
@@ -150,6 +184,19 @@ function SubsInsurancePage() {
       return;
     }
     setFormFileName(file.name);
+    if (file.type.startsWith("text") || file.name.endsWith(".txt")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result ?? "");
+        setAcordText(text);
+        const result = parseAcord25Text(text);
+        setAcordResult(result);
+        setShowAcord(true);
+        setShowAddPolicy(false);
+      };
+      reader.readAsText(file);
+      return;
+    }
     const extracted = simulateExtractFromUpload(file.name);
     if (extracted.type) setFormType(extracted.type);
     if (extracted.carrier) setFormCarrier(extracted.carrier);
@@ -162,16 +209,18 @@ function SubsInsurancePage() {
   function addVendor() {
     if (!vCompany.trim()) return;
     const id = `v-${Date.now()}`;
-    const v: Vendor = {
-      id,
-      company: vCompany.trim(),
-      trade: vTrade.trim() || "General",
-      contact: vContact.trim(),
-      email: vEmail.trim(),
-      phone: vPhone.trim(),
-      preferred: false,
-    };
-    setVendors((prev) => [...prev, v]);
+    setVendors((prev) => [
+      ...prev,
+      {
+        id,
+        company: vCompany.trim(),
+        trade: vTrade.trim() || "General",
+        contact: vContact.trim(),
+        email: vEmail.trim(),
+        phone: vPhone.trim(),
+        preferred: false,
+      },
+    ]);
     setSelectedVendorId(id);
     setShowAddVendor(false);
     setVCompany("");
@@ -189,12 +238,21 @@ function SubsInsurancePage() {
     <div>
       <PageHeader
         title="Sub insurance"
-        description="Automated COI verification — limits, additional insured, expiration, and required coverages. Failures block clean mobilization."
+        description="ACORD 25 parsing + automated verification — limits, additional insured, expiration, required coverages."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => setShowAddVendor(true)}>
               <Plus className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
               Add sub
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAcord(true)}
+              disabled={!selectedVendorId}
+            >
+              <FileText className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+              Parse ACORD 25
             </Button>
             <Button size="sm" onClick={() => setShowAddPolicy(true)} disabled={!selectedVendorId}>
               <FileUp className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
@@ -291,76 +349,36 @@ function SubsInsurancePage() {
                       {selectedVendor.contact ? ` · ${selectedVendor.contact}` : ""}
                       {selectedVendor.phone ? ` · ${selectedVendor.phone}` : ""}
                     </p>
-                    {selectedVendor.email && (
-                      <a
-                        href={`mailto:${selectedVendor.email}`}
-                        className="mt-0.5 block text-[12px] text-fg-muted hover:text-fg hover:underline"
-                      >
-                        {selectedVendor.email}
-                      </a>
-                    )}
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2">
-                      <ScoreDot score={score.score} large />
-                      <span className="text-[18px] font-medium tabular-nums">{score.score}</span>
-                    </div>
-                    <Button size="sm" variant="ghost" onClick={() => togglePreferred(selectedVendor.id)}>
-                      {selectedVendor.preferred ? "Remove preferred" : "Mark preferred"}
-                    </Button>
+                  <div className="flex items-center gap-2">
+                    <ScoreDot score={score.score} large />
+                    <span className="text-[18px] font-medium tabular-nums">{score.score}</span>
                   </div>
                 </div>
-
-                {(score.missing.length > 0 ||
-                  score.expired.length > 0 ||
-                  score.expiring.length > 0 ||
-                  score.failedVerification.length > 0) && (
-                  <div className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-2">
-                    {score.missing.length > 0 && (
-                      <div className="flex gap-2 text-[12px] text-fg-muted">
-                        <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                        <span>Missing: {score.missing.map((m) => typeLabel(m as InsurancePolicyType)).join(", ")}</span>
-                      </div>
-                    )}
-                    {score.failedVerification.length > 0 && (
-                      <div className="flex gap-2 text-[12px] text-fg-muted">
-                        <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                        <span>{score.failedVerification.length} failed auto-verify</span>
-                      </div>
-                    )}
-                    {score.expired.length > 0 && (
-                      <div className="flex gap-2 text-[12px] text-fg-muted">
-                        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                        <span>{score.expired.length} expired</span>
-                      </div>
-                    )}
-                    {score.expiring.length > 0 && (
-                      <div className="flex gap-2 text-[12px] text-fg-muted">
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                        <span>{score.expiring.length} expiring ≤30d</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 <p className="mt-4 text-[11px] leading-relaxed text-fg-subtle">
-                  Auto-checks: GL ≥ $1M + AI named <strong className="text-fg-muted">{ADDITIONAL_INSURED_NAME}</strong>,
-                  WC on file, expiration, carrier/policy #, certificate document. Failures set status to
-                  pending review.
+                  Parse an ACORD 25 to import GL, auto, umbrella, and WC in one pass, then auto-verify each line.
+                  Certificate holder / description of operations drives additional insured detection for{" "}
+                  <strong className="text-fg-muted">{ADDITIONAL_INSURED_NAME}</strong>.
                 </p>
               </div>
 
               <div className="border border-border">
                 <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
                   <p className="text-[12px] font-medium">Certificates on file</p>
-                  <Button size="sm" variant="outline" onClick={() => setShowAddPolicy(true)}>
-                    <FileUp className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
-                    Upload / record
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setShowAcord(true)}>
+                      <FileText className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+                      ACORD 25
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAddPolicy(true)}>
+                      <FileUp className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+                      Manual
+                    </Button>
+                  </div>
                 </div>
                 {vendorPolicies.length === 0 ? (
                   <p className="px-4 py-10 text-center text-[13px] text-fg-muted">
-                    No COIs recorded. Request GL and workers' comp with additional insured before mobilizing.
+                    No COIs recorded. Parse an ACORD 25 or enter a certificate manually.
                   </p>
                 ) : (
                   <ul className="divide-y divide-border">
@@ -389,31 +407,12 @@ function SubsInsurancePage() {
                                   ? ` · $${p.coverageLimit.toLocaleString()} limit`
                                   : ""}
                               </p>
-                              {p.type === "general_liability" && (
-                                <p
-                                  className={cn(
-                                    "mt-0.5 inline-flex items-center gap-1 text-[11px]",
-                                    p.additionalInsured ? "text-fg-muted" : "text-fg-subtle",
-                                  )}
-                                >
-                                  {p.additionalInsured ? (
-                                    <>
-                                      <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
-                                      AI: {p.additionalInsuredNamed ?? ADDITIONAL_INSURED_NAME}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ShieldOff className="h-3 w-3" strokeWidth={1.75} />
-                                      Additional insured missing
-                                    </>
-                                  )}
-                                </p>
-                              )}
+                              {p.notes && <p className="mt-0.5 text-[11px] text-fg-subtle">{p.notes}</p>}
                             </div>
                             <div className="flex flex-col items-end gap-1 text-right text-[12px] tabular-nums text-fg-muted">
                               <p>Exp {p.expirationDate}</p>
                               <p className="text-[11px] text-fg-subtle">
-                                {days < 0 ? `${Math.abs(days)} days overdue` : `${days} days remaining`}
+                                {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
                               </p>
                               <div className="mt-1 flex gap-1">
                                 <Button
@@ -437,7 +436,6 @@ function SubsInsurancePage() {
                               </div>
                             </div>
                           </div>
-
                           {open && v && (
                             <div className="mt-3 border border-border bg-bg p-3">
                               <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
@@ -474,11 +472,12 @@ function SubsInsurancePage() {
               <div className="border border-border bg-bg-elevated p-4 text-[11px] leading-relaxed text-fg-subtle">
                 <p className="mb-1 flex items-center gap-1.5 font-medium text-fg-muted">
                   <Shield className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Automated verification
+                  ACORD 25 parsing
                 </p>
-                Rules engine checks every save and on demand. OCR / ACORD extraction can feed the same
-                pipeline later — filename extract already pre-fills the form. Carrier API confirmation is
-                a future plug-in; until then, treat pass + document on file as operational clearance.
+                Paste OCR or text-extracted certificate content. The parser reads coverage rows (GL, auto,
+                umbrella, WC), limits, dates, insurer letters, additional insured checkboxes, and
+                Description of Operations / Certificate Holder for AI language. Binary PDF OCR is not
+                bundled — export text or paste from your scanner workflow.
               </div>
             </>
           ) : (
@@ -489,27 +488,133 @@ function SubsInsurancePage() {
         </div>
       </div>
 
+      {/* ACORD 25 parser modal */}
+      {showAcord && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden border border-border bg-bg shadow-lg">
+            <div className="border-b border-border px-5 py-4">
+              <h3 className="text-[15px] font-medium">Parse ACORD 25</h3>
+              <p className="mt-1 text-[12px] text-fg-muted">
+                {selectedVendor?.company} — paste certificate text or load the sample form.
+              </p>
+            </div>
+            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setAcordText(SAMPLE_ACORD_25_TEXT);
+                    setAcordResult(parseAcord25Text(SAMPLE_ACORD_25_TEXT));
+                  }}
+                >
+                  Load sample certificate
+                </Button>
+                <Button size="sm" onClick={runAcordParse} disabled={acordText.trim().length < 20}>
+                  Parse text
+                </Button>
+              </div>
+              <div>
+                <Label className="text-[11px]">Certificate text (OCR / paste)</Label>
+                <textarea
+                  className="mt-1 min-h-[180px] w-full border border-border bg-bg px-3 py-2 font-mono text-[11px] leading-relaxed"
+                  value={acordText}
+                  onChange={(e) => setAcordText(e.target.value)}
+                  placeholder="Paste ACORD 25 text here…"
+                />
+              </div>
+              {acordResult && (
+                <div className="border border-border bg-bg-elevated p-3">
+                  <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                    <Badge variant={acordResult.isAcord25 ? "success" : "warning"}>
+                      {acordResult.isAcord25 ? "ACORD 25 detected" : "Uncertain form"}
+                    </Badge>
+                    <span className="text-fg-muted">Confidence {acordResult.confidence}%</span>
+                    {acordResult.formEdition && (
+                      <span className="text-fg-subtle">Edition {acordResult.formEdition}</span>
+                    )}
+                  </div>
+                  {(acordResult.insuredName || acordResult.certificateHolder) && (
+                    <p className="mt-2 text-[12px] text-fg-muted">
+                      {acordResult.insuredName && <>Insured: {acordResult.insuredName}</>}
+                      {acordResult.insuredName && acordResult.certificateHolder && " · "}
+                      {acordResult.certificateHolder && <>Holder: {acordResult.certificateHolder}</>}
+                    </p>
+                  )}
+                  {acordResult.additionalInsuredMentioned && (
+                    <p className="mt-1 flex items-center gap-1 text-[12px] text-fg-muted">
+                      <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      AI language: {acordResult.additionalInsuredNamed ?? "(see description)"}
+                    </p>
+                  )}
+                  <ul className="mt-3 divide-y divide-border border border-border">
+                    {acordResult.coverages.map((c) => (
+                      <li key={c.type} className="px-3 py-2 text-[12px]">
+                        <span className="font-medium">{c.label}</span>
+                        <span className="text-fg-muted">
+                          {" · "}{c.policyNumber ?? "no policy #"}
+                          {c.expirationDate ? ` · exp ${c.expirationDate}` : ""}
+                          {c.eachOccurrence != null
+                            ? ` · $${c.eachOccurrence.toLocaleString()}`
+                            : ""}
+                          {c.additionalInsuredChecked ? " · AI box" : ""}
+                        </span>
+                      </li>
+                    ))}
+                    {acordResult.coverages.length === 0 && (
+                      <li className="px-3 py-3 text-fg-muted">No coverage rows extracted.</li>
+                    )}
+                  </ul>
+                  {acordResult.warnings.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-[11px] text-fg-subtle">
+                      {acordResult.warnings.map((w) => (
+                        <li key={w}>• {w}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowAcord(false);
+                  setAcordResult(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={applyAcordPolicies}
+                disabled={!acordResult || acordResult.policies.length === 0}
+              >
+                Import {acordResult?.policies.length ?? 0} coverage
+                {(acordResult?.policies.length ?? 0) === 1 ? "" : "s"} & verify
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddPolicy && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
           <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto border border-border bg-bg p-5 shadow-lg">
             <h3 className="text-[15px] font-medium">Record certificate of insurance</h3>
             <p className="mt-1 text-[12px] text-fg-muted">
-              {selectedVendor?.company} — upload triggers auto-extract, then automated verification on save.
+              {selectedVendor?.company} — or use Parse ACORD 25 for multi-line import.
             </p>
             <div className="mt-4 space-y-3">
               <div>
-                <Label className="text-[11px]">COI file</Label>
+                <Label className="text-[11px]">File (.txt opens ACORD parser)</Label>
                 <Input
                   className="mt-1"
                   type="file"
-                  accept=".pdf,image/*"
+                  accept=".pdf,image/*,.txt,text/plain"
                   onChange={(e) => onFileSelected(e.target.files?.[0])}
                 />
-                {formFileName && (
-                  <p className="mt-1 text-[11px] text-fg-subtle">
-                    Attached: {formFileName} — fields pre-filled; confirm against the certificate.
-                  </p>
-                )}
               </div>
               <div>
                 <Label className="text-[11px]">Policy type</Label>
@@ -527,11 +632,11 @@ function SubsInsurancePage() {
               </div>
               <div>
                 <Label className="text-[11px]">Carrier</Label>
-                <Input className="mt-1" value={formCarrier} onChange={(e) => setFormCarrier(e.target.value)} placeholder="Carrier name" />
+                <Input className="mt-1" value={formCarrier} onChange={(e) => setFormCarrier(e.target.value)} />
               </div>
               <div>
                 <Label className="text-[11px]">Policy number</Label>
-                <Input className="mt-1" value={formNumber} onChange={(e) => setFormNumber(e.target.value)} placeholder="Policy #" />
+                <Input className="mt-1" value={formNumber} onChange={(e) => setFormNumber(e.target.value)} />
               </div>
               <div>
                 <Label className="text-[11px]">Expiration date</Label>
@@ -539,12 +644,7 @@ function SubsInsurancePage() {
               </div>
               <div>
                 <Label className="text-[11px]">Coverage limit (USD)</Label>
-                <Input
-                  className="mt-1"
-                  value={formLimit}
-                  onChange={(e) => setFormLimit(e.target.value)}
-                  placeholder={String(COI_REQUIREMENTS.minLimits[formType] || 1000000)}
-                />
+                <Input className="mt-1" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} />
               </div>
               {formType === "general_liability" && (
                 <label className="flex items-center gap-2 text-[12px]">
@@ -569,7 +669,6 @@ function SubsInsurancePage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
           <div className="w-full max-w-md border border-border bg-bg p-5 shadow-lg">
             <h3 className="text-[15px] font-medium">Add subcontractor</h3>
-            <p className="mt-1 text-[12px] text-fg-muted">Collect COIs before they mobilize.</p>
             <div className="mt-4 space-y-3">
               <div>
                 <Label className="text-[11px]">Company</Label>
@@ -577,7 +676,7 @@ function SubsInsurancePage() {
               </div>
               <div>
                 <Label className="text-[11px]">Trade</Label>
-                <Input className="mt-1" value={vTrade} onChange={(e) => setVTrade(e.target.value)} placeholder="Framing, Electrical…" />
+                <Input className="mt-1" value={vTrade} onChange={(e) => setVTrade(e.target.value)} />
               </div>
               <div>
                 <Label className="text-[11px]">Contact</Label>
