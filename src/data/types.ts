@@ -326,6 +326,7 @@ export type InsurancePolicyType =
   | "builders_risk"
   | "professional";
 export type InsurancePolicyStatus = "active" | "expiring_soon" | "expired" | "missing";
+export type CoiStatus = "valid" | "expiring_soon" | "expired" | "missing" | "pending_review";
 
 export interface InsurancePolicy {
   id: string;
@@ -335,9 +336,13 @@ export interface InsurancePolicy {
   carrier: string;
   policyNumber: string;
   expirationDate: string;
-  status: InsurancePolicyStatus;
+  status: InsurancePolicyStatus | CoiStatus;
   additionalInsured: boolean;
   additionalInsuredNamed?: string;
+  coverageLimit?: number;
+  effectiveDate?: string;
+  certificateUrl?: string;
+  notes?: string;
 }
 
 export type LienWaiverType =
@@ -346,7 +351,7 @@ export type LienWaiverType =
   | "conditional_final"
   | "unconditional_final";
 
-export type LienWaiverStatus = "draft" | "sent" | "signed" | "void";
+export type LienWaiverStatus = "draft" | "sent" | "signed" | "void" | "filed";
 
 export interface LienWaiver {
   id: string;
@@ -358,6 +363,7 @@ export interface LienWaiver {
   throughDate: string;
   drawId?: string;
   notes?: string;
+  createdAt?: string;
 }
 
 export interface Vendor {
@@ -367,5 +373,64 @@ export interface Vendor {
   contact: string;
   email: string;
   phone: string;
-  w9OnFile: boolean;
+  w9OnFile?: boolean;
+  preferred?: boolean;
+  portalToken?: string;
+  notes?: string;
+}
+
+/** Jefferson County + EIPH permit packaging */
+export type PermitAuthority = "jefferson_county" | "eiph" | "state" | "utility";
+export type PermitStatus = "not_started" | "drafting" | "ready_review" | "submitted" | "approved" | "denied";
+
+export interface PermitChecklistItem {
+  key: string;
+  label: string;
+  authority: PermitAuthority;
+  status: PermitStatus;
+  formCode?: string;
+  notes?: string;
+  draftText?: string;
+}
+
+export interface PermitPackage {
+  id: string;
+  projectId: string;
+  title: string;
+  status: PermitStatus;
+  items: PermitChecklistItem[];
+  updatedAt: string;
+}
+
+/** Virtual design studio finish catalog */
+export type DesignCategory =
+  | "paint"
+  | "flooring"
+  | "cabinets"
+  | "countertops"
+  | "fixtures"
+  | "hardware"
+  | "exterior"
+  | "lighting";
+
+export interface DesignOption {
+  id: string;
+  category: DesignCategory;
+  name: string;
+  brand?: string;
+  finish?: string;
+  woodSpecies?: string;
+  colorHex?: string;
+  priceDelta: number;
+  allowanceBucket: string;
+  imageHint: string;
+}
+
+export interface DesignSelection {
+  id: string;
+  projectId: string;
+  room: string;
+  category: DesignCategory;
+  optionId: string;
+  locked: boolean;
 }
