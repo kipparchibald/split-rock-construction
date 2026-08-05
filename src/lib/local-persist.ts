@@ -40,4 +40,5 @@ export const PERSIST_KEYS = {
   waivers: "lien-waivers",
   permitPackages: "permit-packages",
   acknowledgedAlerts: "acknowledged-alerts",
+  designSessions: "design-sessions",
 } as const;
