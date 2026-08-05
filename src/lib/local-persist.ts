@@ -41,4 +41,5 @@ export const PERSIST_KEYS = {
   permitPackages: "permit-packages",
   acknowledgedAlerts: "acknowledged-alerts",
   designSessions: "design-sessions",
+  contractModel: "active-contract-model",
 } as const;
