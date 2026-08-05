@@ -16,11 +16,12 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({ component: LandingPage });
 
-/** Public marketing contact — aligned with Teton Heights / Archibald-Bagley field presence */
+/** Public marketing contact */
 const CONTACT = {
   phone: "(208) 200-0605",
   phoneHref: "2082000605",
-  email: "kipparchibald@gmail.com",
+  emailKipp: "Kipp@splitrockconst.com",
+  emailKyle: "Kyle@splitrockconst.com",
   location: "Rigby · Jefferson County, Idaho",
   lotsUrl: "https://www.rigbylots.com/",
 };
@@ -348,11 +349,18 @@ function LandingPage() {
                   {CONTACT.phone}
                 </a>
                 <a
-                  href={`mailto:${CONTACT.email}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  href={`mailto:${CONTACT.emailKipp}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
                   className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
                 >
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {CONTACT.email}
+                  {CONTACT.emailKipp}
+                </a>
+                <a
+                  href={`mailto:${CONTACT.emailKyle}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
+                >
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {CONTACT.emailKyle}
                 </a>
                 <span className="inline-flex items-center gap-2 text-primary-fg/65">
                   <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -378,12 +386,12 @@ function LandingPage() {
                 className="border-primary-fg/30 text-primary-fg hover:bg-primary-fg/10"
                 asChild
               >
-                <a href={`mailto:${CONTACT.email}?subject=Hunter%20Chase%20interest%20list`}>
+                <a href={`mailto:${CONTACT.emailKipp}?subject=Hunter%20Chase%20interest%20list`}>
                   Hunter Chase interest list
                 </a>
               </Button>
               <p className="text-[11px] text-primary-fg/55">
-                Kipp Archibald · land, lots & build conversations
+                Kipp Archibald · Kyle · land, lots & build conversations
               </p>
             </div>
           </div>
@@ -399,6 +407,9 @@ function LandingPage() {
             </p>
           </div>
           <div className="flex flex-col items-start gap-1 sm:items-end">
+            <a href={`tel:${CONTACT.phoneHref}`} className="text-[11px] text-fg-subtle hover:text-fg">
+              {CONTACT.phone}
+            </a>
             <Link to="/login" className="text-[11px] text-fg-subtle hover:text-fg">
               Operator sign-in
             </Link>
