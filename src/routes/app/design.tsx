@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Box,
@@ -44,9 +44,16 @@ import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
 import type { ContractModel } from "@/lib/pricing";
 import { cn, formatCurrency } from "@/lib/utils";
 
+const WebGLWalkthrough = lazy(() =>
+  import("@/components/design/webgl-walkthrough").then((m) => ({
+    default: m.WebGLWalkthrough,
+  })),
+);
+
 export const Route = createFileRoute("/app/design")({ component: DesignCenterPage });
 
 type SelectionMap = Partial<Record<DesignCategory, string>>;
+type RenderEngine = "webgl" | "css";
 
 interface UploadedPlan {
   name: string;
@@ -63,6 +70,7 @@ interface DesignSession {
   locked: Partial<Record<DesignCategory, boolean>>;
   plan?: UploadedPlan;
   viewMode: "perspective" | "front" | "elevation";
+  renderEngine: RenderEngine;
   updatedAt: string;
 }
 
@@ -73,12 +81,16 @@ function loadSession(): DesignSession {
     selections: { ...DEFAULT_SELECTIONS },
     locked: {},
     viewMode: "perspective",
+    renderEngine: "webgl",
     updatedAt: new Date().toISOString(),
   });
 }
 
 function DesignCenterPage() {
-  const [session, setSession] = useState<DesignSession>(loadSession);
+  const [session, setSession] = useState<DesignSession>(() => {
+    const s = loadSession();
+    return { ...s, renderEngine: s.renderEngine ?? "webgl" };
+  });
   const [activeCat, setActiveCat] = useState<DesignCategory>("paint");
   const [tierFilter, setTierFilter] = useState<DesignTier | "all">("all");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -174,11 +186,13 @@ function DesignCenterPage() {
     });
   };
 
+  const engine = session.renderEngine ?? "webgl";
+
   return (
     <div>
       <PageHeader
         title="Design center"
-        description="Full interior + exterior selections. Midrange base finishes sit inside allowance; trendy and premium options show clear upgrade pricing. Upload plans and preview in virtual 3D."
+        description="Full interior + exterior selections with WebGL walkthrough. Midrange base finishes sit inside allowance; trendy and premium options show clear upgrade pricing."
       />
 
       <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[11px] text-fg-muted">
@@ -220,23 +234,46 @@ function DesignCenterPage() {
               ))}
             </div>
             <div className="ml-auto flex flex-wrap gap-1">
-              {(["perspective", "front", "elevation"] as const).map((v) => (
+              {(["webgl", "css"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() =>
-                    persist({ ...session, viewMode: v, updatedAt: new Date().toISOString() })
+                    persist({
+                      ...session,
+                      renderEngine: v,
+                      updatedAt: new Date().toISOString(),
+                    })
                   }
                   className={cn(
                     "border px-2 py-1 text-[10px] uppercase tracking-[0.06em]",
-                    session.viewMode === v
+                    engine === v
                       ? "border-primary bg-primary text-primary-fg"
                       : "border-border text-fg-subtle",
                   )}
                 >
-                  {v}
+                  {v === "webgl" ? "WebGL" : "CSS"}
                 </button>
               ))}
+              {engine === "css"
+                ? (["perspective", "front", "elevation"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() =>
+                        persist({ ...session, viewMode: v, updatedAt: new Date().toISOString() })
+                      }
+                      className={cn(
+                        "border px-2 py-1 text-[10px] uppercase tracking-[0.06em]",
+                        session.viewMode === v
+                          ? "border-primary bg-primary text-primary-fg"
+                          : "border-border text-fg-subtle",
+                      )}
+                    >
+                      {v}
+                    </button>
+                  ))
+                : null}
             </div>
           </div>
 
@@ -246,10 +283,12 @@ function DesignCenterPage() {
                 <div>
                   <p className="flex items-center gap-2 text-[13px] font-medium">
                     <Box className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    {ROOM_LABELS[session.room]} · virtual 3D
+                    {ROOM_LABELS[session.room]} · {engine === "webgl" ? "WebGL walkthrough" : "CSS preview"}
                   </p>
                   <p className="text-[11px] text-fg-subtle">
-                    Live finish swap · {session.viewMode} view
+                    {engine === "webgl"
+                      ? "Orbit · zoom · live finish materials"
+                      : `Live finish swap · ${session.viewMode} view`}
                   </p>
                 </div>
                 <Badge variant={upgradeTotal > 0 ? "secondary" : "outline"}>
@@ -258,11 +297,23 @@ function DesignCenterPage() {
                     : `+${formatCurrency(upgradeTotal)} upgrades`}
                 </Badge>
               </div>
-              <VirtualRoom
-                room={session.room}
-                selections={resolved}
-                viewMode={session.viewMode}
-              />
+              {engine === "webgl" ? (
+                <Suspense
+                  fallback={
+                    <div className="flex aspect-[16/10] items-center justify-center bg-[#1a1c1e] text-[12px] text-white/60">
+                      Loading WebGL…
+                    </div>
+                  }
+                >
+                  <WebGLWalkthrough room={session.room} selections={resolved} />
+                </Suspense>
+              ) : (
+                <VirtualRoom
+                  room={session.room}
+                  selections={resolved}
+                  viewMode={session.viewMode}
+                />
+              )}
               <div className="border-t border-border px-4 py-3">
                 <p className="label-caps mb-2">Locked package</p>
                 <ul className="grid gap-1.5 sm:grid-cols-2">
@@ -477,13 +528,13 @@ function DesignCenterPage() {
             <div className="border border-border bg-bg-elevated p-4">
               <p className="text-[13px] font-medium">Upload plan set</p>
               <p className="mt-1 text-[12px] text-fg-muted">
-                PDF or image of floor plans / elevations. Stored as session metadata in this browser
-                (file name + size). Full BIM / 3D mesh import is the next engineering layer.
+                PDF or image of floor plans / elevations. Stored as session metadata. WebGL scene is
+                procedural for now; plan-specific GLB / IFC is the next layer.
               </p>
               <input
                 ref={fileRef}
                 type="file"
-                accept=".pdf,image/*,.dwg,.png,.jpg,.jpeg"
+                accept=".pdf,image/*,.dwg,.png,.jpg,.jpeg,.glb,.gltf,.ifc"
                 className="hidden"
                 onChange={(e) => onPlanFile(e.target.files?.[0] ?? null)}
               />
@@ -603,16 +654,6 @@ function VirtualRoom({
             className="absolute bottom-0 left-1/2 h-[36%] w-[16%] -translate-x-1/2"
             style={{ background: selections.doors?.colorHex ?? "#3d2c1e" }}
           />
-          {selections.exterior?.id?.includes("stone") ? (
-            <div
-              className="absolute inset-x-0 bottom-0 h-[22%]"
-              style={{
-                background: "#8B7D6B",
-                backgroundImage:
-                  "repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(0,0,0,0.12) 18px, rgba(0,0,0,0.12) 19px)",
-              }}
-            />
-          ) : null}
         </div>
         <div className="absolute inset-x-0 bottom-0 h-[16%] bg-[#5a6b3a]" />
         <p className="absolute bottom-2 left-3 text-[10px] text-white/90">
@@ -629,121 +670,43 @@ function VirtualRoom({
         style={{ transform: perspective, transformStyle: "preserve-3d" }}
       >
         <div className="relative h-full w-full overflow-hidden shadow-xl" style={{ background: wall }}>
-          <div className="absolute inset-x-0 top-0 h-[12%] bg-gradient-to-b from-black/15 to-transparent" />
-          <div
-            className="absolute inset-x-[6%] top-[10%] bottom-[30%] border border-black/5"
-            style={{ background: wall }}
-          />
           <div
             className="absolute inset-x-0 bottom-0 h-[30%]"
             style={{
               background: floor,
-              backgroundImage: `repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 28px,
-                rgba(0,0,0,0.07) 28px,
-                rgba(0,0,0,0.07) 29px
-              ), linear-gradient(to top, rgba(0,0,0,0.14), transparent)`,
+              backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,0,0,0.07) 28px, rgba(0,0,0,0.07) 29px)`,
             }}
           />
-          <div className="absolute right-[12%] top-[16%] h-[26%] w-[16%] border-2 border-black/15 bg-[#b8d4e8]/55 shadow-inner">
-            <div className="absolute inset-y-0 left-1/2 w-px bg-black/20" />
-            <div className="absolute inset-x-0 top-1/2 h-px bg-black/20" />
-          </div>
-          <div className="absolute left-1/2 top-[8%] -translate-x-1/2">
-            <div
-              className="mx-auto h-2 w-2 rounded-full shadow-[0_0_28px_10px_rgba(255,240,200,0.5)]"
-              style={{ background: light }}
-            />
-            <div
-              className="mx-auto mt-0.5 h-7 w-12 border border-black/10"
-              style={{ background: light }}
-            />
-          </div>
-
           {isKitchen ? (
             <>
-              <div className="absolute left-[8%] top-[14%] flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-[4.5rem] w-14 border border-black/10 shadow-sm"
-                    style={{ background: cab }}
-                  >
-                    <div className="mx-auto mt-8 h-1 w-4 rounded-full bg-black/25" />
-                  </div>
-                ))}
-              </div>
               <div
-                className="absolute left-[8%] top-[14%] h-16 w-[11.2rem] border border-black/5 opacity-90"
+                className="absolute left-[8%] top-[14%] h-16 w-[11.2rem] border border-black/5"
                 style={{ background: splash }}
               />
               <div className="absolute bottom-[30%] left-[6%] right-[26%]">
                 <div className="h-2.5 border border-black/10" style={{ background: ct }} />
-                <div
-                  className="flex h-[4.75rem] border-x border-b border-black/10"
-                  style={{ background: cab }}
-                >
-                  {[0, 1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="relative flex-1 border-r border-black/10 last:border-r-0"
-                    >
-                      <div className="absolute left-1/2 top-1/2 h-1 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/30" />
-                    </div>
-                  ))}
-                </div>
+                <div className="h-[4.75rem] border-x border-b border-black/10" style={{ background: cab }} />
                 <div
                   className="absolute -top-6 left-[28%] h-6 w-1.5 rounded-t-full"
                   style={{ background: fx }}
                 />
               </div>
-              <div className="absolute bottom-[32%] right-[10%] w-[22%]">
-                <div className="h-2.5 border border-black/10" style={{ background: ct }} />
-                <div className="h-14 border-x border-b border-black/10" style={{ background: cab }} />
-              </div>
             </>
           ) : null}
-
           {isBath ? (
-            <>
-              <div className="absolute bottom-[30%] left-[10%] w-[28%]">
-                <div className="h-2 border border-black/10" style={{ background: ct }} />
-                <div className="h-16 border-x border-b border-black/10" style={{ background: cab }}>
-                  <div className="mx-auto mt-6 h-1 w-6 rounded-full bg-black/30" />
-                </div>
-                <div
-                  className="absolute -top-6 left-1/2 h-6 w-1.5 -translate-x-1/2 rounded-t-full"
-                  style={{ background: fx }}
-                />
-              </div>
-              <div
-                className="absolute bottom-[32%] right-[12%] h-28 w-[22%] border border-black/10"
-                style={{
-                  background: tile,
-                  backgroundImage:
-                    "repeating-linear-gradient(0deg, transparent, transparent 12px, rgba(0,0,0,0.06) 12px, rgba(0,0,0,0.06) 13px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(0,0,0,0.06) 12px, rgba(0,0,0,0.06) 13px)",
-                }}
-              />
-            </>
+            <div
+              className="absolute bottom-[32%] right-[12%] h-28 w-[22%] border border-black/10"
+              style={{ background: tile }}
+            />
           ) : null}
-
-          {!isKitchen && !isBath ? (
-            <>
-              <div
-                className="absolute bottom-[32%] left-[16%] h-16 w-[38%] border border-black/10"
-                style={{ background: `color-mix(in srgb, ${wall} 65%, #6b5b4a)` }}
-              />
-              <div
-                className="absolute bottom-[40%] right-[18%] h-12 w-12 border border-black/10"
-                style={{ background: `color-mix(in srgb, ${floor} 40%, #4a4035)` }}
-              />
-            </>
-          ) : null}
-
+          <div className="absolute left-1/2 top-[8%] -translate-x-1/2">
+            <div
+              className="mx-auto h-2 w-2 rounded-full shadow-[0_0_28px_10px_rgba(255,240,200,0.5)]"
+              style={{ background: light }}
+            />
+          </div>
           <p className="absolute bottom-2 left-3 text-[10px] text-black/40">
-            Virtual 3D preview · not a construction drawing
+            CSS fallback preview · not a construction drawing
           </p>
         </div>
       </div>
