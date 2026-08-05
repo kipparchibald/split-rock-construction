@@ -4,12 +4,14 @@ import {
   Box,
   Check,
   ExternalLink,
+  FileText,
   FileUp,
   Lock,
   ShoppingBag,
   Unlock,
   Upload,
 } from "lucide-react";
+import { PlanSheetViewer } from "@/components/design/plan-sheet-viewer";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,7 @@ import {
   shopUrl,
 } from "@/lib/finish-partners";
 import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
+import { planKindFromFile, savePlanFile } from "@/lib/plan-file-store";
 import type { ContractModel } from "@/lib/pricing";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -53,7 +56,8 @@ const WebGLWalkthrough = lazy(() =>
 export const Route = createFileRoute("/app/design")({ component: DesignCenterPage });
 
 type SelectionMap = Partial<Record<DesignCategory, string>>;
-type RenderEngine = "webgl" | "css";
+/** sheet = PDF/image only; webgl/css = finish studio; split = plan + WebGL (PDF-only path) */
+type RenderEngine = "webgl" | "css" | "sheet" | "split";
 
 interface UploadedPlan {
   name: string;
@@ -61,6 +65,7 @@ interface UploadedPlan {
   type: string;
   uploadedAt: string;
   bookPlanId?: string;
+  kind?: "pdf" | "image" | "other";
 }
 
 interface DesignSession {
@@ -93,6 +98,8 @@ function DesignCenterPage() {
   });
   const [activeCat, setActiveCat] = useState<DesignCategory>("paint");
   const [tierFilter, setTierFilter] = useState<DesignTier | "all">("all");
+  const [planReloadKey, setPlanReloadKey] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const contractModel = loadJson<ContractModel>(PERSIST_KEYS.contractModel, DEFAULT_CONTRACT_MODEL);
@@ -156,19 +163,36 @@ function DesignCenterPage() {
 
   const partners = partnersForCategory(partnerCategoryForDesign(cat));
 
-  const onPlanFile = (file: File | null) => {
+  const onPlanFile = async (file: File | null) => {
     if (!file) return;
-    persist({
-      ...session,
-      plan: {
-        name: file.name,
-        size: file.size,
-        type: file.type || "application/octet-stream",
-        uploadedAt: new Date().toISOString(),
-        bookPlanId: session.plan?.bookPlanId,
-      },
-      updatedAt: new Date().toISOString(),
-    });
+    setUploading(true);
+    try {
+      const kind = planKindFromFile(file);
+      await savePlanFile(file);
+      const nextEngine: RenderEngine =
+        kind === "pdf" || kind === "image"
+          ? session.renderEngine === "css"
+            ? "split"
+            : "split"
+          : session.renderEngine;
+      persist({
+        ...session,
+        plan: {
+          name: file.name,
+          size: file.size,
+          type: file.type || "application/octet-stream",
+          uploadedAt: new Date().toISOString(),
+          bookPlanId: session.plan?.bookPlanId,
+          kind,
+        },
+        renderEngine: nextEngine,
+        projectLabel: session.projectLabel === "Current home" ? file.name.replace(/\.pdf$/i, "") : session.projectLabel,
+        updatedAt: new Date().toISOString(),
+      });
+      setPlanReloadKey((k) => k + 1);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const linkBookPlan = (planId: string) => {
@@ -180,6 +204,7 @@ function DesignCenterPage() {
         type: session.plan?.type ?? "book-of-plans",
         uploadedAt: session.plan?.uploadedAt ?? new Date().toISOString(),
         bookPlanId: planId,
+        kind: session.plan?.kind,
       },
       projectLabel: plans.find((p) => p.id === planId)?.name ?? session.projectLabel,
       updatedAt: new Date().toISOString(),
@@ -187,12 +212,13 @@ function DesignCenterPage() {
   };
 
   const engine = session.renderEngine ?? "webgl";
+  const hasPlanSheet = Boolean(session.plan?.name);
 
   return (
     <div>
       <PageHeader
         title="Design center"
-        description="Full interior + exterior selections with WebGL walkthrough. Midrange base finishes sit inside allowance; trendy and premium options show clear upgrade pricing."
+        description="Works with PDF plans alone: upload the sheet, pick finishes room-by-room, preview in WebGL. No IFC or GLB required."
       />
 
       <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[11px] text-fg-muted">
@@ -203,6 +229,12 @@ function DesignCenterPage() {
           Base allowances {formatCurrency(allowanceTotal())} · Upgrades{" "}
           {upgradeTotal === 0 ? "none" : formatCurrency(upgradeTotal)}
         </span>
+        {hasPlanSheet ? (
+          <Badge variant="outline" className="gap-1">
+            <FileText className="h-3 w-3" strokeWidth={1.75} />
+            PDF path
+          </Badge>
+        ) : null}
         <span className="ml-auto text-fg-subtle">{DESIGN_OPTIONS.length} catalog options</span>
       </div>
 
@@ -234,7 +266,7 @@ function DesignCenterPage() {
               ))}
             </div>
             <div className="ml-auto flex flex-wrap gap-1">
-              {(["webgl", "css"] as const).map((v) => (
+              {(["split", "sheet", "webgl", "css"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -252,95 +284,122 @@ function DesignCenterPage() {
                       : "border-border text-fg-subtle",
                   )}
                 >
-                  {v === "webgl" ? "WebGL" : "CSS"}
+                  {v === "split"
+                    ? "Plan + 3D"
+                    : v === "sheet"
+                      ? "Plan sheet"
+                      : v === "webgl"
+                        ? "WebGL"
+                        : "CSS"}
                 </button>
               ))}
-              {engine === "css"
-                ? (["perspective", "front", "elevation"] as const).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() =>
-                        persist({ ...session, viewMode: v, updatedAt: new Date().toISOString() })
-                      }
-                      className={cn(
-                        "border px-2 py-1 text-[10px] uppercase tracking-[0.06em]",
-                        session.viewMode === v
-                          ? "border-primary bg-primary text-primary-fg"
-                          : "border-border text-fg-subtle",
-                      )}
-                    >
-                      {v}
-                    </button>
-                  ))
-                : null}
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-            <div className="border border-border bg-bg-elevated">
-              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                <div>
-                  <p className="flex items-center gap-2 text-[13px] font-medium">
-                    <Box className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    {ROOM_LABELS[session.room]} · {engine === "webgl" ? "WebGL walkthrough" : "CSS preview"}
-                  </p>
-                  <p className="text-[11px] text-fg-subtle">
-                    {engine === "webgl"
-                      ? "Orbit · zoom · live finish materials"
-                      : `Live finish swap · ${session.viewMode} view`}
-                  </p>
+          {engine === "split" ? (
+            <p className="text-[11px] text-fg-muted">
+              PDF-only workflow: left is your uploaded plan set; right is a representative finish studio
+              for the selected room. Lock choices as the owner confirms against the sheet.
+            </p>
+          ) : null}
+
+          <div
+            className={cn(
+              "grid gap-4",
+              engine === "split"
+                ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)]"
+                : "lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]",
+            )}
+          >
+            {engine === "split" || engine === "sheet" ? (
+              <div className="border border-border bg-bg-elevated overflow-hidden">
+                <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                  <div>
+                    <p className="flex items-center gap-2 text-[13px] font-medium">
+                      <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Plan sheet
+                    </p>
+                    <p className="text-[11px] text-fg-subtle">
+                      {session.plan?.name ?? "Upload a PDF on the Plans tab"}
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+                    <Upload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+                    {hasPlanSheet ? "Replace" : "Upload PDF"}
+                  </Button>
                 </div>
-                <Badge variant={upgradeTotal > 0 ? "secondary" : "outline"}>
-                  {upgradeTotal === 0
-                    ? "At midrange base"
-                    : `+${formatCurrency(upgradeTotal)} upgrades`}
-                </Badge>
+                <PlanSheetViewer reloadKey={planReloadKey} />
               </div>
-              {engine === "webgl" ? (
-                <Suspense
-                  fallback={
-                    <div className="flex aspect-[16/10] items-center justify-center bg-[#1a1c1e] text-[12px] text-white/60">
-                      Loading WebGL…
-                    </div>
-                  }
-                >
-                  <WebGLWalkthrough room={session.room} selections={resolved} />
-                </Suspense>
-              ) : (
-                <VirtualRoom
-                  room={session.room}
-                  selections={resolved}
-                  viewMode={session.viewMode}
-                />
-              )}
-              <div className="border-t border-border px-4 py-3">
-                <p className="label-caps mb-2">Locked package</p>
-                <ul className="grid gap-1.5 sm:grid-cols-2">
-                  {roomCats.map((c) => {
-                    const opt = resolved[c];
-                    return (
-                      <li key={c} className="flex items-center gap-2 text-[12px]">
-                        <span
-                          className="h-3 w-3 shrink-0 border border-border"
-                          style={{ background: opt?.colorHex ?? "#ddd" }}
-                        />
-                        <span className="text-fg-muted">{DESIGN_CATEGORY_LABELS[c]}:</span>
-                        <span className="truncate font-medium">{opt?.name ?? "—"}</span>
-                        {opt ? (
-                          <Badge variant="outline" className="ml-auto shrink-0 text-[9px]">
-                            {opt.tier}
-                          </Badge>
-                        ) : null}
-                        {session.locked[c] ? (
-                          <Lock className="h-3 w-3 shrink-0 text-fg-subtle" strokeWidth={1.75} />
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+            ) : null}
+
+            {engine !== "sheet" ? (
+              <div className="border border-border bg-bg-elevated">
+                <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                  <div>
+                    <p className="flex items-center gap-2 text-[13px] font-medium">
+                      <Box className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      {ROOM_LABELS[session.room]} ·{" "}
+                      {engine === "css" ? "CSS preview" : "Finish studio (WebGL)"}
+                    </p>
+                    <p className="text-[11px] text-fg-subtle">
+                      {hasPlanSheet
+                        ? "Representative room for finish picks — not a model of the PDF"
+                        : engine === "css"
+                          ? `Live finish swap · ${session.viewMode}`
+                          : "Orbit · zoom · live materials"}
+                    </p>
+                  </div>
+                  <Badge variant={upgradeTotal > 0 ? "secondary" : "outline"}>
+                    {upgradeTotal === 0
+                      ? "At midrange base"
+                      : `+${formatCurrency(upgradeTotal)} upgrades`}
+                  </Badge>
+                </div>
+                {engine === "css" ? (
+                  <VirtualRoom
+                    room={session.room}
+                    selections={resolved}
+                    viewMode={session.viewMode}
+                  />
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div className="flex aspect-[16/10] items-center justify-center bg-[#1a1c1e] text-[12px] text-white/60">
+                        Loading WebGL…
+                      </div>
+                    }
+                  >
+                    <WebGLWalkthrough room={session.room} selections={resolved} />
+                  </Suspense>
+                )}
+                <div className="border-t border-border px-4 py-3">
+                  <p className="label-caps mb-2">Locked package</p>
+                  <ul className="grid gap-1.5 sm:grid-cols-2">
+                    {roomCats.map((c) => {
+                      const opt = resolved[c];
+                      return (
+                        <li key={c} className="flex items-center gap-2 text-[12px]">
+                          <span
+                            className="h-3 w-3 shrink-0 border border-border"
+                            style={{ background: opt?.colorHex ?? "#ddd" }}
+                          />
+                          <span className="text-fg-muted">{DESIGN_CATEGORY_LABELS[c]}:</span>
+                          <span className="truncate font-medium">{opt?.name ?? "—"}</span>
+                          {opt ? (
+                            <Badge variant="outline" className="ml-auto shrink-0 text-[9px]">
+                              {opt.tier}
+                            </Badge>
+                          ) : null}
+                          {session.locked[c] ? (
+                            <Lock className="h-3 w-3 shrink-0 text-fg-subtle" strokeWidth={1.75} />
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="border border-border bg-bg-elevated">
               <div className="border-b border-border px-3 py-2">
@@ -492,7 +551,6 @@ function DesignCenterPage() {
             <p className="mt-1 text-[12px] text-fg-muted">
               These amounts are included in a typical Teton Heights / Jefferson ranch fixed-price or
               allowance schedule. Selecting a Base tier option does not change the contract price.
-              Upgrade / Trendy / Premium options add the listed delta (change order on fixed-price).
             </p>
             <p className="mt-2 text-[13px] font-medium tabular-nums">
               Package total {formatCurrency(allowanceTotal())}
@@ -511,41 +569,45 @@ function DesignCenterPage() {
               </li>
             ))}
           </ul>
-          <div className="border border-border bg-bg-elevated p-4 text-[12px] text-fg-muted">
-            <p className="font-medium text-fg">Current selection delta vs base</p>
-            <p className="mt-1 text-[18px] font-medium tabular-nums text-fg">
-              {upgradeTotal === 0 ? "At base" : `+${formatCurrency(upgradeTotal)}`}
-            </p>
-            <p className="mt-2 text-[11px] text-fg-subtle">
-              Link Book of Plans allowances on the Plans tab for job-specific packages (TR-1580, JF-1520,
-              SR-1620).
-            </p>
-          </div>
         </TabsContent>
 
         <TabsContent value="plans" className="space-y-4">
+          <div className="border border-border bg-bg-elevated p-4 text-[12px] leading-relaxed text-fg-muted">
+            <p className="font-medium text-fg">PDF-only path (default for most jobs)</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-4">
+              <li>Upload the architect/designer PDF (or a floor-plan image).</li>
+              <li>Open <span className="text-fg">Select finishes</span> → view mode <span className="text-fg">Plan + 3D</span>.</li>
+              <li>Walk rooms on the sheet; pick finishes in the catalog; lock when confirmed.</li>
+              <li>
+                WebGL is a <span className="text-fg">representative finish studio</span> keyed to the room — not a
+                mesh of the PDF. That is intentional until a GLB/IFC exists.
+              </li>
+            </ol>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="border border-border bg-bg-elevated p-4">
-              <p className="text-[13px] font-medium">Upload plan set</p>
+              <p className="text-[13px] font-medium">Upload plan set (PDF or image)</p>
               <p className="mt-1 text-[12px] text-fg-muted">
-                PDF or image of floor plans / elevations. Stored as session metadata. WebGL scene is
-                procedural for now; plan-specific GLB / IFC is the next layer.
+                Stored in this browser (IndexedDB). Survives refresh on this device. Suitable for
+                selection meetings without cloud BIM.
               </p>
               <input
                 ref={fileRef}
                 type="file"
-                accept=".pdf,image/*,.dwg,.png,.jpg,.jpeg,.glb,.gltf,.ifc"
+                accept=".pdf,application/pdf,image/*,.png,.jpg,.jpeg,.webp"
                 className="hidden"
-                onChange={(e) => onPlanFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => void onPlanFile(e.target.files?.[0] ?? null)}
               />
               <Button
                 type="button"
                 className="mt-3"
                 size="sm"
+                disabled={uploading}
                 onClick={() => fileRef.current?.click()}
               >
                 <Upload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
-                Choose plan file
+                {uploading ? "Saving…" : "Choose PDF or image"}
               </Button>
               {session.plan ? (
                 <div className="mt-3 border border-border bg-bg px-3 py-2 text-[12px]">
@@ -554,19 +616,37 @@ function DesignCenterPage() {
                     {session.plan.name}
                   </p>
                   <p className="mt-1 text-[11px] text-fg-subtle">
-                    {(session.plan.size / 1024).toFixed(0)} KB ·{" "}
+                    {(session.plan.size / 1024).toFixed(0)} KB · {session.plan.kind ?? "file"} ·{" "}
                     {new Date(session.plan.uploadedAt).toLocaleString()}
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() =>
+                      persist({
+                        ...session,
+                        renderEngine: "split",
+                        updatedAt: new Date().toISOString(),
+                      })
+                    }
+                  >
+                    Open Plan + 3D
+                  </Button>
                 </div>
               ) : (
                 <p className="mt-3 text-[11px] text-fg-subtle">No plan uploaded yet.</p>
               )}
+
+              <div className="mt-4 border-t border-border pt-3">
+                <PlanSheetViewer reloadKey={planReloadKey} className="min-h-[14rem]" />
+              </div>
             </div>
 
             <div className="border border-border bg-bg-elevated p-4">
-              <p className="text-[13px] font-medium">Link Book of Plans</p>
+              <p className="text-[13px] font-medium">Optional: link Book of Plans</p>
               <p className="mt-1 text-[12px] text-fg-muted">
-                Seed allowances and naming from a Split Rock standard ranch package.
+                If the PDF matches a Split Rock package, link it for naming and allowance context.
               </p>
               <ul className="mt-3 space-y-2">
                 {plans.filter((p) => p.active).map((p) => (
@@ -596,6 +676,15 @@ function DesignCenterPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Shared file input for Select tab upload button */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,application/pdf,image/*,.png,.jpg,.jpeg,.webp"
+        className="hidden"
+        onChange={(e) => void onPlanFile(e.target.files?.[0] ?? null)}
+      />
     </div>
   );
 }
@@ -635,11 +724,8 @@ function VirtualRoom({
     return (
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-b from-[#8eabbf] to-[#c5d5e0]">
         <div
-          className="absolute inset-x-[10%] bottom-[16%] top-[18%] shadow-2xl transition-transform duration-500"
-          style={{
-            transform: viewMode === "perspective" ? "perspective(800px) rotateY(-8deg)" : undefined,
-            background: ext,
-          }}
+          className="absolute inset-x-[10%] bottom-[16%] top-[18%] shadow-2xl"
+          style={{ background: ext }}
         >
           <div
             className="absolute -top-6 left-[-4%] right-[-4%] h-10"
@@ -648,17 +734,8 @@ function VirtualRoom({
               clipPath: "polygon(5% 100%, 50% 0%, 95% 100%)",
             }}
           />
-          <div className="absolute left-[14%] top-[22%] h-[30%] w-[20%] border-2 border-black/20 bg-[#9ec5e0]/75" />
-          <div className="absolute right-[14%] top-[22%] h-[30%] w-[20%] border-2 border-black/20 bg-[#9ec5e0]/75" />
-          <div
-            className="absolute bottom-0 left-1/2 h-[36%] w-[16%] -translate-x-1/2"
-            style={{ background: selections.doors?.colorHex ?? "#3d2c1e" }}
-          />
         </div>
         <div className="absolute inset-x-0 bottom-0 h-[16%] bg-[#5a6b3a]" />
-        <p className="absolute bottom-2 left-3 text-[10px] text-white/90">
-          Exterior elevation · virtual preview
-        </p>
       </div>
     );
   }
@@ -666,48 +743,29 @@ function VirtualRoom({
   return (
     <div className="relative aspect-[16/10] overflow-hidden bg-[#1a1a1a]/5">
       <div
-        className="absolute inset-[6%] origin-center transition-transform duration-500"
+        className="absolute inset-[6%] origin-center"
         style={{ transform: perspective, transformStyle: "preserve-3d" }}
       >
         <div className="relative h-full w-full overflow-hidden shadow-xl" style={{ background: wall }}>
           <div
             className="absolute inset-x-0 bottom-0 h-[30%]"
-            style={{
-              background: floor,
-              backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,0,0,0.07) 28px, rgba(0,0,0,0.07) 29px)`,
-            }}
+            style={{ background: floor }}
           />
           {isKitchen ? (
-            <>
-              <div
-                className="absolute left-[8%] top-[14%] h-16 w-[11.2rem] border border-black/5"
-                style={{ background: splash }}
-              />
-              <div className="absolute bottom-[30%] left-[6%] right-[26%]">
-                <div className="h-2.5 border border-black/10" style={{ background: ct }} />
-                <div className="h-[4.75rem] border-x border-b border-black/10" style={{ background: cab }} />
-                <div
-                  className="absolute -top-6 left-[28%] h-6 w-1.5 rounded-t-full"
-                  style={{ background: fx }}
-                />
-              </div>
-            </>
+            <div className="absolute bottom-[30%] left-[6%] right-[26%]">
+              <div className="h-2.5" style={{ background: ct }} />
+              <div className="h-[4.75rem]" style={{ background: cab }} />
+              <div className="absolute -top-6 left-[28%] h-6 w-1.5" style={{ background: fx }} />
+              <div className="absolute left-[8%] top-[-4rem] h-12 w-40" style={{ background: splash }} />
+            </div>
           ) : null}
           {isBath ? (
-            <div
-              className="absolute bottom-[32%] right-[12%] h-28 w-[22%] border border-black/10"
-              style={{ background: tile }}
-            />
+            <div className="absolute bottom-[32%] right-[12%] h-28 w-[22%]" style={{ background: tile }} />
           ) : null}
-          <div className="absolute left-1/2 top-[8%] -translate-x-1/2">
-            <div
-              className="mx-auto h-2 w-2 rounded-full shadow-[0_0_28px_10px_rgba(255,240,200,0.5)]"
-              style={{ background: light }}
-            />
-          </div>
-          <p className="absolute bottom-2 left-3 text-[10px] text-black/40">
-            CSS fallback preview · not a construction drawing
-          </p>
+          <div
+            className="absolute left-1/2 top-[8%] h-2 w-2 -translate-x-1/2 rounded-full"
+            style={{ background: light }}
+          />
         </div>
       </div>
     </div>
