@@ -12,6 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DesignCategory } from "@/data/types";
 import {
+  DEFAULT_CONTRACT_MODEL,
+  feePolicyFor,
+} from "@/lib/contract-fee-policy";
+import {
   DEFAULT_SELECTIONS,
   DESIGN_CATEGORY_LABELS,
   DESIGN_OPTIONS,
@@ -24,11 +28,12 @@ import {
   type DesignRoom,
 } from "@/lib/design-catalog";
 import {
-  AFFILIATE_DISCLOSURE,
+  affiliateDisclosureFor,
   partnersForCategory,
   shopUrl,
 } from "@/lib/finish-partners";
 import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
+import type { ContractModel } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/design")({ component: DesignCenterPage });
@@ -56,6 +61,9 @@ function loadSession(): DesignSession {
 function DesignCenterPage() {
   const [session, setSession] = useState<DesignSession>(loadSession);
   const [activeCat, setActiveCat] = useState<DesignCategory>("paint");
+  const contractModel = loadJson<ContractModel>(PERSIST_KEYS.contractModel, DEFAULT_CONTRACT_MODEL);
+  const feePolicy = feePolicyFor(contractModel);
+  const disclosure = affiliateDisclosureFor(contractModel);
 
   const roomCats = ROOM_CATEGORIES[session.room];
   const cat =
@@ -118,8 +126,14 @@ function DesignCenterPage() {
     <div>
       <PageHeader
         title="Design center"
-        description="Client picks paint, flooring, cabinets, fixtures, and more. Live virtual room updates with every choice. Purchase through preferred partners when ready to order."
+        description="Client picks paint, flooring, cabinets, fixtures, and more. Live virtual room updates with every choice. Purchase links follow the active contract fee policy."
       />
+
+      <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[11px] text-fg-muted">
+        <Badge variant="secondary">{feePolicy.title}</Badge>
+        <span>{feePolicy.referralHandlingLabel}</span>
+        <span className="text-fg-subtle">· Set on Bid & price</span>
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="text-[11px] uppercase tracking-[0.06em] text-fg-subtle">Room</label>
@@ -146,7 +160,6 @@ function DesignCenterPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        {/* Virtual room */}
         <div className="border border-border bg-bg-elevated">
           <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
             <div>
@@ -185,7 +198,6 @@ function DesignCenterPage() {
           </div>
         </div>
 
-        {/* Picker */}
         <div className="border border-border bg-bg-elevated">
           <div className="border-b border-border px-3 py-2">
             <div className="flex flex-wrap gap-1">
@@ -281,7 +293,7 @@ function DesignCenterPage() {
 
           <div className="border-t border-border px-4 py-3">
             <p className="label-caps mb-2">Order this category</p>
-            <p className="mb-2 text-[11px] leading-relaxed text-fg-subtle">{AFFILIATE_DISCLOSURE}</p>
+            <p className="mb-2 text-[11px] leading-relaxed text-fg-subtle">{disclosure}</p>
             <div className="flex flex-wrap gap-2">
               {partners.slice(0, 3).map((p) => (
                 <Button key={p.id} size="sm" variant="outline" asChild>
@@ -307,11 +319,10 @@ function DesignCenterPage() {
       <div className="mt-4 border border-border bg-bg-elevated p-4 text-[12px] leading-relaxed text-fg-muted">
         <p className="font-medium text-fg">How we use this with owners</p>
         <ol className="mt-2 list-decimal space-y-1 pl-4">
+          <li>Confirm contract type on Bid & price so fee rules match the signed deal.</li>
           <li>Open Design center in the selection meeting (kitchen first, then baths, then living).</li>
-          <li>Lock each category when the owner confirms — locked choices stay for the purchase list.</li>
-          <li>Upgrade total above tracks allowance impact across the active package.</li>
-          <li>When ready to buy, use Order buttons (affiliate / trade links) or your Ferguson / paint store account.</li>
-          <li>Full 3D walkthrough from uploaded plans is the next layer; this room engine is the day-one client experience.</li>
+          <li>Lock each category when the owner confirms.</li>
+          <li>On cost-plus, credit any supplier referral to Job Cost; on fixed-price, upgrades need a change order.</li>
         </ol>
         <p className="mt-3 text-[11px] text-fg-subtle">
           Catalog size: {DESIGN_OPTIONS.length} options · Swaps are CSS-rendered for instant feedback offline.
@@ -361,16 +372,11 @@ function VirtualRoom({
 
   return (
     <div className="relative aspect-[16/10] overflow-hidden" style={{ background: wall }}>
-      {/* Ceiling band */}
       <div className="absolute inset-x-0 top-0 h-[12%] bg-gradient-to-b from-black/10 to-transparent" />
-
-      {/* Back wall depth */}
       <div
         className="absolute inset-x-[8%] top-[12%] bottom-[32%] border border-black/5"
         style={{ background: wall }}
       />
-
-      {/* Floor */}
       <div
         className="absolute inset-x-0 bottom-0 h-[32%]"
         style={{
@@ -384,14 +390,10 @@ function VirtualRoom({
           ), linear-gradient(to top, rgba(0,0,0,0.12), transparent)`,
         }}
       />
-
-      {/* Window */}
       <div className="absolute right-[14%] top-[18%] h-[28%] w-[18%] border-2 border-black/15 bg-[#b8d4e8]/55 shadow-inner">
         <div className="absolute inset-y-0 left-1/2 w-px bg-black/20" />
         <div className="absolute inset-x-0 top-1/2 h-px bg-black/20" />
       </div>
-
-      {/* Light fixture */}
       <div className="absolute left-1/2 top-[10%] -translate-x-1/2">
         <div
           className="mx-auto h-2 w-2 rounded-full shadow-[0_0_24px_8px_rgba(255,240,200,0.45)]"
@@ -399,10 +401,8 @@ function VirtualRoom({
         />
         <div className="mx-auto mt-0.5 h-6 w-10 border border-black/10" style={{ background: light }} />
       </div>
-
       {isKitchen ? (
         <>
-          {/* Upper cabinets */}
           <div className="absolute left-[10%] top-[16%] flex gap-1">
             {[0, 1, 2].map((i) => (
               <div
@@ -414,7 +414,6 @@ function VirtualRoom({
               </div>
             ))}
           </div>
-          {/* Base cabinets + counter */}
           <div className="absolute bottom-[32%] left-[8%] right-[28%]">
             <div className="h-2 border border-black/10" style={{ background: ct }} />
             <div className="flex h-20 border-x border-b border-black/10" style={{ background: cab }}>
@@ -424,20 +423,17 @@ function VirtualRoom({
                 </div>
               ))}
             </div>
-            {/* Faucet */}
             <div
               className="absolute -top-5 left-[30%] h-5 w-1.5 rounded-t-full"
               style={{ background: fx }}
             />
           </div>
-          {/* Island */}
           <div className="absolute bottom-[34%] right-[12%] w-[22%]">
             <div className="h-2 border border-black/10" style={{ background: ct }} />
             <div className="h-14 border-x border-b border-black/10" style={{ background: cab }} />
           </div>
         </>
       ) : null}
-
       {isBath ? (
         <>
           <div className="absolute bottom-[32%] left-[12%] w-[28%]">
@@ -450,15 +446,11 @@ function VirtualRoom({
               style={{ background: fx }}
             />
           </div>
-          <div
-            className="absolute bottom-[34%] right-[16%] h-24 w-16 rounded-t-[40%] border border-black/10 bg-white/80"
-          />
+          <div className="absolute bottom-[34%] right-[16%] h-24 w-16 rounded-t-[40%] border border-black/10 bg-white/80" />
         </>
       ) : null}
-
       {!isKitchen && !isBath ? (
         <>
-          {/* Sofa block */}
           <div
             className="absolute bottom-[34%] left-[18%] h-16 w-[36%] border border-black/10"
             style={{ background: `color-mix(in srgb, ${wall} 70%, #6b5b4a)` }}
@@ -469,7 +461,6 @@ function VirtualRoom({
           />
         </>
       ) : null}
-
       <p className="absolute bottom-2 left-3 text-[10px] text-black/40">
         Interactive preview · not a construction drawing
       </p>
