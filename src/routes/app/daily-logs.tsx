@@ -1,6 +1,7 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ImagePlus, X } from "lucide-react";
+import { Cloud, CloudRain, Snowflake, Sun, Wind } from "lucide-react";
+import { PhotoDropzone } from "@/components/field/photo-dropzone";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,29 +21,13 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/daily-logs")({ component: DailyLogsPage });
 
-const MAX_PHOTOS = 8;
-const MAX_BYTES = 4 * 1024 * 1024; // 4 MB per image (data-URL storage)
-
-function readImageAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
-      reject(new Error("Not an image"));
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      reject(new Error(`Too large (max ${MAX_BYTES / 1024 / 1024} MB)`));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") resolve(result);
-      else reject(new Error("Read failed"));
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Read failed"));
-    reader.readAsDataURL(file);
-  });
-}
+const WEATHER: { value: DailyLogWeather; label: string; icon: typeof Sun }[] = [
+  { value: "clear", label: "Clear", icon: Sun },
+  { value: "overcast", label: "Overcast", icon: Cloud },
+  { value: "rain", label: "Rain", icon: CloudRain },
+  { value: "snow", label: "Snow", icon: Snowflake },
+  { value: "wind", label: "Wind", icon: Wind },
+];
 
 function DailyLogsPage() {
   const { dailyLogs, projects, addDailyLog } = useAppStore();
@@ -51,47 +36,8 @@ function DailyLogsPage() {
   const [blockers, setBlockers] = useState("");
   const [crewCount, setCrewCount] = useState("4");
   const [hours, setHours] = useState("32");
+  const [weather, setWeather] = useState<DailyLogWeather>("clear");
   const [photos, setPhotos] = useState<string[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const addFiles = useCallback(async (fileList: FileList | File[]) => {
-    const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
-    if (files.length === 0) {
-      toast.error("Drop image files only (JPG, PNG, HEIC, WebP)");
-      return;
-    }
-    setBusy(true);
-    try {
-      const next: string[] = [];
-      for (const file of files) {
-        if (photos.length + next.length >= MAX_PHOTOS) {
-          toast.message(`Max ${MAX_PHOTOS} photos per log`);
-          break;
-        }
-        try {
-          next.push(await readImageAsDataUrl(file));
-        } catch (err) {
-          toast.error(
-            err instanceof Error ? `${file.name}: ${err.message}` : `Could not read ${file.name}`,
-          );
-        }
-      }
-      if (next.length) {
-        setPhotos((prev) => [...prev, ...next].slice(0, MAX_PHOTOS));
-        toast.success(
-          next.length === 1 ? "Photo added" : `${next.length} photos added`,
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  }, [photos.length]);
-
-  function removePhoto(index: number) {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-  }
 
   function postLog() {
     if (!projectId || !workDone.trim()) return;
@@ -100,7 +46,7 @@ function DailyLogsPage() {
     addDailyLog({
       projectId,
       date: new Date().toISOString().slice(0, 10),
-      weather: "clear" as DailyLogWeather,
+      weather,
       crewCount: crew,
       hours: hrs,
       workDone: workDone.trim().slice(0, 2000),
@@ -123,11 +69,16 @@ function DailyLogsPage() {
     <div>
       <PageHeader
         title="Daily logs"
-        description="What happened on site today — work notes plus site photos for the owner portal. Drag photos onto the drop zone or tap to browse."
+        description="Site notes, weather, and photos for the job record and owner portal. Drag photos onto the drop zone or tap to browse."
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/app/field">Field board</Link>
+          </Button>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form onSubmit={submit} className="space-y-3 border border-border bg-bg-elevated p-4">
-          <p className="text-[13px] font-medium">Post log</p>
+          <p className="text-sm font-medium">Post log</p>
           <div>
             <Label>Job</Label>
             <Select value={projectId} onValueChange={setProjectId}>
@@ -142,6 +93,31 @@ function DailyLogsPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>Weather</Label>
+            <div className="mt-1 grid grid-cols-5 gap-1">
+              {WEATHER.map((w) => {
+                const Icon = w.icon;
+                const on = weather === w.value;
+                return (
+                  <button
+                    key={w.value}
+                    type="button"
+                    onClick={() => setWeather(w.value)}
+                    className={cn(
+                      "flex min-h-11 flex-col items-center justify-center gap-0.5 border px-1 py-1.5 text-center transition-colors",
+                      on
+                        ? "border-primary bg-primary text-primary-fg"
+                        : "border-border bg-bg text-fg-muted hover:bg-bg-subtle hover:text-fg",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    <span className="text-[10px] font-medium leading-none">{w.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -176,120 +152,37 @@ function DailyLogsPage() {
               onChange={(e) => setBlockers(e.target.value)}
             />
           </div>
-
           <div>
             <Label>Site photos</Label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.length) void addFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-            <div
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  fileRef.current?.click();
-                }
-              }}
-              onClick={() => fileRef.current?.click()}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setDragOver(true);
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setDragOver(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setDragOver(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setDragOver(false);
-                if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files);
-              }}
-              className={cn(
-                "mt-1 flex min-h-[7.5rem] cursor-pointer flex-col items-center justify-center gap-1.5 border border-dashed px-3 py-4 text-center transition-colors",
-                dragOver
-                  ? "border-primary bg-primary/10 text-fg"
-                  : "border-border bg-bg text-fg-muted hover:border-primary/50 hover:bg-bg-subtle",
-                busy && "opacity-60 pointer-events-none",
-              )}
-            >
-              <ImagePlus className="h-6 w-6 text-fg-subtle" strokeWidth={1.5} />
-              <p className="text-[13px] font-medium text-fg">
-                {dragOver ? "Drop photos here" : "Drag & drop site photos"}
-              </p>
-              <p className="text-[11px] text-fg-subtle">
-                or click to browse · phone camera works · up to {MAX_PHOTOS} images
-              </p>
-            </div>
-
-            {photos.length > 0 ? (
-              <ul className="mt-2 grid grid-cols-3 gap-2">
-                {photos.map((src, i) => (
-                  <li key={i} className="relative aspect-[4/3] border border-border bg-bg">
-                    <img
-                      src={src}
-                      alt={`Site photo ${i + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Remove photo"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removePhoto(i);
-                      }}
-                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center bg-black/70 text-white hover:bg-black"
-                    >
-                      <X className="h-3.5 w-3.5" strokeWidth={2} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            <PhotoDropzone className="mt-1" photos={photos} onChange={setPhotos} />
           </div>
-
-          <Button type="button" className="w-full" onClick={postLog} disabled={busy}>
+          <Button type="button" className="w-full min-h-11" onClick={postLog}>
             Post log
           </Button>
         </form>
-
         <div className="space-y-2">
           {dailyLogs.map((l) => {
             const p = projects.find((x) => x.id === l.projectId);
+            const w = WEATHER.find((x) => x.value === l.weather);
+            const WIcon = w?.icon ?? Sun;
             return (
               <div key={l.id} className="border border-border bg-bg-elevated p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Link
                     to="/app/projects/$projectId"
                     params={{ projectId: l.projectId }}
-                    className="text-[13px] font-medium hover:underline"
+                    className="text-sm font-medium hover:underline"
                   >
                     {p?.name}
                   </Link>
-                  <span className="text-[11px] tabular-nums text-fg-subtle">
-                    {formatDate(l.date)} · {l.crewCount} crew · {l.hours}h
+                  <span className="inline-flex items-center gap-1.5 text-xs tabular-nums text-fg-subtle">
+                    <WIcon className="h-3 w-3" strokeWidth={1.75} />
+                    {w?.label ?? l.weather} · {formatDate(l.date)} · {l.crewCount} crew · {l.hours}h
                   </span>
                 </div>
-                <p className="mt-2 text-[13px] text-fg-muted">{l.workDone}</p>
+                <p className="mt-2 text-sm text-fg-muted">{l.workDone}</p>
                 {l.blockers ? (
-                  <p className="mt-1 text-[12px] text-warning">Blocker: {l.blockers}</p>
+                  <p className="mt-1 text-xs text-warning">Blocker: {l.blockers}</p>
                 ) : null}
                 {l.photos?.length ? (
                   <div className="mt-3 flex gap-2 overflow-x-auto">
@@ -303,9 +196,7 @@ function DailyLogsPage() {
                     ))}
                   </div>
                 ) : null}
-                <p className="mt-2 text-[11px] text-fg-subtle">
-                  {l.author} · {l.weather}
-                </p>
+                <p className="mt-2 text-xs text-fg-subtle">{l.author}</p>
               </div>
             );
           })}
