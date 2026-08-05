@@ -34,27 +34,22 @@ function KitchenScene({ s }: { s: FinishSelections }) {
 
   return (
     <group>
-      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[10, 8]} />
         <meshStandardMaterial color={floor} roughness={0.55} metalness={0.05} />
       </mesh>
-      {/* Ceiling */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 3.2, 0]}>
         <planeGeometry args={[10, 8]} />
         <meshStandardMaterial color="#f8f7f4" roughness={0.9} />
       </mesh>
-      {/* Back wall */}
       <mesh position={[0, 1.6, -4]} receiveShadow>
         <boxGeometry args={[10, 3.2, 0.15]} />
         <meshStandardMaterial color={wall} roughness={0.85} />
       </mesh>
-      {/* Left wall */}
       <mesh position={[-5, 1.6, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <boxGeometry args={[8, 3.2, 0.15]} />
         <meshStandardMaterial color={wall} roughness={0.85} />
       </mesh>
-      {/* Right wall with "window" */}
       <mesh position={[5, 1.6, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <boxGeometry args={[8, 3.2, 0.15]} />
         <meshStandardMaterial color={wall} roughness={0.85} />
@@ -64,19 +59,16 @@ function KitchenScene({ s }: { s: FinishSelections }) {
         <meshStandardMaterial color="#9ec5e0" transparent opacity={0.45} />
       </mesh>
 
-      {/* Upper cabinets */}
       {[-2.4, -1.2, 0, 1.2].map((x) => (
         <mesh key={`uc-${x}`} position={[x, 2.35, -3.7]} castShadow>
           <boxGeometry args={[1.05, 0.85, 0.4]} />
           <meshStandardMaterial color={cab} roughness={0.45} />
         </mesh>
       ))}
-      {/* Backsplash */}
       <mesh position={[-0.6, 1.55, -3.85]}>
         <boxGeometry args={[4.4, 0.7, 0.06]} />
         <meshStandardMaterial color={splash} roughness={0.4} />
       </mesh>
-      {/* Base cabinets + counter */}
       <mesh position={[-0.6, 0.45, -3.55]} castShadow>
         <boxGeometry args={[4.4, 0.9, 0.65]} />
         <meshStandardMaterial color={cab} roughness={0.45} />
@@ -85,12 +77,10 @@ function KitchenScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[4.5, 0.08, 0.7]} />
         <meshStandardMaterial color={ct} roughness={0.25} metalness={0.1} />
       </mesh>
-      {/* Faucet */}
       <mesh position={[-0.6, 1.15, -3.35]}>
         <cylinderGeometry args={[0.03, 0.03, 0.35, 12]} />
         <meshStandardMaterial color={fx} metalness={0.85} roughness={0.25} />
       </mesh>
-      {/* Island */}
       <mesh position={[1.2, 0.45, -0.4]} castShadow>
         <boxGeometry args={[2.2, 0.9, 1.1]} />
         <meshStandardMaterial color={cab} roughness={0.45} />
@@ -99,12 +89,10 @@ function KitchenScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[2.3, 0.08, 1.2]} />
         <meshStandardMaterial color={ct} roughness={0.25} metalness={0.1} />
       </mesh>
-      {/* Range */}
       <mesh position={[2.6, 0.5, -3.5]} castShadow>
         <boxGeometry args={[0.9, 1.0, 0.7]} />
         <meshStandardMaterial color={appliance} metalness={0.55} roughness={0.3} />
       </mesh>
-      {/* Pendant lights */}
       {[0.4, 1.2, 2.0].map((x) => (
         <group key={`lt-${x}`} position={[x, 2.6, -0.4]}>
           <mesh>
@@ -113,7 +101,12 @@ function KitchenScene({ s }: { s: FinishSelections }) {
           </mesh>
           <mesh position={[0, -0.35, 0]}>
             <cylinderGeometry args={[0.12, 0.15, 0.2, 16]} />
-            <meshStandardMaterial color={light} roughness={0.4} emissive={light} emissiveIntensity={0.35} />
+            <meshStandardMaterial
+              color={light}
+              roughness={0.4}
+              emissive={light}
+              emissiveIntensity={0.35}
+            />
           </mesh>
         </group>
       ))}
@@ -146,16 +139,14 @@ function LivingScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[10, 3.4, 0.15]} />
         <meshStandardMaterial color={wall} roughness={0.85} />
       </mesh>
-      {/* Sofa block */}
       <mesh position={[-1.5, 0.4, 0.5]} castShadow>
         <boxGeometry args={[3.2, 0.8, 1.4]} />
-        <meshStandardMaterial color={`color-mix(in srgb, ${wall} 40%, #6b5b4a)` as never} />
+        <meshStandardMaterial color="#6b5b4a" roughness={0.7} />
       </mesh>
       <mesh position={[-1.5, 0.85, 0.1]} castShadow>
         <boxGeometry args={[3.2, 0.55, 0.35]} />
-        <meshStandardMaterial color={`color-mix(in srgb, ${wall} 30%, #5a4a3a)` as never} />
+        <meshStandardMaterial color="#5a4a3a" roughness={0.7} />
       </mesh>
-      {/* Coffee table */}
       <mesh position={[-1.2, 0.25, 2.2]} castShadow>
         <boxGeometry args={[1.4, 0.5, 0.8]} />
         <meshStandardMaterial color={floor} roughness={0.4} />
@@ -187,7 +178,6 @@ function BathScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[6, 3, 0.12]} />
         <meshStandardMaterial color={wall} />
       </mesh>
-      {/* Vanity */}
       <mesh position={[-1.2, 0.4, -2.2]} castShadow>
         <boxGeometry args={[1.6, 0.8, 0.55]} />
         <meshStandardMaterial color={cab} />
@@ -200,7 +190,6 @@ function BathScene({ s }: { s: FinishSelections }) {
         <cylinderGeometry args={[0.025, 0.025, 0.3, 10]} />
         <meshStandardMaterial color={fx} metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Shower enclosure */}
       <mesh position={[1.4, 1.1, -1.6]}>
         <boxGeometry args={[1.5, 2.2, 1.4]} />
         <meshStandardMaterial color={tile} roughness={0.35} />
@@ -222,7 +211,6 @@ function ExteriorScene({ s }: { s: FinishSelections }) {
         <planeGeometry args={[30, 30]} />
         <meshStandardMaterial color="#5a6b3a" roughness={1} />
       </mesh>
-      {/* House body */}
       <mesh position={[0, 1.5, 0]} castShadow>
         <boxGeometry args={[10, 3, 7]} />
         <meshStandardMaterial color={ext} roughness={0.7} />
@@ -233,17 +221,14 @@ function ExteriorScene({ s }: { s: FinishSelections }) {
           <meshStandardMaterial color="#8B7D6B" roughness={0.9} />
         </mesh>
       ) : null}
-      {/* Roof */}
       <mesh position={[0, 3.6, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
         <coneGeometry args={[7.2, 2.2, 4]} />
         <meshStandardMaterial color={roof} roughness={0.8} />
       </mesh>
-      {/* Door */}
       <mesh position={[0, 1.0, 3.55]}>
         <boxGeometry args={[1.1, 2.0, 0.12]} />
         <meshStandardMaterial color={door} roughness={0.5} />
       </mesh>
-      {/* Windows */}
       <mesh position={[-2.8, 1.7, 3.55]}>
         <boxGeometry args={[1.4, 1.2, 0.08]} />
         <meshStandardMaterial color="#9ec5e0" transparent opacity={0.55} />
@@ -296,13 +281,7 @@ export function WebGLWalkthrough({
         <Suspense fallback={null}>
           <RoomModel room={room} selections={selections} />
           {!isExterior ? <Environment preset="apartment" environmentIntensity={0.35} /> : null}
-          <ContactShadows
-            position={[0, 0.01, 0]}
-            opacity={0.35}
-            scale={20}
-            blur={2.5}
-            far={8}
-          />
+          <ContactShadows position={[0, 0.01, 0]} opacity={0.35} scale={20} blur={2.5} far={8} />
         </Suspense>
         <OrbitControls
           makeDefault
