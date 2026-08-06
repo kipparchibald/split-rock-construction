@@ -470,6 +470,12 @@ function LandingPage() {
             <a href={`tel:${CONTACT.phoneHref}`} className="text-[11px] text-fg-subtle hover:text-fg">
               {CONTACT.phone}
             </a>
+            <Link to="/estimate" className="text-[11px] text-fg-subtle hover:text-fg">
+              Lot + build estimate
+            </Link>
+            <Link to="/agents" className="text-[11px] text-fg-subtle hover:text-fg">
+              Agent referral
+            </Link>
             <Link to="/portal/login" className="text-[11px] text-fg-subtle hover:text-fg">
               Client portal
             </Link>

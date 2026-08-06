@@ -7,14 +7,18 @@ import {
   members as seedMembers, payApplications as seedPayApps, progressDraws as seedDraws,
   projects as seedProjects, realtyDeals as seedRealty, safetyIncidents as seedSafety,
   selections as seedSelections, subcontracts as seedSubs,
+  tetonHeightsLots as seedLots, tetonBuildPackages as seedPackages,
+  tetonFinanceOptions as seedFinance, tetonCommunityPricing,
+  prospects as seedProspects, tours as seedTours, proposals as seedProposals,
 } from "./seed";
 import { liveEmpty } from "./live-empty";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 import type {
-  ActivityItem, Bid, BidStatus, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
+  ActivityItem, Bid, BidStatus, BudgetLine, BuildPackage, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
   CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
-  PayApplication, PermitPackage, PermitStatus, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
-  RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
+  LotFinanceOption, LotStatus, PayApplication, PermitPackage, PermitStatus, ProgressDraw, Project, ProjectStatus,
+  Proposal, Prospect, ProspectStage, RealtyDeal, RealtyDealStatus,
+  RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract, SubdivisionLot, Tour, TourStatus,
 } from "./types";
 import { LIMITS, clampText } from "@/lib/security";
 import { estimateBucketsToBudget } from "@/lib/cost-codes";
@@ -24,6 +28,8 @@ import type { PricingAssumptions } from "@/lib/pricing";
 import { plans } from "./plans";
 import { buildJobFromPlan } from "@/lib/start-from-plan";
 import { generatePortalToken } from "@/lib/client-portal";
+import { scoreProspect } from "@/lib/prospects";
+import { packageTotal } from "@/lib/lot-pricing";
 import {
   advancePermitStatus,
   buildDraftForKey,
@@ -77,6 +83,13 @@ const initial = isDemoDataEnabled
       realtyDeals: seedRealty,
       dualRolePolicy: seedDualPolicy,
       permitPackages: seedPermitPackages(seedProjects),
+      tetonLots: seedLots,
+      tetonPackages: seedPackages,
+      tetonFinance: seedFinance,
+      tetonCommunity: tetonCommunityPricing,
+      prospects: seedProspects,
+      tours: seedTours,
+      proposals: seedProposals,
     }
   : {
       projects: liveEmpty.projects,
@@ -100,6 +113,13 @@ const initial = isDemoDataEnabled
       realtyDeals: liveEmpty.realtyDeals,
       dualRolePolicy: liveEmpty.dualRolePolicy,
       permitPackages: [] as PermitPackage[],
+      tetonLots: liveEmpty.tetonLots,
+      tetonPackages: liveEmpty.tetonPackages,
+      tetonFinance: liveEmpty.tetonFinance,
+      tetonCommunity: liveEmpty.tetonCommunity,
+      prospects: liveEmpty.prospects,
+      tours: liveEmpty.tours,
+      proposals: liveEmpty.proposals,
     };
 
 interface AppState {
@@ -111,6 +131,13 @@ interface AppState {
   subcontracts: Subcontract[]; payApplications: PayApplication[]; commercialMeta: CommercialMeta[];
   closeoutPackages: CloseoutPackage[]; realtyDeals: RealtyDeal[]; dualRolePolicy: DualRolePolicy;
   permitPackages: PermitPackage[];
+  tetonLots: SubdivisionLot[];
+  tetonPackages: BuildPackage[];
+  tetonFinance: LotFinanceOption[];
+  tetonCommunity: typeof tetonCommunityPricing;
+  prospects: Prospect[];
+  tours: Tour[];
+  proposals: Proposal[];
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
   addDailyLog: (log: Omit<DailyLog, "id">) => void;
   submitDraw: (id: string) => void;
@@ -178,6 +205,37 @@ interface AppState {
     elevation?: string;
     superintendent?: string;
   }) => string | null;
+  setLotStatus: (id: string, status: LotStatus) => void;
+  addProspect: (
+    input: Omit<
+      Prospect,
+      | "id"
+      | "score"
+      | "createdAt"
+      | "stage"
+      | "lastContactAt"
+      | "lostReason"
+      | "lotId"
+      | "packageId"
+      | "referralAgent"
+      | "referralBrokerage"
+    > & {
+      stage?: ProspectStage;
+      lastContactAt?: string;
+      lostReason?: string;
+      lotId?: string;
+      packageId?: string;
+      referralAgent?: string;
+      referralBrokerage?: string;
+    },
+  ) => string;
+  setProspectStage: (id: string, stage: ProspectStage, lostReason?: string) => void;
+  touchProspect: (id: string) => void;
+  acknowledgeProspectDualRole: (id: string) => void;
+  scheduleTour: (input: Omit<Tour, "id" | "status"> & { status?: TourStatus }) => void;
+  setTourStatus: (id: string, status: TourStatus) => void;
+  createProposalFromProspect: (prospectId: string) => string | null;
+  setProposalStatus: (id: string, status: Proposal["status"]) => void;
 }
 
 function createAppStore() {
@@ -1018,6 +1076,171 @@ function createAppStore() {
       void get;
       return built.project.id;
     },
+
+    setLotStatus: (id, status) =>
+      set((s) => ({
+        tetonLots: s.tetonLots.map((l) => (l.id === id ? { ...l, status } : l)),
+      })),
+
+    addProspect: (input) => {
+      const id = uid("pr");
+      const score = scoreProspect(input);
+      const createdAt = new Date().toISOString();
+      set((s) => ({
+        prospects: [
+          {
+            ...input,
+            id,
+            score,
+            createdAt,
+            stage: input.stage ?? "new",
+          },
+          ...s.prospects,
+        ],
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: createdAt,
+          text: `New prospect: ${input.name} (${input.leadType.replace(/_/g, " ")})`,
+          kind: "project",
+        }),
+      }));
+      return id;
+    },
+
+    setProspectStage: (id, stage, lostReason) =>
+      set((s) => ({
+        prospects: s.prospects.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                stage,
+                lostReason: stage === "lost" ? lostReason ?? p.lostReason : p.lostReason,
+                lastContactAt: new Date().toISOString(),
+              }
+            : p,
+        ),
+      })),
+
+    touchProspect: (id) =>
+      set((s) => ({
+        prospects: s.prospects.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                lastContactAt: new Date().toISOString(),
+                stage: p.stage === "new" ? "contacted" : p.stage,
+              }
+            : p,
+        ),
+      })),
+
+    acknowledgeProspectDualRole: (id) =>
+      set((s) => ({
+        prospects: s.prospects.map((p) =>
+          p.id === id ? { ...p, dualRoleAcknowledged: true, dualRoleFlag: true } : p,
+        ),
+      })),
+
+    scheduleTour: (input) =>
+      set((s) => {
+        const id = uid("t");
+        const tour: Tour = { ...input, id, status: input.status ?? "scheduled" };
+        return {
+          tours: [tour, ...s.tours],
+          prospects: s.prospects.map((p) =>
+            p.id === input.prospectId
+              ? { ...p, stage: "tour_scheduled", lastContactAt: new Date().toISOString() }
+              : p,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Tour scheduled: ${input.kind.replace(/_/g, " ")} @ ${input.location}`,
+            kind: "project",
+          }),
+        };
+      }),
+
+    setTourStatus: (id, status) =>
+      set((s) => {
+        const tour = s.tours.find((x) => x.id === id);
+        return {
+          tours: s.tours.map((x) => (x.id === id ? { ...x, status } : x)),
+          prospects:
+            tour && status === "completed"
+              ? s.prospects.map((p) =>
+                  p.id === tour.prospectId
+                    ? { ...p, stage: "tour_done", lastContactAt: new Date().toISOString() }
+                    : p,
+                )
+              : s.prospects,
+        };
+      }),
+
+    createProposalFromProspect: (prospectId) => {
+      let newId: string | null = null;
+      set((s) => {
+        const pr = s.prospects.find((p) => p.id === prospectId);
+        if (!pr) return s;
+        const lot = pr.lotId ? s.tetonLots.find((l) => l.id === pr.lotId) : undefined;
+        const pack = pr.packageId
+          ? s.tetonPackages.find((x) => x.id === pr.packageId)
+          : undefined;
+        let lotPrice = lot?.listPrice ?? 0;
+        let buildPrice = pack?.baseBuild ?? 0;
+        let soft = 0;
+        let total = lotPrice + buildPrice;
+        if (lot && pack) {
+          const calc = packageTotal(lot, pack);
+          lotPrice = calc.lotPrice;
+          buildPrice = calc.buildPrice;
+          soft = calc.soft;
+          total = calc.total;
+        } else {
+          soft = Math.round(total * 0.02);
+          total += soft;
+        }
+        newId = uid("prop");
+        const createdAt = new Date().toISOString().slice(0, 10);
+        const valid = new Date();
+        valid.setDate(valid.getDate() + 14);
+        const proposal: Proposal = {
+          id: newId,
+          prospectId,
+          lotId: pr.lotId,
+          packageId: pr.packageId,
+          lotPrice,
+          buildPrice,
+          softCosts: soft,
+          extras: 0,
+          total,
+          status: "draft",
+          createdAt,
+          validUntil: valid.toISOString().slice(0, 10),
+          notes: pr.interest,
+        };
+        return {
+          proposals: [proposal, ...s.proposals],
+          prospects: s.prospects.map((p) =>
+            p.id === prospectId
+              ? { ...p, stage: "proposal_sent", lastContactAt: new Date().toISOString() }
+              : p,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Proposal drafted for ${pr.name}`,
+            kind: "bid",
+          }),
+        };
+      });
+      return newId;
+    },
+
+    setProposalStatus: (id, status) =>
+      set((s) => ({
+        proposals: s.proposals.map((p) => (p.id === id ? { ...p, status } : p)),
+      })),
   }));
 }
 

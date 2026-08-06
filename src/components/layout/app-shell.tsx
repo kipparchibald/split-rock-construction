@@ -69,6 +69,9 @@ const groups: NavGroup[] = [
     items: [
       { to: "/app/portal", label: "Owner portal", icon: Eye },
       { to: "/app/clients", label: "Clients", icon: Users },
+      { to: "/app/prospects", label: "Prospects", icon: Users },
+      { to: "/app/teton-heights", label: "Teton Heights", icon: Landmark },
+      { to: "/app/proposals", label: "Proposals", icon: FileText },
       { to: "/app/closing", label: "Closing", icon: Scale },
       { to: "/app/commercial", label: "Commercial", icon: Factory },
     ],

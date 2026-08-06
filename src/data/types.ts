@@ -474,3 +474,130 @@ export interface DesignSelection {
   optionId: string;
   locked: boolean;
 }
+
+// --- Teton Heights sales / CRM (merged from split-rock-os) ---
+export type LotStatus = "available" | "reserved" | "under_contract" | "sold" | "model" | "hold";
+export type LotPremium =
+  | "standard"
+  | "corner"
+  | "view"
+  | "cul_de_sac"
+  | "oversized";
+
+export interface SubdivisionLot {
+  id: string;
+  projectId: string;
+  block: string;
+  lot: string;
+  acres: number;
+  status: LotStatus;
+  premium: LotPremium;
+  basePrice: number;
+  premiumAmount: number;
+  listPrice: number;
+  multiLotDiscountPct: number;
+  notes: string;
+  wellReady: boolean;
+  septicReady: boolean;
+  utilities: string;
+}
+
+export interface LotFinanceOption {
+  id: string;
+  label: string;
+  downPct: number;
+  termMonths: number;
+  interestRatePct: number;
+  notes: string;
+}
+
+export interface BuildPackage {
+  id: string;
+  name: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+  baseBuild: number;
+  finishesTier: "standard" | "preferred" | "premium";
+  notes: string;
+}
+
+export type LeadType = "lot_only" | "lot_and_build" | "custom_own_land" | "commercial" | "referral";
+export type ProspectStage =
+  | "new"
+  | "contacted"
+  | "tour_scheduled"
+  | "tour_done"
+  | "qualified"
+  | "lot_hold"
+  | "proposal_sent"
+  | "bid"
+  | "won"
+  | "lost";
+export type LeadSource =
+  | "website"
+  | "teton_estimator"
+  | "model_home"
+  | "yard_sign"
+  | "referral_agent"
+  | "social"
+  | "open_house"
+  | "phone"
+  | "other";
+export type BudgetBand = "under_400k" | "400_500k" | "500_650k" | "650_800k" | "800k_plus" | "unknown";
+export type TimelineBand = "0_3mo" | "3_6mo" | "6_12mo" | "12mo_plus" | "browsing";
+
+export interface Prospect {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  leadType: LeadType;
+  stage: ProspectStage;
+  source: LeadSource;
+  budgetBand: BudgetBand;
+  timeline: TimelineBand;
+  interest: string;
+  notes: string;
+  dualRoleFlag: boolean;
+  dualRoleAcknowledged: boolean;
+  score: number;
+  lotId?: string;
+  packageId?: string;
+  assignedTo: string;
+  createdAt: string;
+  lastContactAt?: string;
+  lostReason?: string;
+  referralAgent?: string;
+  referralBrokerage?: string;
+}
+
+export type TourStatus = "scheduled" | "completed" | "no_show" | "cancelled";
+export type TourKind = "model_home" | "lot_walk" | "custom_consult" | "commercial_walk";
+
+export interface Tour {
+  id: string;
+  prospectId: string;
+  kind: TourKind;
+  at: string;
+  location: string;
+  status: TourStatus;
+  notes: string;
+  host: string;
+}
+
+export interface Proposal {
+  id: string;
+  prospectId: string;
+  lotId?: string;
+  packageId?: string;
+  lotPrice: number;
+  buildPrice: number;
+  softCosts: number;
+  extras: number;
+  total: number;
+  status: "draft" | "sent" | "accepted" | "expired";
+  createdAt: string;
+  validUntil: string;
+  notes: string;
+}

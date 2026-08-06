@@ -1,5 +1,5 @@
 import type {
-  ActivityItem, Bid, BudgetLine, ChangeOrder, Client, CloseoutPackage, CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment, PayApplication, ProgressDraw, Project, RealtyDeal, SafetyIncident, SelectionItem, Subcontract,
+  ActivityItem, Bid, BudgetLine, BuildPackage, ChangeOrder, Client, CloseoutPackage, CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment, LotFinanceOption, PayApplication, ProgressDraw, Project, Proposal, Prospect, RealtyDeal, SafetyIncident, SelectionItem, Subcontract, SubdivisionLot, Tour,
 } from "./types";
 
 export const COMPANY = {
@@ -623,5 +623,141 @@ export const realtyDeals: RealtyDeal[] = [
       { key: "closing_disclosure_review", label: "Closing disclosure reviewed", status: "n_a", systemOfRecord: "—" },
       { key: "deed_recorded", label: "Deed recorded / keys at closing", status: "n_a", systemOfRecord: "—" },
     ],
+  },
+];
+/** Teton Heights Div #6 — market list ~$99,500 for 0.6+ ac (Twin Forks marketing). Premiums are builder/ops demos. */
+export const tetonHeightsLots: SubdivisionLot[] = [
+  { id: "th1", projectId: "p4", block: "8", lot: "1", acres: 0.61, status: "available", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Standard interior lot. Well pad designated.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th2", projectId: "p4", block: "8", lot: "7", acres: 0.62, status: "available", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Flat, basement-friendly.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th3", projectId: "p4", block: "8", lot: "12", acres: 0.63, status: "model", premium: "cul_de_sac", basePrice: 99500, premiumAmount: 7500, listPrice: 107000, multiLotDiscountPct: 0, notes: "Split Rock model home site — not for lot-only sale while model active.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th4", projectId: "p4", block: "8", lot: "15", acres: 0.60, status: "under_contract", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Buyer under contract — Split Rock build package pending.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th5", projectId: "p4", block: "8", lot: "28", acres: 0.64, status: "available", premium: "corner", basePrice: 99500, premiumAmount: 5000, listPrice: 104500, multiLotDiscountPct: 3, notes: "Corner — extra shop/side yard room.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th6", projectId: "p4", block: "8", lot: "30", acres: 0.66, status: "available", premium: "oversized", basePrice: 99500, premiumAmount: 8500, listPrice: 108000, multiLotDiscountPct: 3, notes: "Larger pad; multi-lot incentive eligible.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th7", projectId: "p4", block: "9", lot: "3", acres: 0.61, status: "available", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Standard.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th8", projectId: "p4", block: "9", lot: "7", acres: 0.62, status: "reserved", premium: "view", basePrice: 99500, premiumAmount: 10000, listPrice: 109500, multiLotDiscountPct: 3, notes: "Elevated / view premium — 48hr hold.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th9", projectId: "p4", block: "9", lot: "14", acres: 0.60, status: "available", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Ready to build.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th10", projectId: "p4", block: "9", lot: "16", acres: 0.63, status: "sold", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 0, notes: "Closed lot sale — outside builder.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th11", projectId: "p4", block: "9", lot: "22", acres: 0.65, status: "available", premium: "cul_de_sac", basePrice: 99500, premiumAmount: 6000, listPrice: 105500, multiLotDiscountPct: 3, notes: "Cul-de-sac frontage.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+  { id: "th12", projectId: "p4", block: "9", lot: "29", acres: 0.61, status: "available", premium: "standard", basePrice: 99500, premiumAmount: 0, listPrice: 99500, multiLotDiscountPct: 3, notes: "Standard — multi-lot promo eligible.", wellReady: true, septicReady: true, utilities: "Power, natural gas, fiber at lot line" },
+];
+
+export const tetonFinanceOptions: LotFinanceOption[] = [
+  { id: "cash", label: "Cash / conventional lot loan", downPct: 100, termMonths: 0, interestRatePct: 0, notes: "Pay in full at closing with title." },
+  { id: "of1", label: "Owner finance — 20% down / 60 mo", downPct: 20, termMonths: 60, interestRatePct: 7.9, notes: "Seller financing demo terms — confirm current Twin Forks offering." },
+  { id: "of2", label: "Owner finance — 25% down / 36 mo", downPct: 25, termMonths: 36, interestRatePct: 6.9, notes: "Shorter term, lower rate tier (demo)." },
+  { id: "of3", label: "Owner finance — 30% down / 24 mo", downPct: 30, termMonths: 24, interestRatePct: 5.9, notes: "Fast payoff track (demo)." },
+];
+
+export const tetonBuildPackages: BuildPackage[] = [
+  { id: "bp1", name: "Ridge 1840", beds: 3, baths: 2, sqft: 1840, baseBuild: 368000, finishesTier: "standard", notes: "Efficient ranch — good entry package on standard lots." },
+  { id: "bp2", name: "Forks 2280", beds: 4, baths: 2.5, sqft: 2280, baseBuild: 425000, finishesTier: "preferred", notes: "Current model plan class for Lot 12." },
+  { id: "bp3", name: "Heights 2680", beds: 4, baths: 3, sqft: 2680, baseBuild: 498000, finishesTier: "premium", notes: "Larger plan — pairs with corner/oversized lots." },
+];
+
+export const tetonCommunityPricing = {
+  name: "Teton Heights Division #6",
+  developer: "Twin Forks Development",
+  builder: "Split Rock Construction",
+  location: "Rigby, ID (Jefferson County — outside city limits)",
+  baseLotPrice: 99500,
+  typicalAcres: "0.6+",
+  lotCountNote: "Large inventory; limited lots remain at base price — confirm live availability with Twin Forks.",
+  inclusions: [
+    "Paved road frontage",
+    "Power, natural gas, and high-speed fiber at lot line",
+    "Designated private well sites (buyer installs well + septic)",
+    "No city water/sewer connection required",
+    "Grandfathered private-well irrigation rights (platted before July 1, 2025 cutoff) — confirm on title",
+    "No forced builder — Split Rock is preferred build partner",
+    "Multi-lot purchase incentives available",
+    "Owner financing available on lots (terms set by seller)",
+  ],
+  buyerCostsBeyondLot: [
+    { item: "Private domestic well", estimateLow: 12000, estimateHigh: 22000 },
+    { item: "Septic system", estimateLow: 8000, estimateHigh: 16000 },
+    { item: "Driveway / site prep (typical)", estimateLow: 5000, estimateHigh: 18000 },
+    { item: "Impact / permit fees (Jefferson Co.)", estimateLow: 3000, estimateHigh: 8000 },
+  ],
+  taxNote: "County location often means lower property taxes vs. in-city Rigby parcels — verify with county assessor.",
+  schoolsNote: "Rigby-area schools; confirm district boundaries for the specific lot.",
+};
+
+
+export const prospects: Prospect[] = [
+  {
+    id: "pr1", name: "Sara & Mike Jensen", email: "sara.jensen@email.com", phone: "(208) 555-0191",
+    leadType: "lot_and_build", stage: "tour_scheduled", source: "teton_estimator", budgetBand: "500_650k",
+    timeline: "0_3mo", interest: "Forks 2280 on Teton Heights standard lot", notes: "Used public estimator; prefers owner-finance lot.",
+    dualRoleFlag: true, dualRoleAcknowledged: true, score: 88, lotId: "th1", packageId: "bp2",
+    assignedTo: "Kipp Archibald", createdAt: "2026-07-28T14:00:00", lastContactAt: "2026-07-29T09:00:00",
+  },
+  {
+    id: "pr2", name: "Tom Hale", email: "tom.hale@email.com", phone: "(208) 555-0192",
+    leadType: "lot_only", stage: "new", source: "website", budgetBand: "under_400k",
+    timeline: "3_6mo", interest: "Lot only — may bring own builder later", notes: "Asked about multi-lot discount for 2 lots.",
+    dualRoleFlag: true, dualRoleAcknowledged: false, score: 62, lotId: "th5",
+    assignedTo: "Kipp Archibald", createdAt: "2026-07-30T08:15:00",
+  },
+  {
+    id: "pr3", name: "Angela Ruiz", email: "a.ruiz@email.com", phone: "(208) 555-0193",
+    leadType: "custom_own_land", stage: "qualified", source: "referral_agent", budgetBand: "650_800k",
+    timeline: "6_12mo", interest: "Custom ranch on family parcel near Menan", notes: "Has land; wants cost-plus transparency.",
+    dualRoleFlag: false, dualRoleAcknowledged: false, score: 74,
+    assignedTo: "Morgan Ellis", createdAt: "2026-07-20T11:00:00", lastContactAt: "2026-07-27T16:00:00",
+    referralAgent: "Jamie Cole", referralBrokerage: "Snake River Realty",
+  },
+  {
+    id: "pr4", name: "Idaho Ag Supply LLC", email: "facilities@idahoag.example", phone: "(208) 555-0194",
+    leadType: "commercial", stage: "proposal_sent", source: "phone", budgetBand: "800k_plus",
+    timeline: "3_6mo", interest: "Small flex warehouse / shop", notes: "Compared County Line shell approach.",
+    dualRoleFlag: false, dualRoleAcknowledged: false, score: 70,
+    assignedTo: "Morgan Ellis", createdAt: "2026-07-15T10:00:00", lastContactAt: "2026-07-25T13:00:00",
+  },
+  {
+    id: "pr5", name: "Ben & Katie Moore", email: "katie.moore@email.com", phone: "(208) 555-0195",
+    leadType: "lot_and_build", stage: "lot_hold", source: "model_home", budgetBand: "500_650k",
+    timeline: "0_3mo", interest: "Corner lot + Heights 2680", notes: "Soft hold on B8/L28 until Sat.",
+    dualRoleFlag: true, dualRoleAcknowledged: true, score: 91, lotId: "th5", packageId: "bp3",
+    assignedTo: "Kipp Archibald", createdAt: "2026-07-22T15:30:00", lastContactAt: "2026-07-29T18:00:00",
+  },
+  {
+    id: "pr6", name: "Chris Park", email: "cpark@email.com", phone: "(208) 555-0196",
+    leadType: "lot_and_build", stage: "lost", source: "social", budgetBand: "400_500k",
+    timeline: "browsing", interest: "Ridge 1840", notes: "Chose different subdivision.",
+    dualRoleFlag: true, dualRoleAcknowledged: false, score: 35, packageId: "bp1",
+    assignedTo: "Kipp Archibald", createdAt: "2026-06-01T12:00:00", lastContactAt: "2026-06-20T12:00:00",
+    lostReason: "Chose other community",
+  },
+];
+
+export const tours: Tour[] = [
+  {
+    id: "t1", prospectId: "pr1", kind: "model_home", at: "2026-07-31T17:00:00",
+    location: "Teton Heights Div #6 — Model Lot 12", status: "scheduled",
+    notes: "Show Forks 2280 finishes; bring lot map.", host: "Kipp Archibald",
+  },
+  {
+    id: "t2", prospectId: "pr5", kind: "lot_walk", at: "2026-07-30T16:00:00",
+    location: "Teton Heights B8 / L28", status: "scheduled",
+    notes: "Corner lot stake walk + shop placement.", host: "Tyler Brooks",
+  },
+  {
+    id: "t3", prospectId: "pr3", kind: "custom_consult", at: "2026-07-25T10:00:00",
+    location: "Split Rock office — Rigby", status: "completed",
+    notes: "Budget band locked; site visit next.", host: "Morgan Ellis",
+  },
+];
+
+export const proposals: Proposal[] = [
+  {
+    id: "prop1", prospectId: "pr5", lotId: "th5", packageId: "bp3",
+    lotPrice: 104500, buildPrice: 498000, softCosts: 12050, extras: 0, total: 614550,
+    status: "draft", createdAt: "2026-07-29", validUntil: "2026-08-12",
+    notes: "Corner lot + Heights 2680 preferred finishes.",
+  },
+  {
+    id: "prop2", prospectId: "pr4", buildPrice: 890000, lotPrice: 0, softCosts: 18000, extras: 25000, total: 933000,
+    status: "sent", createdAt: "2026-07-25", validUntil: "2026-08-25",
+    notes: "Commercial shell ROM — not fixed bid.",
   },
 ];

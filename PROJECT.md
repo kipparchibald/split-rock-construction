@@ -58,4 +58,12 @@ After the **split-rock-construction** Vercel project exists under team **voxli**
    - `CNAME` `www` → `cname.vercel-dns.com` (or the target Vercel shows)
 3. Do **not** add this domain to `ideaspeak-app` or any other project.
 
-Until the Vercel project is created and DNS is pointed, production is GitHub-only (`main` branch).
+## Related historical code (do not dual-develop)
+
+| Repo | Package name | Status |
+| --- | --- | --- |
+| **`kipparchibald/split-rock-construction`** | `split-rock-construction` | **Canonical — all work goes here** |
+| `kipparchibald/Voxli` | `split-rock-os` (legacy) | Earlier Split Rock OS fork; Teton sales CRM was merged back into this repo |
+| Grok workspace names (`split-rock-os`, `split-rock-field-os`, …) | — | Sandbox leftovers — not source of truth |
+
+There is **one git branch**: `main`. No feature branches or open PRs on this repo.

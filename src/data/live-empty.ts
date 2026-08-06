@@ -1,11 +1,8 @@
-/**
- * Empty operational datasets for live publish (VITE_SPLIT_ROCK_DEMO=false).
- * Keep dual-role policy text — compliance guidance is not demo fluff.
- */
 import type {
   ActivityItem,
   Bid,
   BudgetLine,
+  BuildPackage,
   ChangeOrder,
   Client,
   CloseoutPackage,
@@ -16,13 +13,18 @@ import type {
   DocumentItem,
   DualRolePolicy,
   Equipment,
+  LotFinanceOption,
   PayApplication,
   ProgressDraw,
   Project,
+  Proposal,
+  Prospect,
   RealtyDeal,
   SafetyIncident,
   SelectionItem,
   Subcontract,
+  SubdivisionLot,
+  Tour,
 } from "./types";
 import { COMPANY } from "@/lib/company";
 
@@ -38,10 +40,6 @@ export const liveDualRolePolicy: DualRolePolicy = {
     "Execute official Idaho REALTORS® / brokerage forms in the approved e-sign system; Split Rock tracks status and attachments only.",
     "Use a new-construction addendum covering completion date, allowances, warranty, punch, and CO contingency.",
     "Align builder warranty language with the purchase contract so post-closing punch is unambiguous.",
-    "On buyer-rep + builder-seller deals, consider separate buyer representation when conflicts are material.",
-    "Advertise with correct brokerage identification; do not imply neutral advocacy when acting as builder-seller.",
-    "Confirm GL, builders risk, completed ops, and real estate E&O all cover dual-role scenarios.",
-    "This app provides operational checklists — not legal advice or licensed form substitutes.",
   ],
 };
 
@@ -66,4 +64,23 @@ export const liveEmpty = {
   closeoutPackages: [] as CloseoutPackage[],
   realtyDeals: [] as RealtyDeal[],
   dualRolePolicy: liveDualRolePolicy,
+  tetonLots: [] as SubdivisionLot[],
+  tetonPackages: [] as BuildPackage[],
+  tetonFinance: [] as LotFinanceOption[],
+  tetonCommunity: {
+    name: "Teton Heights Division #6",
+    developer: "Twin Forks Development",
+    builder: COMPANY.name,
+    location: "Rigby, ID (Jefferson County — outside city limits)",
+    baseLotPrice: 99500,
+    typicalAcres: "0.6+",
+    lotCountNote: "Confirm live availability with Twin Forks.",
+    inclusions: [] as string[],
+    buyerCostsBeyondLot: [] as { item: string; estimateLow: number; estimateHigh: number }[],
+    taxNote: "",
+    schoolsNote: "",
+  },
+  prospects: [] as Prospect[],
+  tours: [] as Tour[],
+  proposals: [] as Proposal[],
 };
