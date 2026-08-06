@@ -1,0 +1,45 @@
+# Deploys main → Vercel project split-rock-construction (team voxli).
+# Required repo secrets (Settings → Secrets → Actions):
+#   VERCEL_TOKEN          — https://vercel.com/account/tokens
+#   VERCEL_ORG_ID         — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
+#   VERCEL_PROJECT_ID     — set after first project create (prj_…)
+#
+# First-time: create the empty project in Vercel UI (import this repo),
+# copy Project ID into VERCEL_PROJECT_ID, then re-run this workflow.
+
+name: Deploy production (main)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Project isolation check
+        run: npm run check:project
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Pull Vercel env (optional)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
+          working-directory: ./
