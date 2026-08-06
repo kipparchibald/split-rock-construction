@@ -6,6 +6,7 @@ import {
   ClipboardList,
   HardHat,
   Home,
+  LogOut,
   MessageSquare,
   Phone,
 } from "lucide-react";
@@ -19,7 +20,9 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppStore } from "@/data/store";
 import type { ChangeOrder } from "@/data/types";
+import { projectsForClient } from "@/lib/client-portal";
 import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
+import { usePortalSession } from "@/lib/use-portal-session";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -53,24 +56,54 @@ function PortalPage() {
     setChangeOrderStatus,
     setSelectionStatus,
   } = useAppStore();
+  const { client: portalClient, isClientUser, signOut } = usePortalSession();
 
-  const homeProjects = projects.filter((p) => p.type === "residential");
+  // HARD ISOLATION: client users only see their own projects.
+  // Operators (no portal session) may browse all residential for demo/ops preview.
+  const visibleProjects = useMemo(() => {
+    if (portalClient) return projectsForClient(projects, portalClient.id);
+    return projects.filter((p) => p.type === "residential");
+  }, [projects, portalClient]);
+
+  // Block cross-client deep links: ignore ?project= if not in visible set
+  const scopedSearch =
+    searchProject && visibleProjects.some((p) => p.id === searchProject)
+      ? searchProject
+      : undefined;
+
   const defaultId =
-    (searchProject && projects.some((p) => p.id === searchProject) ? searchProject : undefined) ??
-    homeProjects.find((p) => p.status !== "planning")?.id ??
-    homeProjects[0]?.id ??
-    projects[0]?.id ??
+    scopedSearch ??
+    visibleProjects.find((p) => p.status !== "planning")?.id ??
+    visibleProjects[0]?.id ??
     "";
 
   const activeId =
-    searchProject && projects.some((p) => p.id === searchProject) ? searchProject : defaultId;
+    scopedSearch && visibleProjects.some((p) => p.id === scopedSearch)
+      ? scopedSearch
+      : defaultId;
+
+  // If client had a foreign project in URL, strip it
+  useEffect(() => {
+    if (searchProject && !visibleProjects.some((p) => p.id === searchProject)) {
+      void navigate({
+        search: { project: defaultId || undefined },
+        replace: true,
+      });
+    }
+  }, [searchProject, visibleProjects, defaultId, navigate]);
 
   const setActiveProject = (id: string) => {
+    // Never allow selecting outside visible set
+    if (!visibleProjects.some((p) => p.id === id)) {
+      toast.error("That project is not part of your account.");
+      return;
+    }
     void navigate({ search: { project: id } });
   };
 
-  const project = projects.find((p) => p.id === activeId);
-  const client = clients.find((c) => c.id === project?.clientId);
+  const project = visibleProjects.find((p) => p.id === activeId);
+  const client =
+    portalClient ?? clients.find((c) => c.id === project?.clientId);
 
   const pDraws = useMemo(
     () => (project ? draws.filter((d) => d.projectId === project.id) : []),
@@ -147,8 +180,10 @@ function PortalPage() {
     if (!project) {
       return {
         severity: "clear",
-        title: "No project selected",
-        detail: "Pick your home build to see money, decisions, and field updates.",
+        title: "No project in your account",
+        detail: isClientUser
+          ? "When Split Rock links a job to your account, it appears here."
+          : "Pick a home build or sign in as a client.",
       };
     }
     if (pendingCOs[0]) {
@@ -176,9 +211,19 @@ function PortalPage() {
       title: "You're caught up",
       detail: "No open change orders or selections. Check money and field updates anytime.",
     };
-  }, [project, pendingCOs, pendingSel]);
+  }, [project, pendingCOs, pendingSel, isClientUser]);
 
   function approveCo(id: string, number: string, title: string) {
+    // Isolation: only mutate COs for visible project
+    const co = changeOrders.find((c) => c.id === id);
+    if (!co || !project || co.projectId !== project.id) {
+      toast.error("That change order is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
     setChangeOrderStatus(id, "approved");
     setLastAction(`Approved ${number} · ${title}`);
     toast.success("Change order approved", {
@@ -187,6 +232,15 @@ function PortalPage() {
   }
 
   function declineCo(id: string, number: string) {
+    const co = changeOrders.find((c) => c.id === id);
+    if (!co || !project || co.projectId !== project.id) {
+      toast.error("That change order is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
     setChangeOrderStatus(id, "rejected");
     setLastAction(`Declined ${number}`);
     toast.message("Change order declined", {
@@ -195,18 +249,60 @@ function PortalPage() {
   }
 
   function approveSelection(id: string, label: string, choice: string) {
+    const sel = selections.find((s) => s.id === id);
+    if (!sel || !project || sel.projectId !== project.id) {
+      toast.error("That selection is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
     setSelectionStatus(id, "approved", choice);
     setLastAction(`Approved selection · ${label}`);
     toast.success("Selection approved", { description: label });
   }
 
-  if (!project) {
+  // Client not signed in — send to portal login (operators can still preview with banner)
+  if (!isClientUser && visibleProjects.length === 0) {
     return (
       <div>
-        <PageHeader title="Your home build" description="No projects yet." />
+        <PageHeader title="Your home build" description="Sign in to see your jobs." />
+        <Button asChild>
+          <Link to="/portal/login">Client sign-in</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div data-testid="portal-empty">
+        <PageHeader
+          title="Your home build"
+          description={
+            isClientUser
+              ? `Signed in as ${portalClient?.name}. No jobs are linked to your account yet.`
+              : "No projects yet."
+          }
+          actions={
+            isClientUser ? (
+              <Button size="sm" variant="outline" onClick={signOut}>
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </Button>
+            ) : null
+          }
+        />
         <p className="text-[13px] text-fg-muted">
-          When Split Rock starts your job, decisions and money show up here.
+          When Split Rock starts your job, decisions and money show up here — only for your
+          household.
         </p>
+        {!isClientUser ? (
+          <Button className="mt-4" asChild>
+            <Link to="/portal/login">Client sign-in</Link>
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -214,27 +310,46 @@ function PortalPage() {
   const superName = project.superintendent || "Your superintendent";
 
   return (
-    <div>
+    <div data-testid="portal-root" data-client-id={client?.id ?? ""} data-isolated={isClientUser ? "true" : "false"}>
       <PageHeader
         title="Your home build"
-        description="Approve change orders, pick finishes, and see money and field progress — the same view owners use."
+        description={
+          isClientUser
+            ? `Private to ${portalClient?.name} — other clients cannot see this.`
+            : "Operator preview of owner portal. Client sign-in isolates each household."
+        }
         actions={
-          <Badge variant="secondary" className="font-normal">
-            Client portal
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="font-normal">
+              {isClientUser ? "Client portal · locked to you" : "Ops preview"}
+            </Badge>
+            {isClientUser ? (
+              <Button size="sm" variant="outline" onClick={signOut} data-testid="portal-sign-out">
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/portal/login">Client sign-in</Link>
+              </Button>
+            )}
+          </div>
         }
       />
 
-      {/* Job switcher + operator bridge */}
+      {/* Job switcher — only visible projects for this client */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="w-full max-w-sm space-y-1.5">
-          <p className="label-caps">Your project</p>
+          <p className="label-caps">
+            {isClientUser ? "Your project" : "Preview project"}
+            {client ? ` · ${client.name}` : ""}
+          </p>
           <Select value={activeId} onValueChange={setActiveProject}>
-            <SelectTrigger aria-label="Select project" className="h-11">
+            <SelectTrigger aria-label="Select project" className="h-11" data-testid="portal-project-select">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {projects.map((p) => {
+              {visibleProjects.map((p) => {
                 const needs = changeOrders.some(
                   (c) => c.projectId === p.id && c.status === "pending_owner",
                 );
@@ -247,19 +362,37 @@ function PortalPage() {
               })}
             </SelectContent>
           </Select>
+          {isClientUser ? (
+            <p className="text-[10px] text-fg-subtle" data-testid="portal-isolation-note">
+              Showing {visibleProjects.length} job
+              {visibleProjects.length === 1 ? "" : "s"} for your account only.
+            </p>
+          ) : (
+            <p className="text-[10px] text-fg-subtle">
+              Operator mode lists residential jobs.{" "}
+              <Link to="/portal/login" className="underline-offset-2 hover:underline">
+                Sign in as a client
+              </Link>{" "}
+              to enforce isolation.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" asChild>
-            <Link to="/app/projects/$projectId" params={{ projectId: project.id }}>
-              Operator job hub
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link to="/app">Command center</Link>
-          </Button>
+          {/* Operator tools only when not a client session */}
+          {!isClientUser ? (
+            <>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/app/projects/$projectId" params={{ projectId: project.id }}>
+                  Operator job hub
+                </Link>
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/app">Command center</Link>
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
-
       {/* Snapshot strip */}
       <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Snapshot

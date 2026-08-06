@@ -470,6 +470,9 @@ function LandingPage() {
             <a href={`tel:${CONTACT.phoneHref}`} className="text-[11px] text-fg-subtle hover:text-fg">
               {CONTACT.phone}
             </a>
+            <Link to="/portal/login" className="text-[11px] text-fg-subtle hover:text-fg">
+              Client portal
+            </Link>
             <Link to="/login" className="text-[11px] text-fg-subtle hover:text-fg">
               Operator sign-in
             </Link>

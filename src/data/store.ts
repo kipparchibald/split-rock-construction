@@ -23,6 +23,7 @@ import { calcPrice } from "@/lib/pricing";
 import type { PricingAssumptions } from "@/lib/pricing";
 import { plans } from "./plans";
 import { buildJobFromPlan } from "@/lib/start-from-plan";
+import { generatePortalToken } from "@/lib/client-portal";
 import {
   advancePermitStatus,
   buildDraftForKey,
@@ -139,6 +140,10 @@ interface AppState {
   setBidStatus: (id: string, status: BidStatus) => void;
   setEquipmentStatus: (id: string, status: Equipment["status"]) => void;
   addClient: (client: Omit<Client, "id">) => void;
+  /** Issue or rotate portal access code and mark invited */
+  inviteClientPortal: (clientId: string) => { token: string } | null;
+  revokeClientPortal: (clientId: string) => void;
+  markClientPortalLogin: (clientId: string) => void;
   addSafetyIncident: (incident: Omit<SafetyIncident, "id">) => void;
   setSubStatus: (id: string, status: SubStatus) => void;
   submitPayApp: (id: string) => void;
@@ -519,9 +524,70 @@ function createAppStore() {
             email: clampText(client.email, 160),
             phone: clampText(client.phone, 40),
             address: clampText(client.address, 240),
+            portalStatus: client.portalStatus ?? "none",
           },
           ...s.clients,
         ],
+      })),
+
+    inviteClientPortal: (clientId) => {
+      let issued: string | null = null;
+      set((s) => {
+        const token = generatePortalToken();
+        issued = token;
+        const today = new Date().toISOString().slice(0, 10);
+        return {
+          clients: s.clients.map((c) =>
+            c.id === clientId
+              ? {
+                  ...c,
+                  portalToken: token,
+                  portalStatus: "invited" as const,
+                  portalInvitedAt: today,
+                }
+              : c,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Portal invite issued for ${s.clients.find((c) => c.id === clientId)?.name ?? clientId}`,
+            kind: "project",
+          }),
+        };
+      });
+      return issued ? { token: issued } : null;
+    },
+
+    revokeClientPortal: (clientId) =>
+      set((s) => ({
+        clients: s.clients.map((c) =>
+          c.id === clientId
+            ? {
+                ...c,
+                portalStatus: "revoked" as const,
+                portalToken: undefined,
+              }
+            : c,
+        ),
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Portal access revoked for ${s.clients.find((c) => c.id === clientId)?.name ?? clientId}`,
+          kind: "project",
+        }),
+      })),
+
+    markClientPortalLogin: (clientId) =>
+      set((s) => ({
+        clients: s.clients.map((c) =>
+          c.id === clientId
+            ? {
+                ...c,
+                portalStatus: "active" as const,
+                portalLastLoginAt: new Date().toISOString().slice(0, 10),
+              }
+            : c,
+        ),
       })),
 
     addSafetyIncident: (incident) =>

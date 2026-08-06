@@ -48,5 +48,14 @@ env vars, domains, or deploy hooks between them.
 - Product copy source: `src/lib/company.ts` → **Split Rock Construction**
 - Auth emails: `@splitrockconst.com` only
 
-If you are unsure whether a change belongs here: if it is not Split Rock land, build,
-or GC ops — it belongs in another repo.
+## Domain: splitrockconst.com
+
+After the **split-rock-construction** Vercel project exists under team **voxli**:
+
+1. Vercel → Project → Settings → Domains → Add **`splitrockconst.com`** and **`www.splitrockconst.com`**
+2. At your DNS host, point:
+   - `A` / apex → Vercel’s documented IPs (or use their nameserver transfer)
+   - `CNAME` `www` → `cname.vercel-dns.com` (or the target Vercel shows)
+3. Do **not** add this domain to `ideaspeak-app` or any other project.
+
+Until the Vercel project is created and DNS is pointed, production is GitHub-only (`main` branch).

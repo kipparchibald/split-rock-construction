@@ -136,12 +136,78 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  clientMode = false,
+}: {
+  children: React.ReactNode;
+  /** Client portal session — hide operator nav, lock to /app/portal */
+  clientMode?: boolean;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
   // "More" highlighted when current route is not one of the four primary tabs
   const onPrimaryTab = bottomNav.some((item) => isActive(pathname, item));
+
+  if (clientMode) {
+    return (
+      <div className="min-h-dvh bg-bg client-portal-mode" data-testid="client-shell">
+        {isDemoDataEnabled ? (
+          <div className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-[11px] text-fg-muted">
+            {DEMO_BANNER}
+          </div>
+        ) : null}
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-border bg-bg-elevated pt-[env(safe-area-inset-top)] lg:flex">
+          <div className="border-b border-border px-4 py-3.5">
+            <Logo className="h-8" />
+            <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-fg-subtle">Client portal</p>
+          </div>
+          <nav className="flex-1 px-2 py-4">
+            <Link
+              to="/app/portal"
+              className="flex min-h-11 items-center gap-2.5 bg-primary px-3 py-2.5 text-[13px] font-medium text-primary-fg"
+            >
+              <Eye className="h-4 w-4" strokeWidth={1.75} />
+              My home build
+            </Link>
+            <p className="mt-4 px-2 text-[11px] leading-relaxed text-fg-subtle">
+              Private to your household. Other clients cannot see your jobs or money.
+            </p>
+            <Link
+              to="/portal/login"
+              className="mt-4 block px-2 text-[12px] text-fg-muted underline-offset-2 hover:underline"
+            >
+              Switch account
+            </Link>
+          </nav>
+        </aside>
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-bg-elevated/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur-sm lg:hidden">
+          <Logo className="h-8" />
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/portal/login">Switch</Link>
+          </Button>
+        </header>
+        <div className="lg:pl-56">
+          <main className="px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-8">
+            {children}
+          </main>
+        </div>
+        <nav
+          data-testid="mobile-bottom-nav"
+          className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-bg-elevated pb-[env(safe-area-inset-bottom)] lg:hidden"
+        >
+          <Link
+            to="/app/portal"
+            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-fg"
+          >
+            <Eye className="h-4 w-4" strokeWidth={1.75} />
+            My build
+          </Link>
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-bg">

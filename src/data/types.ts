@@ -10,6 +10,12 @@ export interface Client {
   id: string; name: string; email: string; phone: string;
   type: "homeowner" | "developer" | "commercial";
   address: string; notes: string;
+  /** Opaque invite/access code for owner portal — unique per client */
+  portalToken?: string;
+  /** none = not invited · invited = code issued · active = has signed in · revoked = blocked */
+  portalStatus?: "none" | "invited" | "active" | "revoked";
+  portalInvitedAt?: string;
+  portalLastLoginAt?: string;
 }
 export interface CrewMember {
   id: string; name: string; role: string; trade: string; phone: string;
