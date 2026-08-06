@@ -67,3 +67,9 @@ After the **split-rock-construction** Vercel project exists under team **voxli**
 | Grok workspace names (`split-rock-os`, `split-rock-field-os`, …) | — | Sandbox leftovers — not source of truth |
 
 There is **one git branch**: `main`. No feature branches or open PRs on this repo.
+
+## Deploy from `main`
+
+Step-by-step production deploy, env vars, domain, and rollback:
+
+→ **[DEPLOY.md](./DEPLOY.md)**

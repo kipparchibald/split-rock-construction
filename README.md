@@ -29,6 +29,19 @@ Full product suite for **Split Rock Construction** (Rigby, ID residential + comm
 npm run dev   # 0.0.0.0:8080
 ```
 
+## Deploy (`main` → Vercel)
+
+Production ships **only from `main`** to the Vercel project **`split-rock-construction`** (team **voxli**).
+
+Full steps, env vars, domain, and rollback: **[DEPLOY.md](./DEPLOY.md)**  
+Product isolation rules: **[PROJECT.md](./PROJECT.md)**
+
+```bash
+git push origin main          # auto-deploy when Git is connected
+# or
+npx vercel --prod             # CLI, after vercel link to split-rock-construction
+```
+
 Inspired by strengths of Buildertrend (client + residential), CoConstruct (custom homes), and Procore (document/job cost spine) — simplified for a small GC in Eastern Idaho.
 
 ## Mobile screenshots
