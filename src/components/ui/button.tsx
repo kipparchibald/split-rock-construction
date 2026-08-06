@@ -16,10 +16,12 @@ const buttonVariants = cva(
         accent: "bg-accent text-accent-fg hover:bg-accent/90",
       },
       size: {
-        default: "h-9 px-3.5",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-10 px-5 text-sm",
-        icon: "h-9 w-9",
+        /* min-h on coarse pointers via CSS media in styles.css is hard on cva —
+           use min-h that works for both desktop density and mobile thumbs */
+        default: "h-10 min-h-10 px-3.5 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-h-11",
+        sm: "h-9 min-h-9 px-3 text-xs [@media(pointer:coarse)]:h-10 [@media(pointer:coarse)]:min-h-10",
+        lg: "h-11 min-h-11 px-5 text-sm",
+        icon: "h-10 w-10 min-h-10 min-w-10 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

@@ -1,8 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { plans } from "@/data/plans";
 import { formatCurrency } from "@/lib/utils";
 import { useAppStore } from "@/data/store";
@@ -12,16 +16,53 @@ export const Route = createFileRoute("/app/plans")({ component: PlansPage });
 
 function PlansPage() {
   const projects = useAppStore((s) => s.projects);
+  const clients = useAppStore((s) => s.clients);
+  const startJobFromPlan = useAppStore((s) => s.startJobFromPlan);
+  const navigate = useNavigate();
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
+  const [lotByPlan, setLotByPlan] = useState<Record<string, string>>({});
+  const [clientByPlan, setClientByPlan] = useState<Record<string, string>>({});
+  const [elevationByPlan, setElevationByPlan] = useState<Record<string, string>>({});
 
   function jobsUsingPlan(planId: string) {
     return projects.filter((p) => p.planId === planId).length;
+  }
+
+  function handleStart(planId: string) {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    setBusyPlanId(planId);
+    try {
+      const clientId = clientByPlan[planId];
+      const projectId = startJobFromPlan({
+        planId,
+        clientId: clientId && clientId !== "new" ? clientId : undefined,
+        clientName: clientId === "new" || !clientId ? undefined : undefined,
+        lotAddress: lotByPlan[planId]?.trim() || undefined,
+        elevation: elevationByPlan[planId] || plan.elevationOptions[0],
+      });
+      if (!projectId) {
+        toast.error("Could not start job from plan");
+        return;
+      }
+      toast.success(`Job seeded from ${plan.code}`, {
+        description: "Schedule, draws, allowances, budget, permits, and closeout package are ready.",
+      });
+      void navigate({
+        to: "/app/projects/$projectId",
+        params: { projectId },
+        search: { tab: "overview" },
+      });
+    } finally {
+      setBusyPlanId(null);
+    }
   }
 
   return (
     <div>
       <PageHeader
         title="Book of Plans"
-        description="Repeatable ranch + basement packages sized for Teton Heights lots and Jefferson County buyers. Seed a job from any plan to lock budget, draws, and allowances."
+        description="Repeatable ranch + basement packages for Teton Heights lots. One click seeds schedule, buyer-funded draws, allowances, job cost, permit docs, and closeout."
       />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -116,16 +157,62 @@ function PlansPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="grid gap-3 border border-border bg-bg-elevated p-4 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor={`lot-${plan.id}`}>Lot / address</Label>
+                  <Input
+                    id={`lot-${plan.id}`}
+                    placeholder="Teton Heights Lot 12"
+                    value={lotByPlan[plan.id] ?? ""}
+                    onChange={(e) => setLotByPlan((m) => ({ ...m, [plan.id]: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Client</Label>
+                  <Select
+                    value={clientByPlan[plan.id] ?? "new"}
+                    onValueChange={(v) => setClientByPlan((m) => ({ ...m, [plan.id]: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="New buyer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New buyer (auto)</SelectItem>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Elevation</Label>
+                  <Select
+                    value={elevationByPlan[plan.id] ?? plan.elevationOptions[0] ?? ""}
+                    onValueChange={(v) => setElevationByPlan((m) => ({ ...m, [plan.id]: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Elevation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plan.elevationOptions.map((e) => (
+                        <SelectItem key={e} value={e}>
+                          {e}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
                 <Button
                   size="sm"
-                  onClick={() => {
-                    toast.message("Start job from plan", {
-                      description: `Use Bid & Price or create a new job, then seed budget/draws from ${plan.code}. Full one-click seed is wired in the next iteration.`,
-                    });
-                  }}
+                  disabled={!plan.active || busyPlanId === plan.id}
+                  onClick={() => handleStart(plan.id)}
                 >
-                  Start job from plan
+                  {busyPlanId === plan.id ? "Seeding…" : "Start job from plan"}
                 </Button>
                 <Button size="sm" variant="outline" asChild>
                   <Link to="/app/pricing">Open Bid & price</Link>
@@ -134,6 +221,9 @@ function PlansPage() {
                   <Link to="/app/projects">View jobs</Link>
                 </Button>
               </div>
+              <p className="text-[11px] text-fg-subtle">
+                Seeds: phase schedule · buyer-funded draw schedule · allowances as selections · residential cost codes · JC/EIPH permit docs · closeout package.
+              </p>
             </CardContent>
           </Card>
         ))}

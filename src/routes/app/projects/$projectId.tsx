@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { JobContextBar } from "@/components/layout/job-context-bar";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
+import { NextActionBanner, type NextAction } from "@/components/layout/next-action-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/data/store";
 import { payAppTotals } from "@/lib/pay-app";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { buildJobPnl } from "@/lib/job-cost";
 import { JobPnlStrip } from "@/components/layout/job-pnl-strip";
-
-export const Route = createFileRoute("/app/projects/$projectId")({
-  component: ProjectHub,
-});
+import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
 
 const BASE_TABS = [
   { value: "overview", label: "Overview" },
@@ -46,18 +46,135 @@ type TabValue =
   | (typeof COMMERCIAL_TABS)[number]["value"]
   | (typeof CLOSING_TABS)[number]["value"];
 
+const ALL_TAB_VALUES = new Set<string>([
+  ...BASE_TABS.map((t) => t.value),
+  ...COMMERCIAL_TABS.map((t) => t.value),
+  ...CLOSING_TABS.map((t) => t.value),
+]);
+
+function parseTab(raw: unknown): TabValue | undefined {
+  if (typeof raw !== "string") return undefined;
+  return ALL_TAB_VALUES.has(raw) ? (raw as TabValue) : undefined;
+}
+
+export const Route = createFileRoute("/app/projects/$projectId")({
+  validateSearch: (search: Record<string, unknown>): { tab?: TabValue } => ({
+    tab: parseTab(search.tab),
+  }),
+  component: ProjectHub,
+});
+
 function ProjectHub() {
   const { projectId } = Route.useParams();
+  const { tab: searchTab } = Route.useSearch();
+  const navigate = useNavigate({ from: "/app/projects/$projectId" });
   const {
     projects, clients, draws, changeOrders, selections, dailyLogs,
     documents, budgetLines, members, subcontracts, payApplications, commercialMeta,
-    closeoutPackages, realtyDeals,
-    submitDraw, setChangeOrderStatus, setSelectionStatus,
+    closeoutPackages, realtyDeals, permitPackages,
+    submitDraw, markDrawPaid, markDrawReady, holdDraw, releaseDraw,
+    setChangeOrderStatus, addChangeOrder, setSelectionStatus,
     setSubStatus, submitPayApp, certifyPayApp, markPayAppPaid,
+    setCloseoutItemStatus, setRealtyItemStatus, setRealtyDealStatus,
+    acknowledgeDualCapacity, adjustPunch, ensurePermitPackage,
   } = useAppStore();
   const project = projects.find((p) => p.id === projectId);
   const client = clients.find((c) => c.id === project?.clientId);
-  const [tab, setTab] = useState<TabValue>("overview");
+  const [tab, setTab] = useState<TabValue>(searchTab ?? "overview");
+  const [coFormOpen, setCoFormOpen] = useState(false);
+  const [coTitle, setCoTitle] = useState("");
+  const [coAmount, setCoAmount] = useState("");
+  const [coDays, setCoDays] = useState("0");
+  const [coDesc, setCoDesc] = useState("");
+  const [coBy, setCoBy] = useState("");
+  const [lastSentCoId, setLastSentCoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchTab && searchTab !== tab) setTab(searchTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTab]);
+
+  const setTabAndUrl = (next: TabValue) => {
+    setTab(next);
+    void navigate({
+      search: (prev) => ({ ...prev, tab: next === "overview" ? undefined : next }),
+      replace: true,
+    });
+  };
+
+  const pDraws = useMemo(() => draws.filter((d) => d.projectId === projectId), [draws, projectId]);
+  const pCOs = useMemo(() => changeOrders.filter((c) => c.projectId === projectId), [changeOrders, projectId]);
+  const pSel = useMemo(() => selections.filter((s) => s.projectId === projectId), [selections, projectId]);
+  const pLogs = useMemo(() => dailyLogs.filter((l) => l.projectId === projectId), [dailyLogs, projectId]);
+  const pDocs = useMemo(() => documents.filter((d) => d.projectId === projectId), [documents, projectId]);
+  const pBudget = useMemo(() => budgetLines.filter((b) => b.projectId === projectId), [budgetLines, projectId]);
+  const pSubs = useMemo(() => subcontracts.filter((s) => s.projectId === projectId), [subcontracts, projectId]);
+  const pPayApps = useMemo(() => payApplications.filter((a) => a.projectId === projectId), [payApplications, projectId]);
+  const meta = commercialMeta.find((m) => m.projectId === projectId);
+  const closeout = closeoutPackages.find((c) => c.projectId === projectId);
+  const realty = realtyDeals.find((d) => d.projectId === projectId);
+  const permitPkg = permitPackages.find((p) => p.projectId === projectId);
+  const crew = members.filter((m) => m.projectId === projectId);
+
+  const nextAction: NextAction = useMemo(() => {
+    if (!project) {
+      return { severity: "clear", title: "Job not found", detail: "Return to jobs list." };
+    }
+    const status = project.status;
+    const hub = (t?: TabValue): Pick<NextAction, "to" | "params" | "search"> => ({
+      to: "/app/projects/$projectId",
+      params: { projectId: project.id },
+      search: t && t !== "overview" ? { tab: t } : undefined,
+    });
+    const readyDraw = pDraws.find((d) => d.status === "ready" || d.status === "submitted" || d.status === "held");
+    const pendingCO = pCOs.find((c) => c.status === "pending_owner");
+    const pendingSel = pSel.find((s) => s.status === "pending_owner");
+    const openPunch = closeout?.punchOpen ?? 0;
+    const dualPending = realty?.dualCapacity === "pending_disclosure";
+    const lienIncomplete = closeout?.items.find((i) => i.key === "lien_waivers" && i.status !== "complete");
+
+    if (status === "planning") {
+      return { severity: "med", title: "Complete bid & contract", detail: "Move from planning into permitting once signed.", to: "/app/pricing", cta: "Open pricing" };
+    }
+    if (status === "permitting") {
+      return {
+        severity: "med",
+        title: "Finish permit package",
+        detail: "Jefferson County / EIPH items still open.",
+        to: "/app/permits",
+        search: { project: project.id },
+        cta: "Open permits",
+      };
+    }
+    if (dualPending) {
+      return { severity: "high", title: "Dual-capacity disclosure required", detail: "Agency election must be acknowledged before close.", ...hub("realty"), cta: "Open closing" };
+    }
+    if (pendingCO) {
+      return { severity: "high", title: `Owner decision · ${pendingCO.number}`, detail: pendingCO.title, ...hub("changes"), cta: "Review change order" };
+    }
+    if (readyDraw) {
+      const cta =
+        readyDraw.status === "held"
+          ? "Release hold"
+          : readyDraw.status === "submitted"
+            ? "Mark paid"
+            : "Submit / track draw";
+      return { severity: "high", title: `Draw ${readyDraw.status} · ${formatCurrency(readyDraw.amount)}`, detail: readyDraw.name, ...hub("draws"), cta };
+    }
+    if (pendingSel) {
+      return { severity: "med", title: `Selection waiting · ${pendingSel.category}`, detail: `${pendingSel.room}`, ...hub("selections"), cta: "Review selections" };
+    }
+    if (lienIncomplete && (status === "punch_list" || status === "complete")) {
+      return { severity: "high", title: "Lien waivers incomplete", detail: "Required before final payment and close.", ...hub("closeout"), cta: "Track waivers" };
+    }
+    if (status === "punch_list" || openPunch > 0) {
+      return { severity: "high", title: `${openPunch} punch items open`, detail: "Clear punch before final closeout and CO.", ...hub("closeout"), cta: "Open closeout" };
+    }
+    if (status === "in_progress") {
+      return { severity: "low", title: "Continue current phase", detail: `${project.phase} — post daily logs and keep photos current.`, ...hub("logs"), cta: "Daily log" };
+    }
+    return { severity: "clear", title: "On track", detail: "No blocking decisions or draws right now." };
+  }, [project, pDraws, pCOs, pSel, closeout, realty]);
 
   if (!project) {
     return (
@@ -72,18 +189,6 @@ function ProjectHub() {
   const tabMeta = isCommercial
     ? [...BASE_TABS.filter((x) => x.value !== "selections"), ...COMMERCIAL_TABS, ...CLOSING_TABS]
     : [...BASE_TABS, ...CLOSING_TABS];
-  const pDraws = draws.filter((d) => d.projectId === project.id);
-  const pCOs = changeOrders.filter((c) => c.projectId === project.id);
-  const pSel = selections.filter((s) => s.projectId === project.id);
-  const pLogs = dailyLogs.filter((l) => l.projectId === project.id);
-  const pDocs = documents.filter((d) => d.projectId === project.id);
-  const pBudget = budgetLines.filter((b) => b.projectId === project.id);
-  const pSubs = subcontracts.filter((s) => s.projectId === project.id);
-  const pPayApps = payApplications.filter((a) => a.projectId === project.id);
-  const meta = commercialMeta.find((m) => m.projectId === project.id);
-  const closeout = closeoutPackages.find((c) => c.projectId === project.id);
-  const realty = realtyDeals.find((d) => d.projectId === project.id);
-  const crew = members.filter((m) => m.projectId === project.id);
   const paid = pDraws.filter((d) => d.status === "paid").reduce((s, d) => s + d.amount, 0);
   const coTotal = pCOs.filter((c) => c.status === "approved" || c.status === "invoiced").reduce((s, c) => s + c.amount, 0);
   const contractTotal = project.budget + coTotal;
@@ -98,6 +203,7 @@ function ProjectHub() {
             <h1 className="text-xl font-medium tracking-[-0.02em]">{project.name}</h1>
             <ProjectStatusBadge status={project.status} />
             <Badge variant="outline">{project.type}</Badge>
+            {project.planId ? <Badge variant="secondary">From plan</Badge> : null}
           </div>
           <p className="mt-1 text-[13px] text-fg-muted">{project.address} · {client?.name}</p>
           <p className="mt-1 text-[12px] text-fg-subtle">
@@ -111,6 +217,8 @@ function ProjectHub() {
           <p className="text-[11px] text-fg-subtle">base {formatCurrency(project.budget)} + COs {formatCurrency(coTotal)}</p>
         </div>
       </div>
+
+      <NextActionBanner action={nextAction} className="mb-5" />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-4">
         {[
@@ -126,10 +234,9 @@ function ProjectHub() {
         ))}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-        {/* Mobile: select */}
+      <Tabs value={tab} onValueChange={(v) => setTabAndUrl(v as TabValue)}>
         <div className="mb-4 md:hidden">
-          <Select value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+          <Select value={tab} onValueChange={(v) => setTabAndUrl(v as TabValue)}>
             <SelectTrigger aria-label="Job section">
               <SelectValue />
             </SelectTrigger>
@@ -140,7 +247,6 @@ function ProjectHub() {
             </SelectContent>
           </Select>
         </div>
-        {/* Desktop: horizontal chips */}
         <TabsList className="mb-1 hidden h-auto w-full flex-wrap md:inline-flex">
           {tabMeta.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
@@ -175,19 +281,38 @@ function ProjectHub() {
               </div>
             </CardContent>
           </Card>
+          {pBudget.length > 0 ? (
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle>Job P&L snapshot</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setTabAndUrl("budget")}>Full budget</Button>
+              </CardHeader>
+              <CardContent>
+                <JobPnlStrip pnl={buildJobPnl(project, {
+                  budgetLines: pBudget,
+                  changeOrders: pCOs,
+                  draws: pDraws,
+                  selections: pSel,
+                  subcontracts: pSubs,
+                  payApplications: pPayApps,
+                })} />
+              </CardContent>
+            </Card>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="schedule">
           <Card>
             <CardHeader><CardTitle>Phase schedule</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {project.schedule.map((s) => (
-                <div key={s.phase}>
-                  <div className="mb-1 flex justify-between text-[12px]">
-                    <span className="font-medium">{s.phase}</span>
-                    <span className="tabular-nums text-fg-subtle">{formatDate(s.start)} → {formatDate(s.end)} · {s.pct}%</span>
+            <CardContent className="space-y-2">
+              {project.schedule.map((ph) => (
+                <div key={ph.phase} className="border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-medium">{ph.phase}</p>
+                    <span className="text-[11px] tabular-nums text-fg-subtle">{ph.pct}%</span>
                   </div>
-                  <Progress value={s.pct} />
+                  <Progress value={ph.pct} className="mt-2" />
+                  <p className="mt-1 text-[11px] text-fg-subtle">{formatDate(ph.start)} → {formatDate(ph.end)}</p>
                 </div>
               ))}
             </CardContent>
@@ -195,262 +320,625 @@ function ProjectHub() {
         </TabsContent>
 
         <TabsContent value="budget">
-          {(() => {
-            const pnl = buildJobPnl(project, {
-              budgetLines, draws, changeOrders, selections, subcontracts, payApplications,
-            });
-            return (
-              <div className="space-y-3">
-                <JobPnlStrip pnl={pnl} compact />
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-2">
-                    <CardTitle>Cost codes</CardTitle>
-                    <Button asChild variant="outline" size="sm">
-                      <Link to="/app/budget">Open portfolio job cost</Link>
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="hidden grid-cols-5 gap-2 border-b border-border px-4 py-2 text-[11px] uppercase tracking-[0.06em] text-fg-subtle sm:grid">
-                      <span>Code</span><span>Name</span><span>Budgeted</span><span>Committed</span><span>Actual</span>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Job cost</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/budget">Open portfolio job cost</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pBudget.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No budget lines yet. Start from a plan or seed from Bid & price.</p>
+              ) : (
+                pBudget.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between gap-3 border border-border px-3 py-2 text-[12px]">
+                    <div className="min-w-0">
+                      <p className="font-medium text-fg">{b.category}</p>
+                      <p className="text-fg-subtle">{b.costCodeId}</p>
                     </div>
-                    {pnl.lines.length === 0 ? (
-                      <p className="px-4 py-6 text-[13px] text-fg-muted">No cost codes yet. Seed from Bid & price or add lines on Job cost.</p>
-                    ) : pnl.lines.map((b) => (
-                      <div key={b.id} className="grid gap-1 border-b border-border px-4 py-3 text-[12px] last:border-0 sm:grid-cols-5 sm:items-center">
-                        <span className="font-mono text-[11px] text-fg-muted">{b.code}</span>
-                        <span className="font-medium">{b.name}</span>
-                        <span className="tabular-nums">{formatCurrency(b.budgeted)}</span>
-                        <span className="tabular-nums text-fg-muted">{formatCurrency(b.committed)}</span>
-                        <span className={`tabular-nums ${b.overBudget ? "text-danger" : ""}`}>{formatCurrency(b.actual)}</span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })()}
+                    <div className="text-right tabular-nums">
+                      <p>{formatCurrency(b.actual)} / {formatCurrency(b.budgeted)}</p>
+                      <p className="text-[11px] text-fg-subtle">committed {formatCurrency(b.committed)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="draws">
           <Card>
-            <CardHeader><CardTitle>Progress draws</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {pDraws.map((d) => (
-                <div key={d.id} className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[13px] font-medium">{d.name}</p>
-                    <p className="text-[11px] text-fg-muted">{d.trigger}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-medium tabular-nums">{formatCurrency(d.amount)}</span>
-                    <Badge variant={d.status === "paid" ? "success" : d.status === "ready" || d.status === "submitted" ? "warning" : "secondary"}>{d.status.replace("_", " ")}</Badge>
-                    {d.status === "ready" ? (
-                      <Button size="sm" onClick={() => submitDraw(d.id)}>Submit</Button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-              {!pDraws.length ? <p className="text-[13px] text-fg-muted">No draw schedule on this job.</p> : null}
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Progress draws</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/draws">Portfolio draws</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pDraws.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No draws on this job yet. Seed from Book of Plans or Bid & price.</p>
+              ) : (
+                (() => {
+                  const cash = summarizeDraws(pDraws);
+                  return (
+                    <>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        <div className="border border-border p-3">
+                          <p className="label-caps">Paid</p>
+                          <p className="mt-1 text-[15px] font-medium tabular-nums">{formatCurrency(cash.paid)}</p>
+                          <p className="text-[11px] text-fg-subtle">{cash.paidPct}% of schedule</p>
+                        </div>
+                        <div className="border border-border p-3">
+                          <p className="label-caps">In flight</p>
+                          <p className="mt-1 text-[15px] font-medium tabular-nums">
+                            {formatCurrency(cash.ready + cash.submitted)}
+                          </p>
+                        </div>
+                        <div className="border border-border p-3">
+                          <p className="label-caps">Remaining</p>
+                          <p className="mt-1 text-[15px] font-medium tabular-nums">{formatCurrency(cash.remaining)}</p>
+                        </div>
+                      </div>
+                      {cash.nextAction && cash.nextActionLabel ? (
+                        <div className="border border-border bg-bg-subtle px-3 py-2 text-[12px]">
+                          <span className="font-medium">Next: </span>
+                          {cash.nextActionLabel} · {cash.nextAction.name} · {formatCurrency(cash.nextAction.amount)}
+                        </div>
+                      ) : null}
+                      <div className="space-y-2">
+                        {pDraws.map((d) => (
+                          <div
+                            key={d.id}
+                            className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div>
+                              <p className="text-[13px] font-medium">{d.name}</p>
+                              <p className="text-[12px] text-fg-muted">
+                                {d.trigger} · {(d.pct * 100).toFixed(0)}%
+                                {d.dueDate ? ` · due ${formatDate(d.dueDate)}` : ""}
+                                {d.paidDate ? ` · paid ${formatDate(d.paidDate)}` : ""}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[13px] font-medium tabular-nums">{formatCurrency(d.amount)}</span>
+                              <Badge variant={drawBadgeVariant(d.status)}>{drawStatusLabel(d.status)}</Badge>
+                              {d.status === "upcoming" ? (
+                                <Button size="sm" onClick={() => markDrawReady(d.id)}>Mark ready</Button>
+                              ) : null}
+                              {d.status === "ready" ? (
+                                <>
+                                  <Button size="sm" onClick={() => submitDraw(d.id)}>Submit</Button>
+                                  <Button size="sm" variant="outline" onClick={() => holdDraw(d.id)}>Hold</Button>
+                                </>
+                              ) : null}
+                              {d.status === "submitted" ? (
+                                <>
+                                  <Button size="sm" onClick={() => markDrawPaid(d.id)}>Mark paid</Button>
+                                  <Button size="sm" variant="outline" onClick={() => holdDraw(d.id)}>Hold</Button>
+                                </>
+                              ) : null}
+                              {d.status === "held" ? (
+                                <Button size="sm" onClick={() => releaseDraw(d.id)}>Release</Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="changes">
           <Card>
-            <CardHeader><CardTitle>Change orders</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {pCOs.map((c) => (
-                <div key={c.id} className="border border-border p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[13px] font-medium">{c.number} · {c.title}</p>
-                      <p className="mt-1 text-[12px] text-fg-muted">{c.description}</p>
-                      <p className="mt-1 text-[11px] text-fg-subtle">{formatDate(c.date)} · {c.requestedBy} · +{c.daysImpact} days</p>
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+              <CardTitle>Change orders</CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/app/portal" search={{ project: projectId }}>
+                    Owner portal
+                  </Link>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setCoFormOpen((o) => !o);
+                    if (!coBy && (client?.name || project?.superintendent)) {
+                      setCoBy(client?.name || project?.superintendent || "");
+                    }
+                  }}
+                >
+                  {coFormOpen ? "Cancel" : "Add change order"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {lastSentCoId ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 border border-success/30 bg-success/5 px-3 py-2 text-[12px]">
+                  <p className="text-fg">
+                    Change order sent — it now appears on the <strong>owner portal</strong> for approve / decline.
+                  </p>
+                  <Button size="sm" asChild>
+                    <Link to="/app/portal" search={{ project: projectId }}>
+                      Open owner portal
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
+              {coFormOpen ? (
+                <form
+                  className="space-y-3 border border-border bg-bg-subtle p-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!coTitle.trim()) return;
+                    const before = useAppStore.getState().changeOrders.map((c) => c.id);
+                    addChangeOrder({
+                      projectId,
+                      title: coTitle.trim(),
+                      amount: Number(coAmount) || 0,
+                      daysImpact: Number(coDays) || 0,
+                      description: coDesc.trim() || coTitle.trim(),
+                      requestedBy: coBy.trim() || client?.name || project?.superintendent,
+                      status: "pending_owner",
+                    });
+                    const created = useAppStore.getState().changeOrders.find((c) => !before.includes(c.id));
+                    setLastSentCoId(created?.id ?? "sent");
+                    setCoTitle("");
+                    setCoAmount("");
+                    setCoDays("0");
+                    setCoDesc("");
+                    setCoFormOpen(false);
+                  }}
+                >
+                  <p className="text-[12px] text-fg-muted">
+                    Creates a written change order and sends it to the owner portal for approval. The client sees
+                    amount, days impact, and can approve or decline.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="co-title">Title</Label>
+                      <Input
+                        id="co-title"
+                        value={coTitle}
+                        onChange={(e) => setCoTitle(e.target.value)}
+                        placeholder="e.g. Upgrade exterior stone veneer"
+                        required
+                      />
                     </div>
-                    <div className="text-right">
-                      <p className="text-[13px] font-medium tabular-nums">{formatCurrency(c.amount)}</p>
-                      <Badge className="mt-1" variant={c.status === "approved" || c.status === "invoiced" ? "success" : c.status === "pending_owner" ? "warning" : "secondary"}>
-                        {c.status.replace(/_/g, " ")}
-                      </Badge>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="co-amount">Amount ($)</Label>
+                      <Input
+                        id="co-amount"
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={coAmount}
+                        onChange={(e) => setCoAmount(e.target.value)}
+                        placeholder="0"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="co-days">Schedule impact (days)</Label>
+                      <Input
+                        id="co-days"
+                        type="number"
+                        min={0}
+                        value={coDays}
+                        onChange={(e) => setCoDays(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="co-by">Requested by</Label>
+                      <Input
+                        id="co-by"
+                        value={coBy}
+                        onChange={(e) => setCoBy(e.target.value)}
+                        placeholder={client?.name || "Owner / superintendent"}
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="co-desc">Description</Label>
+                      <Input
+                        id="co-desc"
+                        value={coDesc}
+                        onChange={(e) => setCoDesc(e.target.value)}
+                        placeholder="Scope, location, and why it is needed"
+                      />
                     </div>
                   </div>
-                  {c.status === "pending_owner" ? (
-                    <div className="mt-3 flex gap-2">
-                      <Button size="sm" onClick={() => setChangeOrderStatus(c.id, "approved")}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => setChangeOrderStatus(c.id, "rejected")}>Reject</Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="submit" size="sm">
+                      Save & send to owner
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (!coTitle.trim()) return;
+                        addChangeOrder({
+                          projectId,
+                          title: coTitle.trim(),
+                          amount: Number(coAmount) || 0,
+                          daysImpact: Number(coDays) || 0,
+                          description: coDesc.trim() || coTitle.trim(),
+                          requestedBy: coBy.trim() || client?.name || project?.superintendent,
+                          status: "draft",
+                        });
+                        setLastSentCoId(null);
+                        setCoTitle("");
+                        setCoAmount("");
+                        setCoDays("0");
+                        setCoDesc("");
+                        setCoFormOpen(false);
+                      }}
+                    >
+                      Save as draft
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
+
+              {pCOs.length === 0 && !coFormOpen ? (
+                <p className="text-[13px] text-fg-muted">
+                  No change orders yet. Use <strong className="font-medium text-fg">Add change order</strong> for
+                  upgrades and scope changes.
+                </p>
+              ) : (
+                pCOs.map((c) => (
+                  <div key={c.id} className="border border-border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[13px] font-medium">
+                        {c.number} · {c.title}
+                      </p>
+                      <Badge variant="outline">{c.status.replace(/_/g, " ")}</Badge>
                     </div>
-                  ) : null}
-                </div>
-              ))}
-              {!pCOs.length ? <p className="text-[13px] text-fg-muted">No change orders.</p> : null}
+                    <p className="mt-1 text-[12px] text-fg-muted">{c.description}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-[12px] font-medium tabular-nums">{formatCurrency(c.amount)}</span>
+                      {c.daysImpact > 0 ? (
+                        <span className="text-[11px] text-fg-subtle">+{c.daysImpact} days</span>
+                      ) : null}
+                      {c.status === "draft" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setChangeOrderStatus(c.id, "pending_owner");
+                            setLastSentCoId(c.id);
+                          }}
+                        >
+                          Send to owner
+                        </Button>
+                      ) : null}
+                      {c.status === "pending_owner" ? (
+                        <>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to="/app/portal" search={{ project: projectId }}>
+                              View on portal
+                            </Link>
+                          </Button>
+                          <Button size="sm" onClick={() => setChangeOrderStatus(c.id, "approved")}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setChangeOrderStatus(c.id, "rejected")}>
+                            Reject
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="selections">
           <Card>
-            <CardHeader><CardTitle>Selections & allowances</CardTitle></CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Selections & allowances</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/portal" search={{ project: projectId }}>Owner view</Link>
+              </Button>
+            </CardHeader>
             <CardContent className="space-y-2">
-              {pSel.map((s) => (
-                <div key={s.id} className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[13px] font-medium">{s.room} · {s.category}</p>
-                    <p className="text-[11px] text-fg-muted">
-                      Allowance {formatCurrency(s.allowance)}
-                      {s.actual != null ? ` · actual ${formatCurrency(s.actual)}` : ""}
-                      {s.choice ? ` · ${s.choice}` : ""}
-                    </p>
+              {pSel.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No selections tracked.</p>
+              ) : (
+                pSel.map((s) => (
+                  <div key={s.id} className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[13px] font-medium">{s.category} · {s.room}</p>
+                      <p className="text-[12px] text-fg-muted">
+                        Allowance {formatCurrency(s.allowance)}
+                        {s.choice ? ` · ${s.choice}` : ""}
+                        {s.actual !== undefined ? ` · actual ${formatCurrency(s.actual)}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{s.status.replace(/_/g, " ")}</Badge>
+                      {s.status === "pending_owner" || s.status === "not_started" ? (
+                        <>
+                          <Button size="sm" onClick={() => setSelectionStatus(s.id, "approved", s.choice ?? s.category)}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setSelectionStatus(s.id, "pending_owner")}>
+                            Send to owner
+                          </Button>
+                        </>
+                      ) : null}
+                      {s.status === "approved" ? (
+                        <Button size="sm" variant="outline" onClick={() => setSelectionStatus(s.id, "ordered")}>
+                          Mark ordered
+                        </Button>
+                      ) : null}
+                      {s.status === "ordered" ? (
+                        <Button size="sm" variant="outline" onClick={() => setSelectionStatus(s.id, "installed")}>
+                          Mark installed
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={s.status === "pending_owner" ? "warning" : s.status === "approved" || s.status === "ordered" || s.status === "installed" ? "success" : "secondary"}>
-                      {s.status.replace(/_/g, " ")}
-                    </Badge>
-                    {s.status === "pending_owner" ? (
-                      <Button size="sm" onClick={() => setSelectionStatus(s.id, "approved")}>Approve</Button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-              {!pSel.length ? <p className="text-[13px] text-fg-muted">No selections tracked.</p> : null}
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="logs">
           <Card>
-            <CardHeader><CardTitle>Daily logs</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {pLogs.map((l) => (
-                <div key={l.id} className="border border-border p-3">
-                  <div className="flex flex-wrap justify-between gap-2 text-[12px]">
-                    <span className="font-medium">{formatDate(l.date)} · {l.weather}</span>
-                    <span className="tabular-nums text-fg-subtle">{l.crewCount} crew · {l.hours}h · {l.author}</span>
-                  </div>
-                  <p className="mt-2 text-[13px] text-fg-muted">{l.workDone}</p>
-                  {l.blockers ? <p className="mt-1 text-[12px] text-warning">Blocker: {l.blockers}</p> : null}
-                  {l.photos?.length ? (
-                    <div className="mt-3 flex gap-2 overflow-x-auto">
-                      {l.photos.map((src) => (
-                        <img key={src} src={src} alt="" className="h-20 w-28 shrink-0 border border-border object-cover" />
-                      ))}
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Daily logs</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/daily-logs">All logs</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pLogs.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No logs yet — post from Field board or Daily logs.</p>
+              ) : (
+                pLogs.map((l) => (
+                  <div key={l.id} className="border border-border p-3">
+                    <div className="flex justify-between gap-2 text-[12px]">
+                      <span className="font-medium">{formatDate(l.date)}</span>
+                      <span className="text-fg-subtle">{l.crewCount} crew · {l.hours}h · {l.weather}</span>
                     </div>
-                  ) : null}
-                </div>
-              ))}
-              {!pLogs.length ? <p className="text-[13px] text-fg-muted">No logs yet.</p> : null}
+                    <p className="mt-1 text-[13px] text-fg-muted">{l.workDone}</p>
+                    {l.blockers ? <p className="mt-1 text-[11px] text-warning">Blocker: {l.blockers}</p> : null}
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="docs">
           <Card>
-            <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {pDocs.map((d) => (
-                <div key={d.id} className="flex items-center justify-between gap-2 border border-border p-3">
-                  <div>
-                    <p className="text-[13px] font-medium">{d.title}</p>
-                    <p className="text-[11px] text-fg-muted">{d.type.replace("_", " ")} · {d.author} · {formatDate(d.updatedAt)}</p>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Documents & permits</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/app/permits" search={{ project: projectId }}>
+                    Permits / EIPH
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {permitPkg ? (
+                <div className="border border-border bg-bg-subtle p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[12px] font-medium">Permit package</p>
+                      <p className="text-[11px] text-fg-subtle">
+                        {permitPkg.items.filter((i) => i.status === "approved").length}/{permitPkg.items.length} approved ·{" "}
+                        {permitPkg.status.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to="/app/permits" search={{ project: projectId }}>
+                        Manage
+                      </Link>
+                    </Button>
                   </div>
-                  <Badge variant={d.status === "approved" ? "success" : d.status === "open" || d.status === "pending" ? "warning" : "secondary"}>{d.status}</Badge>
+                  <ul className="mt-2 space-y-1">
+                    {permitPkg.items.slice(0, 4).map((i) => (
+                      <li key={i.key} className="flex items-center justify-between text-[11px] text-fg-muted">
+                        <span>{i.label}</span>
+                        <span className="tabular-nums">{i.status.replace(/_/g, " ")}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-              {!pDocs.length ? <p className="text-[13px] text-fg-muted">No documents.</p> : null}
+              ) : project?.type === "residential" ? (
+                <div className="border border-border p-3 text-[12px] text-fg-muted">
+                  No permit package yet.{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-fg underline-offset-2 hover:underline"
+                    onClick={() => ensurePermitPackage(projectId)}
+                  >
+                    Create Jefferson County / EIPH package
+                  </button>
+                </div>
+              ) : null}
+              {pDocs.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No documents on this job.</p>
+              ) : (
+                pDocs.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between gap-2 border border-border px-3 py-2">
+                    <div>
+                      <p className="text-[13px] font-medium">{d.title}</p>
+                      <p className="text-[11px] text-fg-subtle">
+                        {d.type.replace(/_/g, " ")}
+                        {d.reference ? ` · ${d.reference}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant="outline">{d.status}</Badge>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-
-        <TabsContent value="subs" className="space-y-2">
-          {pSubs.map((sub) => (
-            <div key={sub.id} className="flex flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[13px] font-medium">{sub.company} · Div {sub.csiDivision}</p>
-                <p className="text-[12px] text-fg-muted">{sub.trade} · {sub.contact}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] tabular-nums font-medium">{formatCurrency(sub.contractAmount)}</span>
-                <Badge variant="secondary">{sub.status}</Badge>
-                {sub.status === "bidding" ? <Button size="sm" onClick={() => setSubStatus(sub.id, "awarded")}>Award</Button> : null}
-              </div>
-            </div>
-          ))}
-          {!pSubs.length ? <p className="text-[13px] text-fg-muted">No subcontracts.</p> : null}
-          <Button variant="outline" size="sm" asChild><Link to="/app/commercial">Open commercial module</Link></Button>
+        <TabsContent value="client">
+          <Card>
+            <CardHeader><CardTitle>Client</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-[13px]">
+              {client ? (
+                <>
+                  <p className="font-medium">{client.name}</p>
+                  <p className="text-fg-muted">{client.email} · {client.phone}</p>
+                  <p className="text-fg-muted">{client.address}</p>
+                  {client.notes ? <p className="text-fg-subtle">{client.notes}</p> : null}
+                  <Button variant="outline" size="sm" asChild className="mt-2">
+                    <Link to="/app/portal" search={{ project: projectId }}>Open owner portal</Link>
+                  </Button>
+                </>
+              ) : (
+                <p className="text-fg-muted">No client linked.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="payapps" className="space-y-3">
-          {pPayApps.slice().sort((a, b) => b.number - a.number).map((app) => {
-            const totals = payAppTotals(app);
-            return (
-              <div key={app.id} className="border border-border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[13px] font-medium">Pay app #{app.number}</p>
-                    <p className="text-[11px] text-fg-muted">Period {formatDate(app.periodEnd)} · due {formatCurrency(totals.currentPayment)}</p>
+        <TabsContent value="subs">
+          <Card>
+            <CardHeader><CardTitle>Subcontracts</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {pSubs.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No subcontracts.</p>
+              ) : (
+                pSubs.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between border border-border p-3 text-[12px]">
+                    <div>
+                      <p className="font-medium">{s.company} · {s.trade}</p>
+                      <p className="text-fg-subtle">{formatCurrency(s.contractAmount)} · retainage {s.retainagePct}%</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{s.status}</Badge>
+                      {s.status === "bidding" ? (
+                        <Button size="sm" onClick={() => setSubStatus(s.id, "awarded")}>Award</Button>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={app.status === "paid" ? "success" : app.status === "draft" ? "secondary" : "warning"}>{app.status}</Badge>
-                    {app.status === "draft" ? <Button size="sm" onClick={() => submitPayApp(app.id)}>Submit</Button> : null}
-                    {app.status === "submitted" ? <Button size="sm" onClick={() => certifyPayApp(app.id)}>Certify</Button> : null}
-                    {app.status === "certified" ? <Button size="sm" variant="outline" onClick={() => markPayAppPaid(app.id)}>Paid</Button> : null}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {!pPayApps.length ? <p className="text-[13px] text-fg-muted">No pay applications.</p> : null}
+                ))
+              )}
+              <Button variant="outline" size="sm" asChild><Link to="/app/commercial">Open commercial module</Link></Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payapps">
+          <Card>
+            <CardHeader><CardTitle>Pay applications</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {pPayApps.length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No pay apps.</p>
+              ) : (
+                pPayApps.map((a) => {
+                  const totals = payAppTotals(a);
+                  return (
+                    <div key={a.id} className="border border-border p-3 text-[12px]">
+                      <div className="flex justify-between gap-2">
+                        <p className="font-medium">Pay app #{a.number}</p>
+                        <Badge variant="outline">{a.status}</Badge>
+                      </div>
+                      <p className="mt-1 text-fg-muted">Period end {formatDate(a.periodEnd)} · this period {formatCurrency(totals.thisPeriod)}</p>
+                      <div className="mt-2 flex gap-2">
+                        {a.status === "draft" ? <Button size="sm" onClick={() => submitPayApp(a.id)}>Submit</Button> : null}
+                        {a.status === "submitted" ? <Button size="sm" onClick={() => certifyPayApp(a.id)}>Certify</Button> : null}
+                        {a.status === "certified" ? <Button size="sm" onClick={() => markPayAppPaid(a.id)}>Mark paid</Button> : null}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="delivery">
           <Card>
-            <CardHeader><CardTitle>Commercial delivery</CardTitle></CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Delivery", meta?.delivery.replace(/_/g, " ") ?? "—"],
-                ["Bond", meta ? `${meta.bondStatus.replace(/_/g, " ")} · ${formatCurrency(meta.bondAmount)}` : "—"],
-                ["Architect", meta?.architect ?? "—"],
-                ["Owner rep", meta?.ownerRep ?? "—"],
-                ["LD / day", meta ? formatCurrency(meta.liquidatedDamagesPerDay) : "—"],
-                ["OCIP", meta?.ocip ? "Yes" : "No"],
-                ["Prevailing wage", meta?.prevailingWage ? "Yes" : "No"],
-                ["Substantial", meta?.substantialDate ? formatDate(meta.substantialDate) : "—"],
-              ].map(([k, v]) => (
-                <div key={String(k)} className="border border-border p-3">
-                  <p className="label-caps">{k}</p>
-                  <p className="mt-1 text-[13px] font-medium capitalize">{v}</p>
-                </div>
-              ))}
+            <CardHeader><CardTitle>Delivery method</CardTitle></CardHeader>
+            <CardContent className="text-[13px] text-fg-muted">
+              {meta ? (
+                <ul className="space-y-1">
+                  <li>Delivery: {meta.delivery.replace(/_/g, " ")}</li>
+                  <li>Bond: {meta.bondStatus} · {formatCurrency(meta.bondAmount)}</li>
+                  <li>Architect: {meta.architect || "—"}</li>
+                  <li>Owner rep: {meta.ownerRep || "—"}</li>
+                  <li>LDs: {formatCurrency(meta.liquidatedDamagesPerDay)}/day</li>
+                </ul>
+              ) : (
+                <p>No commercial meta on this job.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-
         <TabsContent value="closeout">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Construction closeout</CardTitle>
-              <Button variant="outline" size="sm" asChild><Link to="/app/closing">Full closing module</Link></Button>
+              <CardTitle>Closeout package</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/closing" search={{ project: projectId }}>Full closing module</Link>
+              </Button>
             </CardHeader>
             <CardContent className="space-y-2">
               {!closeout ? (
-                <p className="text-[13px] text-fg-muted">No closeout package staged.</p>
+                <p className="text-[13px] text-fg-muted">No closeout package yet.</p>
               ) : (
                 <>
-                  <p className="text-[12px] text-fg-muted">
-                    Punch {closeout.punchClosed} closed / {closeout.punchOpen} open
-                    {closeout.substantialDate ? ` · substantial recorded` : ""}
-                    {closeout.architectCertifier ? ` · certifier: ${closeout.architectCertifier}` : ""}
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] text-fg-muted">
+                    <span>
+                      Punch open {closeout.punchOpen} · closed {closeout.punchClosed}
+                    </span>
+                    <span className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={closeout.punchOpen <= 0}
+                        onClick={() => adjustPunch(closeout.id, -1)}
+                      >
+                        Close 1 punch
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => adjustPunch(closeout.id, 1)}>
+                        Add punch
+                      </Button>
+                    </span>
+                  </div>
                   {closeout.items.map((it) => (
-                    <div key={it.key} className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
-                      <span className="text-fg-muted">{it.label}</span>
-                      <Badge variant={it.status === "complete" || it.status === "waived" ? "success" : it.status === "in_progress" ? "warning" : "secondary"}>
-                        {it.status.replace(/_/g, " ")}
-                      </Badge>
+                    <div key={it.key} className="flex flex-wrap items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
+                      <span>{it.label}</span>
+                      <span className="flex items-center gap-2">
+                        <Badge variant="outline">{it.status.replace(/_/g, " ")}</Badge>
+                        {it.status === "not_started" || it.status === "in_progress" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setCloseoutItemStatus(
+                                closeout.id,
+                                it.key,
+                                it.status === "not_started" ? "in_progress" : "complete",
+                              )
+                            }
+                          >
+                            {it.status === "not_started" ? "Start" : "Done"}
+                          </Button>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
-                  <p className="text-[11px] text-fg-subtle">G704-style substantial completion is separate from any buyer walkthrough.</p>
                 </>
               )}
             </CardContent>
@@ -460,64 +948,72 @@ function ProjectHub() {
         <TabsContent value="realty">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Realty track</CardTitle>
-              <Button variant="outline" size="sm" asChild><Link to="/app/closing">Full closing module</Link></Button>
+              <CardTitle>Realty / dual capacity</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/app/closing" search={{ project: projectId }}>Full closing module</Link>
+              </Button>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3 text-[13px]">
               {!realty ? (
-                <p className="text-[13px] text-fg-muted">No realty deal.</p>
-              ) : realty.status === "n_a" ? (
-                <p className="text-[13px] text-fg-muted">{realty.notes || "Realty not applicable on this job."}</p>
+                <p className="text-fg-muted">No realty track on this job (construction-only).</p>
               ) : (
                 <>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="outline">{realty.status.replace(/_/g, " ")}</Badge>
-                    <Badge variant="outline">{realty.agencyRole.replace(/_/g, " ")}</Badge>
-                    <Badge variant={realty.dualCapacity === "disclosed" ? "success" : "warning"}>
-                      dual: {realty.dualCapacity.replace(/_/g, " ")}
-                    </Badge>
-                  </div>
-                  <p className="text-[12px] text-fg-muted">{realty.trustAccountNote}</p>
-                  {realty.items.filter((i) => i.status !== "n_a").map((it) => (
-                    <div key={it.key} className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
-                      <span className="text-fg-muted">{it.label}</span>
-                      <Badge variant={it.status === "complete" ? "success" : it.status === "in_progress" ? "warning" : "secondary"}>
-                        {it.status.replace(/_/g, " ")}
-                      </Badge>
+                  <p>
+                    Status: <span className="font-medium">{realty.status.replace(/_/g, " ")}</span>
+                  </p>
+                  <p>
+                    Agency: {realty.agencyRole.replace(/_/g, " ")} · Dual:{" "}
+                    {realty.dualCapacity.replace(/_/g, " ")}
+                  </p>
+                  {realty.dualCapacity === "pending_disclosure" ? (
+                    <Button size="sm" onClick={() => acknowledgeDualCapacity(realty.id, "Client")}>
+                      Record dual-capacity acknowledgment
+                    </Button>
+                  ) : null}
+                  {realty.dualCapacity === "disclosed" && realty.dualCapacityAcknowledgedAt ? (
+                    <p className="text-[12px] text-success">
+                      Disclosed {formatDate(realty.dualCapacityAcknowledgedAt)}
+                      {realty.dualCapacityAcknowledgedBy ? ` · ${realty.dualCapacityAcknowledgedBy}` : ""}
+                    </p>
+                  ) : null}
+                  {realty.items.map((it) => (
+                    <div key={it.key} className="flex flex-wrap items-center justify-between gap-2 border border-border px-3 py-2 text-[12px]">
+                      <span>
+                        {it.label}
+                        <span className="mt-0.5 block text-[10px] text-fg-subtle">{it.systemOfRecord}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Badge variant="outline">{it.status.replace(/_/g, " ")}</Badge>
+                        {it.status === "not_started" || it.status === "in_progress" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setRealtyItemStatus(
+                                realty.id,
+                                it.key,
+                                it.status === "not_started" ? "in_progress" : "complete",
+                              )
+                            }
+                          >
+                            {it.status === "not_started" ? "Start" : "Done"}
+                          </Button>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
+                  {realty.status === "listed" ? (
+                    <Button size="sm" variant="outline" onClick={() => setRealtyDealStatus(realty.id, "under_contract")}>
+                      Mark under contract
+                    </Button>
+                  ) : null}
+                  {realty.status === "under_contract" ? (
+                    <Button size="sm" variant="outline" onClick={() => setRealtyDealStatus(realty.id, "pending_close")}>
+                      Mark pending close
+                    </Button>
+                  ) : null}
                 </>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="client">
-          <Card>
-            <CardHeader><CardTitle>Owner snapshot</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-[13px] text-fg-muted">What the homeowner sees in the portal — progress, pending decisions, and money.</p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="border border-border p-3">
-                  <p className="label-caps">Progress</p>
-                  <p className="mt-1 text-xl font-medium tabular-nums">{project.progress}%</p>
-                </div>
-                <div className="border border-border p-3">
-                  <p className="label-caps">Awaiting you</p>
-                  <p className="mt-1 text-xl font-medium tabular-nums">
-                    {pCOs.filter((c) => c.status === "pending_owner").length + pSel.filter((s) => s.status === "pending_owner").length}
-                  </p>
-                </div>
-                <div className="border border-border p-3">
-                  <p className="label-caps">Next draw</p>
-                  <p className="mt-1 text-[13px] font-medium">
-                    {pDraws.find((d) => d.status === "ready" || d.status === "upcoming")?.name ?? "—"}
-                  </p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/app/portal">Open owner portal</Link>
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>

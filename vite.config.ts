@@ -113,7 +113,8 @@ function securityHeadersPlugin(): Plugin {
   const headers: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=()",
+
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
   };
@@ -134,7 +135,8 @@ function securityHeadersPlugin(): Plugin {
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=()",
+
   "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
   "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
 };

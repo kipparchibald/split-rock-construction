@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   Building2,
   CheckCircle2,
   MapPin,
+  Menu,
   Phone,
   Ruler,
   Home,
   LandPlot,
   Layers,
   Mail,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,14 @@ const CONTACT = {
   location: "Rigby · Jefferson County, Idaho",
   lotsUrl: "https://www.rigbylots.com/",
 };
+
+const NAV_LINKS = [
+  { href: "#lots", label: "Lots" },
+  { href: "#build", label: "Build" },
+  { href: "#coming", label: "Coming soon" },
+  { href: "#why", label: "Why us" },
+  { href: "#contact", label: "Contact" },
+];
 
 const pathways = [
   {
@@ -78,27 +89,19 @@ const whyUs = [
 ];
 
 function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="sticky top-0 z-40 border-b border-border bg-bg-elevated/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border bg-bg-elevated/95 pt-[env(safe-area-inset-top)] backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-6 text-[13px] font-medium text-fg-muted md:flex">
-            <a href="#lots" className="hover:text-fg">
-              Lots
-            </a>
-            <a href="#build" className="hover:text-fg">
-              Build
-            </a>
-            <a href="#coming" className="hover:text-fg">
-              Coming soon
-            </a>
-            <a href="#why" className="hover:text-fg">
-              Why us
-            </a>
-            <a href="#contact" className="hover:text-fg">
-              Contact
-            </a>
+            {NAV_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="hover:text-fg">
+                {l.label}
+              </a>
+            ))}
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
@@ -106,11 +109,68 @@ function LandingPage() {
                 Lot inventory
               </a>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="hidden sm:inline-flex">
               <a href={`tel:${CONTACT.phoneHref}`}>Call {CONTACT.phone}</a>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              data-testid="marketing-menu-btn"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              {menuOpen ? (
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              ) : (
+                <Menu className="h-5 w-5" strokeWidth={1.75} />
+              )}
             </Button>
           </div>
         </div>
+        {menuOpen ? (
+          <div
+            className="border-t border-border bg-bg-elevated px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+            data-testid="marketing-mobile-nav"
+          >
+            <nav className="flex flex-col gap-0.5">
+              {NAV_LINKS.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {l.label}
+                </a>
+              ))}
+              <a
+                href={CONTACT.lotsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                Lot inventory
+              </a>
+              <a
+                href={`tel:${CONTACT.phoneHref}`}
+                className="mt-2 flex min-h-11 items-center justify-center gap-2 border border-border bg-primary px-3 text-[13px] font-medium text-primary-fg"
+              >
+                <Phone className="h-4 w-4" strokeWidth={1.75} />
+                Call {CONTACT.phone}
+              </a>
+              <Link
+                to="/login"
+                className="flex min-h-11 items-center justify-center text-[13px] font-medium text-fg-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                Operator sign in
+              </Link>
+            </nav>
+          </div>
+        ) : null}
       </header>
 
       {/* Hero */}

@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Clock, DollarSign } from "luci
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/layout/stat-card";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
+import { NextActionBanner, type NextAction } from "@/components/layout/next-action-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +59,14 @@ function Dashboard() {
     return d.status === "pending_close" && (punch || liens?.status !== "complete");
   });
 
-  type Attention = { severity: "high" | "med"; title: string; detail: string; to: string };
+  type Attention = {
+    severity: "high" | "med";
+    title: string;
+    detail: string;
+    to: string;
+    params?: Record<string, string>;
+    search?: Record<string, string | undefined>;
+  };
   const attention: Attention[] = [];
   readyDraws.forEach((d) => {
     const p = projects.find((x) => x.id === d.projectId);
@@ -66,7 +74,9 @@ function Dashboard() {
       severity: "high",
       title: `Draw ready · ${formatCurrency(d.amount)}`,
       detail: `${p?.name ?? "Job"} — ${d.name}`,
-      to: "/app/draws",
+      to: "/app/projects/$projectId",
+      params: { projectId: d.projectId },
+      search: { tab: "draws" },
     });
   });
   pendingCOs.forEach((c) => {
@@ -75,7 +85,9 @@ function Dashboard() {
       severity: "high",
       title: `Owner decision · ${c.number}`,
       detail: `${p?.name ?? "Job"} — ${c.title}`,
-      to: `/app/projects/${c.projectId}`,
+      to: "/app/projects/$projectId",
+      params: { projectId: c.projectId },
+      search: { tab: "changes" },
     });
   });
   openSafety.forEach((s) => {
@@ -91,7 +103,13 @@ function Dashboard() {
       severity: "med",
       title: d.title,
       detail: d.type.replace("_", " "),
-      to: "/app/documents",
+      to: d.type === "permit" ? "/app/permits" : d.projectId ? "/app/projects/$projectId" : "/app/documents",
+      params: d.type === "permit" ? undefined : d.projectId ? { projectId: d.projectId } : undefined,
+      search: d.type === "permit" && d.projectId
+        ? { project: d.projectId }
+        : d.projectId
+          ? { tab: "docs" }
+          : undefined,
     });
   });
   pendingSel.forEach((s) => {
@@ -100,7 +118,9 @@ function Dashboard() {
       severity: "med",
       title: `Selection waiting · ${s.category}`,
       detail: `${p?.name ?? "Job"} — ${s.room}`,
-      to: `/app/projects/${s.projectId}`,
+      to: "/app/projects/$projectId",
+      params: { projectId: s.projectId },
+      search: { tab: "selections" },
     });
   });
   openPayApps.forEach((a) => {
@@ -109,7 +129,9 @@ function Dashboard() {
       severity: a.status === "submitted" ? "high" : "med",
       title: `Pay app #${a.number} · ${a.status}`,
       detail: p?.name ?? "Commercial job",
-      to: "/app/commercial",
+      to: "/app/projects/$projectId",
+      params: { projectId: a.projectId },
+      search: { tab: "payapps" },
     });
   });
   biddingSubs.slice(0, 2).forEach((s) => {
@@ -117,7 +139,9 @@ function Dashboard() {
       severity: "med",
       title: `Sub buyout open · ${s.trade}`,
       detail: s.company,
-      to: "/app/commercial",
+      to: "/app/projects/$projectId",
+      params: { projectId: s.projectId },
+      search: { tab: "subs" },
     });
   });
   dualBlocked.forEach((d) => {
@@ -126,7 +150,9 @@ function Dashboard() {
       severity: "high",
       title: d.dualCapacity === "pending_disclosure" ? "Dual-capacity disclosure pending" : "Closing gates blocked",
       detail: p?.name ?? "Deal",
-      to: "/app/closing",
+      to: "/app/projects/$projectId",
+      params: { projectId: d.projectId },
+      search: { tab: d.dualCapacity === "pending_disclosure" ? "realty" : "closeout" },
     });
   });
 
@@ -147,13 +173,38 @@ function Dashboard() {
   // Latest field notes (not a hard-coded seed day — works as the calendar moves)
   const todayLogs = useMemo(() => dailyLogs.slice(0, 4), [dailyLogs]);
 
+  // Elevate the single highest-priority item as the primary next action
+  const primaryAction: NextAction = useMemo(() => {
+    if (attention.length === 0) {
+      return {
+        severity: "clear",
+        title: "Nothing blocking",
+        detail: "Field is clean. Focus on progress or new opportunities.",
+      };
+    }
+    // Prefer high severity first (already roughly ordered in attention)
+    const top = attention[0];
+    return {
+      severity: top.severity,
+      title: top.title,
+      detail: top.detail,
+      to: top.to,
+      params: top.params,
+      search: top.search,
+      cta: top.severity === "high" ? "Handle now" : "Review",
+    };
+  }, [attention]);
+
   return (
     <div>
       <PageHeader
         title="Command center"
-        description="What needs you today — money, decisions, and field risk."
+        description="What needs you today — money, owner decisions, and field risk."
         actions={
           <>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app/field">Field board</Link>
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link to="/app/daily-logs">Post daily log</Link>
             </Button>
@@ -163,6 +214,45 @@ function Dashboard() {
           </>
         }
       />
+
+      <NextActionBanner action={primaryAction} className="mb-4" />
+
+      {/* Operator quick strip */}
+      <div className="mb-5 grid gap-2 sm:grid-cols-3">
+        <OperatorQuick
+          title="Owner decisions"
+          detail={
+            changeOrders.filter((c) => c.status === "pending_owner").length
+              ? `${changeOrders.filter((c) => c.status === "pending_owner").length} change order(s) waiting on clients`
+              : "No COs waiting on owners"
+          }
+          to="/app/portal"
+          cta="Open client portal"
+          hot={changeOrders.some((c) => c.status === "pending_owner")}
+        />
+        <OperatorQuick
+          title="Money in flight"
+          detail={
+            readyDraws.length
+              ? `${readyDraws.length} draw(s) · ${formatCurrency(readyDraws.reduce((s, d) => s + d.amount, 0))}`
+              : "No draws ready to submit"
+          }
+          to="/app/draws"
+          cta="Draw board"
+          hot={readyDraws.length > 0}
+        />
+        <OperatorQuick
+          title="Field coverage"
+          detail={
+            dailyLogs.filter((l) => l.date === new Date().toISOString().slice(0, 10)).length
+              ? `${dailyLogs.filter((l) => l.date === new Date().toISOString().slice(0, 10)).length} log(s) today`
+              : "Post today's logs from field board"
+          }
+          to="/app/field"
+          cta="Field board"
+          hot={false}
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Active jobs" value={String(active.length)} hint={`${commercialCount} commercial`} icon={<BuildingIcon />} />
@@ -189,7 +279,12 @@ function Dashboard() {
               attention.slice(0, 8).map((a, i) => (
                 <Link
                   key={i}
-                  to={a.to}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  to={a.to as any}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  params={a.params as any}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  search={a.search as any}
                   className="flex items-start gap-3 border-t border-border px-4 py-3 transition-colors hover:bg-bg-subtle"
                 >
                   <span
@@ -234,6 +329,45 @@ function Dashboard() {
               <Button variant="outline" size="sm" className="w-full" asChild>
                 <Link to="/app/daily-logs">All daily logs</Link>
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Owner decisions</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/app/portal">Portal</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {changeOrders.filter((c) => c.status === "pending_owner").length === 0 ? (
+                <p className="text-[13px] text-fg-muted">No change orders waiting on owners.</p>
+              ) : (
+                changeOrders
+                  .filter((c) => c.status === "pending_owner")
+                  .slice(0, 4)
+                  .map((c) => {
+                    const p = projects.find((x) => x.id === c.projectId);
+                    return (
+                      <Link
+                        key={c.id}
+                        to="/app/portal"
+                        search={{ project: c.projectId }}
+                        className="flex items-start justify-between gap-2 border border-border p-3 transition-colors hover:bg-bg-subtle"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium">
+                            {c.number} · {c.title}
+                          </p>
+                          <p className="mt-0.5 text-[12px] text-fg-muted">
+                            {p?.name} · {formatCurrency(c.amount)}
+                          </p>
+                        </div>
+                        <Badge variant="warning">Owner</Badge>
+                      </Link>
+                    );
+                  })
+              )}
             </CardContent>
           </Card>
 
@@ -298,5 +432,38 @@ function BuildingIcon() {
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
       <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
     </svg>
+  );
+}
+
+function OperatorQuick({
+  title,
+  detail,
+  to,
+  cta,
+  hot,
+}: {
+  title: string;
+  detail: string;
+  to: string;
+  cta: string;
+  hot: boolean;
+}) {
+  return (
+    <Link
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      to={to as any}
+      className={`flex flex-col justify-between border p-3 transition-colors hover:bg-bg-subtle ${
+        hot ? "border-warning/40 bg-warning/5" : "border-border bg-bg-elevated"
+      }`}
+    >
+      <div>
+        <p className="text-[13px] font-medium text-fg">{title}</p>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">{detail}</p>
+      </div>
+      <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-fg">
+        {cta}
+        <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+      </span>
+    </Link>
   );
 }

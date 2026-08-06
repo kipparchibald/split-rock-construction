@@ -6,7 +6,7 @@ export const COMPANY = {
   name: "Split Rock Construction",
   legalName: "Split Rock Construction LLC",
   shortName: "Split Rock",
-  tagline: "Lots, build-to-suit, and land-home packages — Rigby & Jefferson County",
+  tagline: "Quality builds · transparent process · clear communication — Rigby & Jefferson County",
   location: "Rigby, ID",
   region: "Jefferson County & Eastern Idaho",
   phone: "(208) 200-0605",

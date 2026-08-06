@@ -5,7 +5,7 @@ import type {
 export const COMPANY = {
   name: "Split Rock Construction",
   shortName: "Split Rock",
-  tagline: "Homes and commercial built on solid ground",
+  tagline: "Quality builds · transparent process · clear communication",
   location: "Rigby, ID",
   phone: "(208) 555-0142",
   email: "hello@splitrock.build",

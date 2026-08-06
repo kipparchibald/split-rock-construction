@@ -11,6 +11,11 @@ import { isDemoDataEnabled } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
+const DEMO_PASSWORDS = {
+  kipp: "SplitRock-Kipp-2026!",
+  kyle: "SplitRock-Kyle-2026!",
+} as const;
+
 function LoginPage() {
   const navigate = useNavigate();
   const { user, isPending } = useCurrentUserState();
@@ -26,14 +31,13 @@ function LoginPage() {
     return <Navigate to="/app" />;
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function signInWith(emailValue: string, passwordValue: string) {
     setError(null);
     setBusy(true);
     try {
       const { error: signErr } = await authClient.signIn.email({
-        email: email.trim().toLowerCase(),
-        password,
+        email: emailValue.trim().toLowerCase(),
+        password: passwordValue,
       });
       if (signErr) {
         setError(signErr.message ?? "Sign-in failed");
@@ -42,22 +46,31 @@ function LoginPage() {
       await authClient.getSession();
       void navigate({ to: "/app" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      const msg = err instanceof Error ? err.message : "Sign-in failed";
+      // Surface missing API route / network failures clearly
+      if (/fetch|network|failed to fetch|404|not found/i.test(msg)) {
+        setError("Auth service unavailable. Try again in a moment.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
   }
 
-  function fill(operator: "kipp" | "kyle") {
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await signInWith(email, password);
+  }
+
+  async function fillAndSignIn(operator: "kipp" | "kyle") {
     if (!isDemoDataEnabled) return;
-    if (operator === "kipp") {
-      setEmail(OPERATOR_AUTH.kipp.email);
-      setPassword("SplitRock-Kipp-2026!");
-    } else {
-      setEmail(OPERATOR_AUTH.kyle.email);
-      setPassword("SplitRock-Kyle-2026!");
-    }
+    const nextEmail = operator === "kipp" ? OPERATOR_AUTH.kipp.email : OPERATOR_AUTH.kyle.email;
+    const nextPassword = DEMO_PASSWORDS[operator];
+    setEmail(nextEmail);
+    setPassword(nextPassword);
     setError(null);
+    await signInWith(nextEmail, nextPassword);
   }
 
   return (
@@ -77,8 +90,8 @@ function LoginPage() {
         <p className="label-caps mb-2">Split Rock OS</p>
         <h1 className="text-xl font-medium tracking-[-0.02em] text-fg">Operator sign-in</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">
-          Field suite for {COMPANY.legalName}. Use your operator email
-          ({OPERATOR_AUTH.kipp.email} / {OPERATOR_AUTH.kyle.email}).
+          Field suite for {COMPANY.legalName}. Use your operator email (
+          {OPERATOR_AUTH.kipp.email} / {OPERATOR_AUTH.kyle.email}).
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4 border border-border bg-bg-elevated p-5">
@@ -116,20 +129,37 @@ function LoginPage() {
           </Button>
 
           {isDemoDataEnabled ? (
-            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-              <Button type="button" size="sm" variant="outline" onClick={() => fill("kipp")}>
-                Fill Kipp (demo)
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => fill("kyle")}>
-                Fill Kyle (demo)
-              </Button>
+            <div className="space-y-2 border-t border-border pt-4">
+              <p className="text-[11px] text-fg-subtle">
+                Demo: one click fills credentials and signs you in.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void fillAndSignIn("kipp")}
+                >
+                  Sign in as Kipp (demo)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void fillAndSignIn("kyle")}
+                >
+                  Sign in as Kyle (demo)
+                </Button>
+              </div>
             </div>
           ) : null}
         </form>
 
         <p className="mt-6 text-[11px] leading-relaxed text-fg-subtle">
           {isDemoDataEnabled
-            ? "Demo fill helpers are on. Rotate passwords and set VITE_SPLIT_ROCK_DEMO=false before public production."
+            ? "Demo operators are seeded automatically. Rotate passwords and set VITE_SPLIT_ROCK_DEMO=false before public production."
             : "Live mode: password fill helpers are disabled. Use rotated credentials only."}
         </p>
       </main>

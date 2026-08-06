@@ -13,11 +13,11 @@ export function JobContextBar({
   contractTotal: number;
 }) {
   return (
-    <div className="sticky top-12 z-10 -mx-4 mb-5 border-b border-border bg-bg-elevated/95 px-4 py-2.5 backdrop-blur-sm sm:-mx-6 sm:px-6">
+    <div className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-10 -mx-4 mb-5 border-b border-border bg-bg-elevated/95 px-4 py-2.5 backdrop-blur-sm sm:-mx-6 sm:px-6">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link
           to="/app/projects"
-          className="inline-flex items-center gap-1 text-[11px] text-fg-muted hover:text-fg"
+          className="inline-flex min-h-10 items-center gap-1 text-[12px] text-fg-muted hover:text-fg"
         >
           <ArrowLeft className="h-3 w-3" strokeWidth={1.75} />
           Jobs

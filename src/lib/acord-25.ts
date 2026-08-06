@@ -329,8 +329,7 @@ export function parseAcord25Text(raw: string): Acord25ParseResult {
   if (/certificate\s+holder/i.test(text)) confidence += 10;
   if (/description\s+of\s+operations/i.test(text)) confidence += 5;
 
-  const formEdition = text.match(/ACORD\s*25
-?\s*(\d{4}\s*\/\s*\d{2}|\d{2}\s*\/\s*\d{4})/i)?.[1]?.replace(/\s/g, "");
+  const formEdition = text.match(/ACORD\s*25\s*(\d{4}\s*\/\s*\d{2}|\d{2}\s*\/\s*\d{4})/i)?.[1]?.replace(/\s/g, "");
 
   const insurers = extractInsurers(text);
   const producer = findProducer(text);

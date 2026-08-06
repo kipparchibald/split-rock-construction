@@ -8,6 +8,8 @@
 .output
 .tanstack
 .vercel
+!.vercel/
+!.vercel/README.md
 .vinxi
 /tmp
 artifacts

@@ -123,9 +123,12 @@ function FieldBoardPage() {
     <div>
       <PageHeader
         title="Field board"
-        description="GC & foreman — weather, photos, and today's update on one screen. Keep every job moving."
+        description="GC & foreman — log today, clear blockers, and chase owner decisions without hunting menus."
         actions={
           <>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app/portal">Client portal</Link>
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link to="/app/daily-logs">All logs</Link>
             </Button>
@@ -135,6 +138,25 @@ function FieldBoardPage() {
           </>
         }
       />
+
+      {pendingCO.length > 0 ? (
+        <div className="mb-4 flex flex-col gap-2 border border-warning/35 bg-warning/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[13px] font-medium text-fg">
+              {pendingCO.length} owner decision{pendingCO.length > 1 ? "s" : ""} open
+            </p>
+            <p className="mt-0.5 text-[12px] text-fg-muted">
+              Change orders waiting in the client portal — confirm owners see them.
+            </p>
+          </div>
+          <Button size="sm" asChild>
+            <Link to="/app/portal" search={{ project: pendingCO[0]!.projectId }}>
+              Open portal
+              <ArrowRight className="ml-1 h-3.5 w-3.5" strokeWidth={1.75} />
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Pulse label="Active jobs" value={String(active.length)} tone="default" />

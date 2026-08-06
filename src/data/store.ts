@@ -13,7 +13,7 @@ import { isDemoDataEnabled } from "@/lib/runtime-config";
 import type {
   ActivityItem, Bid, BidStatus, BudgetLine, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
   CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
-  PayApplication, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
+  PayApplication, PermitPackage, PermitStatus, ProgressDraw, Project, ProjectStatus, RealtyDeal, RealtyDealStatus,
   RealtyItemStatus, SafetyIncident, SelectionItem, SubStatus, Subcontract,
 } from "./types";
 import { LIMITS, clampText } from "@/lib/security";
@@ -21,6 +21,16 @@ import { estimateBucketsToBudget } from "@/lib/cost-codes";
 import type { CostInputs } from "@/lib/pricing";
 import { calcPrice } from "@/lib/pricing";
 import type { PricingAssumptions } from "@/lib/pricing";
+import { plans } from "./plans";
+import { buildJobFromPlan } from "@/lib/start-from-plan";
+import {
+  advancePermitStatus,
+  buildDraftForKey,
+  CORE_PERMIT_KEYS,
+  createPermitPackage,
+  mockAgencyReference,
+  packageStatus as computePermitPackageStatus,
+} from "@/lib/permits-idaho";
 
 function uid(prefix: string) {
   try {
@@ -35,6 +45,12 @@ function uid(prefix: string) {
 
 function pushActivity(list: ActivityItem[], item: ActivityItem): ActivityItem[] {
   return [item, ...list].slice(0, LIMITS.activityFeed);
+}
+
+function seedPermitPackages(projects: Project[]): PermitPackage[] {
+  return projects
+    .filter((p) => p.type === "residential")
+    .map((p) => createPermitPackage(p.id, p.name));
 }
 
 const initial = isDemoDataEnabled
@@ -59,6 +75,7 @@ const initial = isDemoDataEnabled
       closeoutPackages: seedCloseout,
       realtyDeals: seedRealty,
       dualRolePolicy: seedDualPolicy,
+      permitPackages: seedPermitPackages(seedProjects),
     }
   : {
       projects: liveEmpty.projects,
@@ -81,6 +98,7 @@ const initial = isDemoDataEnabled
       closeoutPackages: liveEmpty.closeoutPackages,
       realtyDeals: liveEmpty.realtyDeals,
       dualRolePolicy: liveEmpty.dualRolePolicy,
+      permitPackages: [] as PermitPackage[],
     };
 
 interface AppState {
@@ -91,12 +109,28 @@ interface AppState {
   dailyLogs: DailyLog[];
   subcontracts: Subcontract[]; payApplications: PayApplication[]; commercialMeta: CommercialMeta[];
   closeoutPackages: CloseoutPackage[]; realtyDeals: RealtyDeal[]; dualRolePolicy: DualRolePolicy;
+  permitPackages: PermitPackage[];
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
   addDailyLog: (log: Omit<DailyLog, "id">) => void;
   submitDraw: (id: string) => void;
   markDrawPaid: (id: string) => void;
+  markDrawReady: (id: string) => void;
+  holdDraw: (id: string, reason?: string) => void;
+  releaseDraw: (id: string) => void;
   setChangeOrderStatus: (id: string, status: ChangeOrder["status"]) => void;
-  setSelectionStatus: (id: string, status: SelectionItem["status"], choice?: string) => void;
+  addChangeOrder: (
+    input: {
+      projectId: string;
+      title: string;
+      amount: number;
+      daysImpact?: number;
+      description?: string;
+      requestedBy?: string;
+      /** default draft — use pending_owner to send to owner portal */
+      status?: ChangeOrder["status"];
+    },
+  ) => void;
+  setSelectionStatus: (id: string, status: SelectionItem["status"], choice?: string, actual?: number) => void;
   closeSafety: (id: string) => void;
   updateDocStatus: (id: string, status: DocumentItem["status"]) => void;
   assignEquipment: (id: string, projectId: string | undefined) => void;
@@ -114,6 +148,13 @@ interface AppState {
   setRealtyItemStatus: (dealId: string, key: string, status: RealtyItemStatus) => void;
   setRealtyDealStatus: (dealId: string, status: RealtyDealStatus) => void;
   acknowledgeDualCapacity: (dealId: string, by: string) => void;
+  adjustPunch: (packageId: string, delta: -1 | 1) => void;
+  ensurePermitPackage: (projectId: string) => void;
+  setPermitItemStatus: (packageId: string, key: string, status: PermitStatus) => void;
+  advancePermitItem: (packageId: string, key: string) => void;
+  generatePermitDraft: (packageId: string, key: string) => void;
+  /** Fill mock drafts + advance building permit, site plan, septic to approved; sync docs */
+  mockFileCorePermits: (packageId: string) => void;
   updateBudgetLine: (
     id: string,
     patch: Partial<Pick<BudgetLine, "budgeted" | "committed" | "actual" | "costCodeId" | "category">>,
@@ -123,10 +164,19 @@ interface AppState {
     costs: CostInputs,
     assumptions: PricingAssumptions,
   ) => void;
+  /** One-click seed from Book of Plans — returns new project id */
+  startJobFromPlan: (opts: {
+    planId: string;
+    clientId?: string;
+    clientName?: string;
+    lotAddress?: string;
+    elevation?: string;
+    superintendent?: string;
+  }) => string | null;
 }
 
 function createAppStore() {
-  return create<AppState>((set) => ({
+  return create<AppState>((set, get) => ({
     ...initial,
 
     updateProjectStatus: (id, status) =>
@@ -166,34 +216,205 @@ function createAppStore() {
       }),
 
     submitDraw: (id) =>
-      set((s) => ({
-        draws: s.draws.map((d) => (d.id === id ? { ...d, status: "submitted" as const } : d)),
-        activity: pushActivity(s.activity, {
-          id: uid("a"),
-          at: new Date().toISOString(),
-          text: "Draw submitted for payment",
-          kind: "project",
-        }),
-      })),
+      set((s) => {
+        const draw = s.draws.find((d) => d.id === id);
+        return {
+          draws: s.draws.map((d) => (d.id === id ? { ...d, status: "submitted" as const } : d)),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: draw ? `Draw submitted · ${draw.name}` : "Draw submitted for payment",
+            kind: "project",
+          }),
+        };
+      }),
 
     markDrawPaid: (id) =>
-      set((s) => ({
-        draws: s.draws.map((d) =>
-          d.id === id ? { ...d, status: "paid" as const, paidDate: new Date().toISOString().slice(0, 10) } : d,
-        ),
-      })),
+      set((s) => {
+        const draw = s.draws.find((d) => d.id === id);
+        return {
+          draws: s.draws.map((d) =>
+            d.id === id ? { ...d, status: "paid" as const, paidDate: new Date().toISOString().slice(0, 10) } : d,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: draw ? `Draw paid · ${draw.name}` : "Draw marked paid",
+            kind: "project",
+          }),
+        };
+      }),
+
+    markDrawReady: (id) =>
+      set((s) => {
+        const draw = s.draws.find((d) => d.id === id);
+        return {
+          draws: s.draws.map((d) => (d.id === id ? { ...d, status: "ready" as const } : d)),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: draw ? `Draw ready · ${draw.name} — trigger met` : "Draw marked ready",
+            kind: "project",
+          }),
+        };
+      }),
+
+    holdDraw: (id) =>
+      set((s) => {
+        const draw = s.draws.find((d) => d.id === id);
+        return {
+          draws: s.draws.map((d) => (d.id === id ? { ...d, status: "held" as const } : d)),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: draw ? `Draw held · ${draw.name}` : "Draw held",
+            kind: "project",
+          }),
+        };
+      }),
+
+    releaseDraw: (id) =>
+      set((s) => {
+        const draw = s.draws.find((d) => d.id === id);
+        return {
+          draws: s.draws.map((d) => (d.id === id ? { ...d, status: "ready" as const } : d)),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: draw ? `Draw released · ${draw.name}` : "Draw released to ready",
+            kind: "project",
+          }),
+        };
+      }),
 
     setChangeOrderStatus: (id, status) =>
-      set((s) => ({
-        changeOrders: s.changeOrders.map((c) => (c.id === id ? { ...c, status } : c)),
-      })),
+      set((s) => {
+        const co = s.changeOrders.find((c) => c.id === id);
+        if (!co) return s;
+        const today = new Date().toISOString().slice(0, 10);
+        const docStatus =
+          status === "approved"
+            ? ("approved" as const)
+            : status === "rejected"
+              ? ("rejected" as const)
+              : ("pending" as const);
+        // Match CO docs by number prefix in title (e.g. "CO-003 …")
+        const documents = s.documents.map((d) =>
+          d.projectId === co.projectId &&
+          d.type === "change_order" &&
+          (d.title.startsWith(co.number) || d.title.includes(co.number))
+            ? { ...d, status: docStatus, updatedAt: today }
+            : d,
+        );
+        // Approved COs bump contract budget so portal money reflects the change
+        const projects =
+          status === "approved" && co.status !== "approved"
+            ? s.projects.map((p) =>
+                p.id === co.projectId ? { ...p, budget: p.budget + Math.max(0, co.amount) } : p,
+              )
+            : status === "rejected" && co.status === "approved"
+              ? s.projects.map((p) =>
+                  p.id === co.projectId
+                    ? { ...p, budget: Math.max(0, p.budget - Math.max(0, co.amount)) }
+                    : p,
+                )
+              : s.projects;
+        const who =
+          status === "approved"
+            ? "owner approved"
+            : status === "rejected"
+              ? "owner declined"
+              : status.replace(/_/g, " ");
+        return {
+          changeOrders: s.changeOrders.map((c) => (c.id === id ? { ...c, status } : c)),
+          documents,
+          projects,
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Change order ${co.number} ${who} · ${co.title}`,
+            kind: "project",
+          }),
+        };
+      }),
 
-    setSelectionStatus: (id, status, choice) =>
-      set((s) => ({
-        selections: s.selections.map((sel) =>
-          sel.id === id ? { ...sel, status, ...(choice !== undefined ? { choice: clampText(choice, 200) } : {}) } : sel,
-        ),
-      })),
+    addChangeOrder: (input) =>
+      set((s) => {
+        const title = clampText(input.title, 160);
+        if (!title) return s;
+        const project = s.projects.find((p) => p.id === input.projectId);
+        if (!project) return s;
+        const existing = s.changeOrders.filter((c) => c.projectId === input.projectId);
+        const maxN = existing.reduce((m, c) => {
+          const n = Number(String(c.number).replace(/\D/g, "")) || 0;
+          return Math.max(m, n);
+        }, 0);
+        const number = `CO-${String(maxN + 1).padStart(3, "0")}`;
+        const amount = Math.max(0, Math.min(5_000_000, Math.round(Number(input.amount) || 0)));
+        const daysImpact = Math.max(0, Math.min(365, Math.round(Number(input.daysImpact) || 0)));
+        const status = input.status ?? "draft";
+        const today = new Date().toISOString().slice(0, 10);
+        const co: ChangeOrder = {
+          id: uid("co"),
+          projectId: input.projectId,
+          number,
+          title,
+          amount,
+          daysImpact,
+          status,
+          requestedBy: clampText(input.requestedBy || project.superintendent || "Superintendent", 80),
+          date: today,
+          description: clampText(input.description || title, 500),
+        };
+        const doc: DocumentItem = {
+          id: uid("doc"),
+          title: `${number} ${title}`,
+          type: "change_order",
+          projectId: input.projectId,
+          status: status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending",
+          updatedAt: today,
+          author: co.requestedBy,
+          reference: number,
+        };
+        return {
+          changeOrders: [co, ...s.changeOrders],
+          documents: [doc, ...s.documents],
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text:
+              status === "pending_owner"
+                ? `Change order ${number} sent to owner portal · ${title}`
+                : `Change order ${number} drafted · ${title}`,
+            kind: "project",
+          }),
+        };
+      }),
+
+    setSelectionStatus: (id, status, choice, actual) =>
+      set((s) => {
+        const sel = s.selections.find((x) => x.id === id);
+        return {
+          selections: s.selections.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  status,
+                  ...(choice !== undefined ? { choice: clampText(choice, 200) } : {}),
+                  ...(actual !== undefined ? { actual } : {}),
+                }
+              : item,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: sel
+              ? `Selection ${status.replace(/_/g, " ")} · ${sel.category} (${sel.room})`
+              : `Selection ${status.replace(/_/g, " ")}`,
+            kind: "project",
+          }),
+        };
+      }),
 
     closeSafety: (id) => set((s) => ({ safety: s.safety.map((i) => (i.id === id ? { ...i, status: "closed" as const } : i)) })),
 
@@ -378,6 +599,44 @@ function createAppStore() {
                 ),
               },
         ),
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Closeout item ${status.replace(/_/g, " ")} · ${key.replace(/_/g, " ")}`,
+          kind: "doc",
+        }),
+      })),
+
+    adjustPunch: (packageId, delta) =>
+      set((s) => ({
+        closeoutPackages: s.closeoutPackages.map((pkg) => {
+          if (pkg.id !== packageId) return pkg;
+          const open = Math.max(0, pkg.punchOpen + delta);
+          const closed =
+            delta < 0
+              ? pkg.punchClosed + Math.min(pkg.punchOpen, -delta)
+              : Math.max(0, pkg.punchClosed - delta);
+          return {
+            ...pkg,
+            punchOpen: open,
+            punchClosed: closed,
+            items: pkg.items.map((it) =>
+              it.key === "punch_list"
+                ? {
+                    ...it,
+                    status: open === 0 ? ("complete" as const) : ("in_progress" as const),
+                    completedAt: open === 0 ? new Date().toISOString().slice(0, 10) : undefined,
+                  }
+                : it,
+            ),
+          };
+        }),
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: delta < 0 ? "Punch item closed" : "Punch item opened",
+          kind: "project",
+        }),
       })),
 
     setRealtyItemStatus: (dealId, key, status) =>
@@ -429,6 +688,199 @@ function createAppStore() {
           kind: "doc",
         }),
       })),
+
+    ensurePermitPackage: (projectId) =>
+      set((s) => {
+        if (s.permitPackages.some((p) => p.projectId === projectId)) return s;
+        const project = s.projects.find((p) => p.id === projectId);
+        if (!project || project.type !== "residential") return s;
+        return {
+          permitPackages: [createPermitPackage(projectId, project.name), ...s.permitPackages],
+        };
+      }),
+
+    setPermitItemStatus: (packageId, key, status) =>
+      set((s) => ({
+        permitPackages: s.permitPackages.map((pkg) => {
+          if (pkg.id !== packageId) return pkg;
+          const items = pkg.items.map((i) => (i.key === key ? { ...i, status } : i));
+          return {
+            ...pkg,
+            items,
+            status: computePermitPackageStatus(items),
+            updatedAt: new Date().toISOString().slice(0, 10),
+          };
+        }),
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Permit ${status.replace(/_/g, " ")} · ${key.replace(/_/g, " ")}`,
+          kind: "doc",
+        }),
+      })),
+
+    advancePermitItem: (packageId, key) =>
+      set((s) => {
+        const pkg = s.permitPackages.find((p) => p.id === packageId);
+        const item = pkg?.items.find((i) => i.key === key);
+        if (!item) return s;
+        const next = advancePermitStatus(item.status);
+        const items = pkg!.items.map((i) => (i.key === key ? { ...i, status: next } : i));
+        const allApproved = items.every((i) => i.status === "approved");
+        return {
+          permitPackages: s.permitPackages.map((p) =>
+            p.id !== packageId
+              ? p
+              : {
+                  ...p,
+                  items,
+                  status: computePermitPackageStatus(items),
+                  updatedAt: new Date().toISOString().slice(0, 10),
+                },
+          ),
+          // When full package approved and job still permitting → move to in_progress
+          projects:
+            allApproved && pkg
+              ? s.projects.map((pr) =>
+                  pr.id === pkg.projectId && pr.status === "permitting"
+                    ? { ...pr, status: "in_progress" as const }
+                    : pr,
+                )
+              : s.projects,
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Permit advanced · ${item.label} → ${next.replace(/_/g, " ")}`,
+            kind: "doc",
+          }),
+        };
+      }),
+
+    generatePermitDraft: (packageId, key) =>
+      set((s) => ({
+        permitPackages: s.permitPackages.map((pkg) => {
+          if (pkg.id !== packageId) return pkg;
+          const project = s.projects.find((p) => p.id === pkg.projectId);
+          const client = s.clients.find((c) => c.id === project?.clientId);
+          const ctx = project
+            ? {
+                project,
+                client,
+                parcelNote: project.address.includes("Teton")
+                  ? "Teton Heights Division #6 — confirm lot on plat"
+                  : undefined,
+              }
+            : undefined;
+          const items = pkg.items.map((i) => {
+            if (i.key !== key) return i;
+            return {
+              ...i,
+              status: i.status === "not_started" || i.status === "denied" ? ("drafting" as const) : i.status,
+              draftText: buildDraftForKey(i.key, project?.name ?? pkg.title, ctx),
+            };
+          });
+          return {
+            ...pkg,
+            items,
+            status: computePermitPackageStatus(items),
+            updatedAt: new Date().toISOString().slice(0, 10),
+          };
+        }),
+      })),
+
+    mockFileCorePermits: (packageId) =>
+      set((s) => {
+        const pkg = s.permitPackages.find((p) => p.id === packageId);
+        if (!pkg) return s;
+        const project = s.projects.find((p) => p.id === pkg.projectId);
+        if (!project) return s;
+        const client = s.clients.find((c) => c.id === project.clientId);
+        const ctx = {
+          project,
+          client,
+          parcelNote: project.address.includes("Teton")
+            ? "Teton Heights Division #6 — confirm lot on plat"
+            : `${project.address} — Jefferson County`,
+          today: new Date().toISOString().slice(0, 10),
+        };
+        const coreSet = new Set<string>(CORE_PERMIT_KEYS);
+        const items = pkg.items.map((i) => {
+          if (!coreSet.has(i.key)) return i;
+          return {
+            ...i,
+            status: "approved" as const,
+            draftText: buildDraftForKey(i.key, project.name, ctx),
+            notes: `Mock filed ${ctx.today} · ref ${mockAgencyReference(i.key, project.id)}`,
+          };
+        });
+        const today = ctx.today;
+        // Upsert document rows for the three core permits
+        let documents = [...s.documents];
+        for (const key of CORE_PERMIT_KEYS) {
+          const item = items.find((i) => i.key === key);
+          if (!item) continue;
+          const ref = mockAgencyReference(key, project.id);
+          const existing = documents.find(
+            (d) => d.projectId === project.id && d.type === "permit" && d.reference?.startsWith(ref.slice(0, 6)),
+          );
+          const title =
+            key === "jc_building_permit"
+              ? "Building permit — Jefferson County (mock filed)"
+              : key === "jc_site_plan"
+                ? "Site plan — Jefferson County (mock filed)"
+                : "EIPH septic / wastewater (mock filed)";
+          if (existing) {
+            documents = documents.map((d) =>
+              d.id === existing.id
+                ? { ...d, status: "approved" as const, updatedAt: today, reference: ref, title }
+                : d,
+            );
+          } else {
+            documents = [
+              {
+                id: uid("doc"),
+                title,
+                type: "permit" as const,
+                projectId: project.id,
+                status: "approved" as const,
+                updatedAt: today,
+                author: project.superintendent,
+                reference: ref,
+              },
+              ...documents,
+            ];
+          }
+        }
+        const allApproved = items.every((i) => i.status === "approved");
+        return {
+          permitPackages: s.permitPackages.map((p) =>
+            p.id !== packageId
+              ? p
+              : {
+                  ...p,
+                  items,
+                  status: computePermitPackageStatus(items),
+                  updatedAt: today,
+                },
+          ),
+          documents,
+          projects:
+            allApproved || project.status === "permitting" || project.status === "planning"
+              ? s.projects.map((pr) =>
+                  pr.id === project.id && (pr.status === "permitting" || pr.status === "planning")
+                    ? { ...pr, status: "in_progress" as const, phase: pr.phase === "Site Work" ? pr.phase : pr.phase }
+                    : pr,
+                )
+              : s.projects,
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Mock filed core permits · BP + site plan + EIPH septic · ${project.name}`,
+            kind: "doc",
+          }),
+        };
+      }),
+
     updateBudgetLine: (id, patch) =>
       set((s) => ({
         budgetLines: s.budgetLines.map((l) => {
@@ -473,6 +925,33 @@ function createAppStore() {
           }),
         };
       }),
+
+    startJobFromPlan: (opts) => {
+      const plan = plans.find((p) => p.id === opts.planId && p.active);
+      if (!plan) return null;
+      const built = buildJobFromPlan({
+        plan,
+        clientId: opts.clientId,
+        clientName: opts.clientName,
+        lotAddress: opts.lotAddress,
+        elevation: opts.elevation,
+        superintendent: opts.superintendent,
+      });
+      set((s) => ({
+        projects: [built.project, ...s.projects],
+        clients: built.client ? [built.client, ...s.clients] : s.clients,
+        draws: [...built.draws, ...s.draws],
+        selections: [...built.selections, ...s.selections],
+        budgetLines: [...built.budgetLines, ...s.budgetLines],
+        documents: [...built.documents, ...s.documents],
+        closeoutPackages: [built.closeout, ...s.closeoutPackages],
+        permitPackages: [createPermitPackage(built.project.id, built.project.name), ...s.permitPackages],
+        activity: pushActivity(s.activity, built.activity),
+      }));
+      // silence unused get warning while keeping API stable
+      void get;
+      return built.project.id;
+    },
   }));
 }
 

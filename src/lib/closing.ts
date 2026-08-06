@@ -35,7 +35,10 @@ export function realtyReady(deal: RealtyDeal) {
     deal.dualCapacity === "not_applicable" ||
     deal.dualCapacity === "disclosed" ||
     deal.dualCapacity === "declined_realty";
-  const trustOk = !deal.earnestAmount || deal.earnestHeldBy.toLowerCase().includes("trust") || deal.earnestHeldBy.includes("Outside");
+  const trustOk =
+    !deal.earnestAmount ||
+    deal.earnestHeldBy.toLowerCase().includes("trust") ||
+    deal.earnestHeldBy.includes("Outside");
   const pAndS = deal.items.find((i) => i.key === "purchase_sale_agreement");
   return {
     pct,
@@ -75,13 +78,73 @@ export function dualCloseReady(pkg: CloseoutPackage | undefined, deal: RealtyDea
 }
 
 export function nextCloseoutAction(items: CloseoutItem[]) {
-  return items.find((i) => i.status === "blocked")
-    ?? items.find((i) => i.status === "in_progress")
-    ?? items.find((i) => i.status === "not_started");
+  return (
+    items.find((i) => i.status === "blocked") ??
+    items.find((i) => i.status === "in_progress") ??
+    items.find((i) => i.status === "not_started")
+  );
 }
 
 export function nextRealtyAction(items: RealtyChecklistItem[]) {
-  return items.find((i) => i.status === "blocked")
-    ?? items.find((i) => i.status === "in_progress")
-    ?? items.find((i) => i.status === "not_started");
+  return (
+    items.find((i) => i.status === "blocked") ??
+    items.find((i) => i.status === "in_progress") ??
+    items.find((i) => i.status === "not_started")
+  );
+}
+
+/** Portfolio-level next action for Closing command banner */
+export function nextDualRoleAction(input: {
+  packages: CloseoutPackage[];
+  deals: RealtyDeal[];
+}): { severity: "high" | "med" | "low" | "clear"; title: string; detail: string; projectId?: string; lane?: "closeout" | "realty" } {
+  const pendingDual = input.deals.find((d) => d.dualCapacity === "pending_disclosure");
+  if (pendingDual) {
+    return {
+      severity: "high",
+      title: "Dual-capacity disclosure required",
+      detail: "Record owner acknowledgment before advancing the realty lane.",
+      projectId: pendingDual.projectId,
+      lane: "realty",
+    };
+  }
+  for (const pkg of input.packages) {
+    if (pkg.punchOpen > 0) {
+      return {
+        severity: "high",
+        title: `${pkg.punchOpen} punch item${pkg.punchOpen === 1 ? "" : "s"} open`,
+        detail: "Clear punch before final pay and CO path.",
+        projectId: pkg.projectId,
+        lane: "closeout",
+      };
+    }
+    const next = nextCloseoutAction(pkg.items);
+    if (next) {
+      return {
+        severity: next.status === "blocked" ? "high" : "med",
+        title: `Closeout · ${next.label}`,
+        detail: next.status === "blocked" ? "Blocked item needs resolution" : "Advance the construction gate",
+        projectId: pkg.projectId,
+        lane: "closeout",
+      };
+    }
+  }
+  for (const deal of input.deals) {
+    if (deal.status === "n_a" || deal.status === "closed" || deal.status === "withdrawn") continue;
+    const next = nextRealtyAction(deal.items);
+    if (next) {
+      return {
+        severity: "med",
+        title: `Realty · ${next.label}`,
+        detail: `${deal.status.replace(/_/g, " ")} — complete in licensed system, mark here`,
+        projectId: deal.projectId,
+        lane: "realty",
+      };
+    }
+  }
+  return {
+    severity: "clear",
+    title: "Closing lanes are clear",
+    detail: "No open dual-capacity, punch, or checklist blockers in the portfolio.",
+  };
 }

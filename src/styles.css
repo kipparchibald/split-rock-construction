@@ -45,6 +45,8 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Avoid horizontal rubber-band overflow on iOS */
+    overflow-x: clip;
   }
   body {
     background-color: var(--color-bg);
@@ -52,6 +54,9 @@
     font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.45;
+    /* Safe areas for notched devices when viewport-fit=cover */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   h1, h2, h3 {
     text-wrap: balance;
@@ -71,6 +76,14 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-fg-subtle);
+  }
+}
+
+/* Coarse pointers (phones/tablets): bump interactive controls toward ~44px */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
   }
 }
 

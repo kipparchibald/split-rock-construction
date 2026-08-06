@@ -1,0 +1,53 @@
+{
+  "name": "Split Rock Construction",
+  "short_name": "Split Rock",
+  "description": "Field OS for Split Rock Construction — jobs, draws, permits, owner portal.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f0f0f0",
+  "theme_color": "#1a1a18",
+  "lang": "en-US",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/logo-app-mark.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-app-mark.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Field board",
+      "short_name": "Field",
+      "url": "/app/field",
+      "description": "Log today and clear blockers"
+    },
+    {
+      "name": "Owner portal",
+      "short_name": "Portal",
+      "url": "/app/portal",
+      "description": "Client decisions and money"
+    },
+    {
+      "name": "Draws",
+      "short_name": "Draws",
+      "url": "/app/draws",
+      "description": "Cash-in queue"
+    }
+  ]
+}
