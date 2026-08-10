@@ -1,0 +1,70 @@
+# Polls Vercel for the latest production deployment and smoke-tests the live URL.
+# Does NOT deploy — use deploy-vercel.yml (or Git integration) to ship.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN       — https://vercel.com/account/tokens
+#   VERCEL_ORG_ID      — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
+#   VERCEL_PROJECT_ID  — prj_… from Vercel → Project → Settings → General
+#
+# Optional repo variables:
+#   PRODUCTION_URL     — e.g. https://splitrockconst.com (preferred smoke target)
+
+name: Vercel production check
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: "15 */6 * * *"
+  workflow_dispatch:
+  # Allow other workflows (e.g. deploy) to trigger a re-check
+  workflow_call:
+    secrets:
+      VERCEL_TOKEN:
+        required: true
+      VERCEL_ORG_ID:
+        required: true
+      VERCEL_PROJECT_ID:
+        required: true
+
+concurrency:
+  group: vercel-prod-check
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Production READY + smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Require Vercel secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=
+          [ -n "$VERCEL_TOKEN" ] || missing="$missing VERCEL_TOKEN"
+          [ -n "$VERCEL_ORG_ID" ] || missing="$missing VERCEL_ORG_ID"
+          [ -n "$VERCEL_PROJECT_ID" ] || missing="$missing VERCEL_PROJECT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Actions secrets:$missing"
+            echo "Set them under Settings → Secrets → Actions (see DEPLOY.md)."
+            exit 1
+          fi
+
+      - name: Check latest production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          DEPLOY_URL: ${{ vars.PRODUCTION_URL }}
+          SKIP_WAIT: "1"
+          ALLOW_SSO: "1"
+          REQUIRE_TEXT: "Split Rock"
+        run: node scripts/check-vercel-deploy.mjs

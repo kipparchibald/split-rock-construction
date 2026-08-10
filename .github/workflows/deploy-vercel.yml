@@ -1,4 +1,6 @@
-# Deploys main → Vercel project split-rock-construction (team voxli).
+# Deploys main → Vercel project split-rock-construction (team voxli),
+# then verifies production is READY and serves HTML.
+#
 # Required repo secrets (Settings → Secrets → Actions):
 #   VERCEL_TOKEN          — https://vercel.com/account/tokens
 #   VERCEL_ORG_ID         — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
@@ -6,6 +8,9 @@
 #
 # First-time: create the empty project in Vercel UI (import this repo),
 # copy Project ID into VERCEL_PROJECT_ID, then re-run this workflow.
+#
+# Prefer Git integration for day-to-day deploys; this workflow is the
+# explicit production path + automated post-deploy checks.
 
 name: Deploy production (main)
 
@@ -14,10 +19,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    name: Build + deploy + verify
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +46,24 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Pull Vercel env (optional)
+      - name: Require Vercel secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=
+          [ -n "$VERCEL_TOKEN" ] || missing="$missing VERCEL_TOKEN"
+          [ -n "$VERCEL_ORG_ID" ] || missing="$missing VERCEL_ORG_ID"
+          [ -n "$VERCEL_PROJECT_ID" ] || missing="$missing VERCEL_PROJECT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Actions secrets:$missing"
+            echo "See DEPLOY.md → GitHub Actions secrets."
+            exit 1
+          fi
+
+      - name: Deploy to Vercel (production)
+        id: vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -43,3 +71,27 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: "--prod"
           working-directory: ./
+
+      - name: Verify production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          EXPECTED_SHA: ${{ github.sha }}
+          DEPLOY_URL: ${{ steps.vercel.outputs.preview-url }}
+          TIMEOUT_MS: "300000"
+          POLL_MS: "10000"
+          ALLOW_SSO: "1"
+          REQUIRE_TEXT: "Split Rock"
+        run: node scripts/check-vercel-deploy.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Production deploy"
+            echo ""
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Deploy URL: ${{ steps.vercel.outputs.preview-url }}"
+            echo "- Project: \`${{ secrets.VERCEL_PROJECT_ID }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -185,3 +185,46 @@ See also [PROJECT.md](./PROJECT.md).
 5. Domains → splitrockconst.com + www
 6. Every later ship: git push origin main
 ```
+
+---
+
+## Automated deployment checks
+
+Two GitHub Actions keep production honest:
+
+| Workflow | When | What it does |
+| --- | --- | --- |
+| **Deploy production (main)** (`deploy-vercel.yml`) | Push to `main` or manual | Tests → Vercel `--prod` deploy → waits for **READY** → HTTP smoke (HTML + “Split Rock”) |
+| **Vercel production check** (`vercel-deploy-check.yml`) | Every 6 hours + manual | Polls latest production deploy only (no ship) → same smoke test |
+
+### Script (local or CI)
+
+```bash
+export VERCEL_TOKEN=…          # vercel.com/account/tokens
+export VERCEL_ORG_ID=team_ZEZVchkfVnLrlfIFcBD32tFl
+export VERCEL_PROJECT_ID=prj_… # Project → Settings → General
+# optional: export PRODUCTION_URL / DEPLOY_URL=https://splitrockconst.com
+npm run check:deploy
+```
+
+Useful flags (env):
+
+| Env | Purpose |
+| --- | --- |
+| `EXPECTED_SHA` | Fail if live deploy is not this git commit |
+| `SKIP_WAIT=1` | Don’t poll — only inspect current latest |
+| `ALLOW_SSO=1` | Soft-pass when Vercel Authentication blocks anonymous HTTP |
+| `REQUIRE_TEXT` | Substring that must appear in HTML (default `Split Rock`) |
+
+### GitHub Actions secrets (required once)
+
+| Secret | Value |
+| --- | --- |
+| `VERCEL_TOKEN` | Create at [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | `team_ZEZVchkfVnLrlfIFcBD32tFl` (voxli) |
+| `VERCEL_PROJECT_ID` | `prj_…` from the **split-rock-construction** project only |
+
+Optional **variable** (not secret): `PRODUCTION_URL` = custom domain for smoke tests.
+
+If secrets are missing, the deploy/check workflows fail fast with a clear error instead of a silent no-op.
+

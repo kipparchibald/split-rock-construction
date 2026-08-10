@@ -21,7 +21,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "npm test && npm run test:e2e"
+    "test:all": "npm test && npm run test:e2e",
+    "check:deploy": "node scripts/check-vercel-deploy.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.3",
