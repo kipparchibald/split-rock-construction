@@ -3,42 +3,11 @@ import { createAuthClient } from "better-auth/react";
 import { GROK_PROVIDERS } from "./providers";
 import { safeInternalHref } from "@/lib/security";
 
-/**
- * Better Auth client for this React SPA (browser-side).
- *
- * Talks to this app's OWN Better Auth at same-origin `/api/auth/*`. In the live
- * preview the app is an embedded iframe with PARTITIONED cookies, so after a
- * popup sign-in it can't read the session cookie — it authenticates with a
- * bearer token instead (captured from the popup, see `signIn`). The `onRequest`
- * hook attaches that token when present; when deployed (cookie auth) no token
- * is stored, so nothing changes.
- */
-export const authClient = createAuthClient({
-  plugins: [genericOAuthClient()],
-  fetchOptions: {
-    onRequest(ctx) {
-      const token = getBearerToken();
-      if (token) ctx.headers.set("Authorization", `Bearer ${token}`);
-      return ctx;
-    },
-  },
-});
-
-/**
- * True when sign-in UI should be shown. On by default (preview via the baked
- * preview client, deployed apps via the injected per-app client); set
- * `VITE_AUTH_ENABLED=false` to force it off (dev user — see `use-current-user`).
- */
-export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
-
-/** The upstream providers to render sign-in buttons for. */
-export { GROK_PROVIDERS };
-
 // ── Live-preview bearer token ────────────────────────────────────────────────
 // The embedded preview iframe has partitioned cookies, so we keep the session's
 // bearer token in sessionStorage and attach it to every Better Auth request (and
 // to server functions, via `@/lib/auth/middleware`). Empty everywhere except the
-// preview after a popup sign-in, so the cookie path is untouched elsewhere.
+// preview after a popup / email sign-in when cookies don't stick.
 const BEARER_KEY = "grok-auth.bearer-token";
 
 /** The stored preview bearer token, or null. */
@@ -60,6 +29,68 @@ function setBearerToken(token: string | null): void {
     /* storage unavailable — ignore */
   }
 }
+
+/**
+ * Persist a session token for bearer auth (email/password + live preview).
+ * Prefer the full `set-auth-token` header value when available; body `token` also works.
+ */
+export function persistBearerToken(token: string | null | undefined): void {
+  if (!token || typeof token !== "string") return;
+  const cleaned = token.trim();
+  if (!cleaned) return;
+  setBearerToken(cleaned);
+}
+
+/** Read set-auth-token from a fetch Response (bearer plugin). */
+export function captureAuthTokenFromResponse(response: Response | undefined | null): void {
+  if (!response?.headers) return;
+  try {
+    const headerToken =
+      response.headers.get("set-auth-token") ??
+      response.headers.get("Set-Auth-Token");
+    if (headerToken) persistBearerToken(headerToken);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Better Auth client for this React SPA (browser-side).
+ *
+ * Talks to this app's OWN Better Auth at same-origin `/api/auth/*`. In the live
+ * preview the app is an embedded iframe with PARTITIONED cookies, so after a
+ * popup sign-in it can't read the session cookie — it authenticates with a
+ * bearer token instead (captured from the popup, see `signIn`). The `onRequest`
+ * hook attaches that token when present; when deployed (cookie auth) no token
+ * is stored, so nothing changes.
+ *
+ * Email/password sign-in also captures `set-auth-token` so demo operator login
+ * works when Secure / partitioned cookies are blocked.
+ */
+export const authClient = createAuthClient({
+  plugins: [genericOAuthClient()],
+  fetchOptions: {
+    onRequest(ctx) {
+      const token = getBearerToken();
+      if (token) ctx.headers.set("Authorization", `Bearer ${token}`);
+      return ctx;
+    },
+    onSuccess(ctx) {
+      // Better Auth bearer plugin exposes the session token for non-cookie clients.
+      captureAuthTokenFromResponse(ctx.response);
+    },
+  },
+});
+
+/**
+ * True when sign-in UI should be shown. On by default (preview via the baked
+ * preview client, deployed apps via the injected per-app client); set
+ * `VITE_AUTH_ENABLED=false` to force it off (dev user — see `use-current-user`).
+ */
+export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
+
+/** The upstream providers to render sign-in buttons for. */
+export { GROK_PROVIDERS };
 
 /**
  * The sandbox live preview runs this app inside an iframe on a `*.grok-sandbox.com`
@@ -234,4 +265,64 @@ export async function signOut(redirectTo = "/"): Promise<void> {
   }
   setBearerToken(null);
   window.location.href = dest;
+}
+
+/**
+ * Email/password sign-in with bearer capture for demo + live preview.
+ * Returns the Better Auth result; stores session token when cookies can't stick.
+ */
+export async function signInWithEmailPassword(
+  email: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const { data, error } = await authClient.signIn.email({
+      email: email.trim().toLowerCase(),
+      password,
+      fetchOptions: {
+        onSuccess(ctx) {
+          captureAuthTokenFromResponse(ctx.response);
+        },
+      },
+    });
+
+    if (error) {
+      return { ok: false, message: error.message ?? "Sign-in failed" };
+    }
+
+    // Body token is the unsigned session id — bearer plugin accepts it.
+    const bodyToken =
+      data && typeof data === "object" && "token" in data
+        ? (data as { token?: string }).token
+        : undefined;
+    if (bodyToken) persistBearerToken(bodyToken);
+
+    // Confirm session is readable (cookie OR bearer).
+    const session = await authClient.getSession();
+    if (!session.data?.user) {
+      // One more refresh with bearer attached
+      const again = await authClient.getSession({
+        fetchOptions: {
+          headers: getBearerToken()
+            ? { Authorization: `Bearer ${getBearerToken()}` }
+            : undefined,
+        },
+      });
+      if (!again.data?.user) {
+        return {
+          ok: false,
+          message:
+            "Signed in but the session did not stick. Refresh and try the demo button again.",
+        };
+      }
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Sign-in failed";
+    if (/fetch|network|failed to fetch|404|not found/i.test(msg)) {
+      return { ok: false, message: "Auth service unavailable. Try again in a moment." };
+    }
+    return { ok: false, message: msg };
+  }
 }

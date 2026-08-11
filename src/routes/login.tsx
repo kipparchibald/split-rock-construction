@@ -4,17 +4,13 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient, authEnabled } from "@/lib/auth/client";
+import { authEnabled, signInWithEmailPassword } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { OPERATOR_AUTH, COMPANY } from "@/lib/company";
+import { DEMO_OPERATORS, type DemoOperatorKey } from "@/lib/demo-credentials";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
-
-const DEMO_PASSWORDS = {
-  kipp: "SplitRock-Kipp-2026!",
-  kyle: "SplitRock-Kyle-2026!",
-} as const;
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -35,24 +31,30 @@ function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      const { error: signErr } = await authClient.signIn.email({
-        email: emailValue.trim().toLowerCase(),
-        password: passwordValue,
-      });
-      if (signErr) {
-        setError(signErr.message ?? "Sign-in failed");
-        return;
+      // Auth POST handler awaits ensureOperatorAccounts before credential check,
+      // so cold-start seed no longer races demo buttons.
+      const result = await signInWithEmailPassword(emailValue, passwordValue);
+      if (!result.ok) {
+        // Single delayed retry for transient seed / DB races.
+        if (
+          isDemoDataEnabled &&
+          /invalid email or password|invalid credentials/i.test(result.message)
+        ) {
+          await new Promise((r) => setTimeout(r, 500));
+          const retry = await signInWithEmailPassword(emailValue, passwordValue);
+          if (!retry.ok) {
+            setError(retry.message);
+            return;
+          }
+        } else {
+          setError(result.message);
+          return;
+        }
       }
-      await authClient.getSession();
       void navigate({ to: "/app" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign-in failed";
-      // Surface missing API route / network failures clearly
-      if (/fetch|network|failed to fetch|404|not found/i.test(msg)) {
-        setError("Auth service unavailable. Try again in a moment.");
-      } else {
-        setError(msg);
-      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -63,14 +65,13 @@ function LoginPage() {
     await signInWith(email, password);
   }
 
-  async function fillAndSignIn(operator: "kipp" | "kyle") {
+  async function fillAndSignIn(operator: DemoOperatorKey) {
     if (!isDemoDataEnabled) return;
-    const nextEmail = operator === "kipp" ? OPERATOR_AUTH.kipp.email : OPERATOR_AUTH.kyle.email;
-    const nextPassword = DEMO_PASSWORDS[operator];
-    setEmail(nextEmail);
-    setPassword(nextPassword);
+    const creds = DEMO_OPERATORS[operator];
+    setEmail(creds.email);
+    setPassword(creds.password);
     setError(null);
-    await signInWith(nextEmail, nextPassword);
+    await signInWith(creds.email, creds.password);
   }
 
   return (
@@ -104,6 +105,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              data-testid="operator-login-email"
             />
           </div>
           <div className="space-y-1.5">
@@ -115,23 +117,28 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              data-testid="operator-login-password"
             />
           </div>
 
           {error ? (
-            <p className="text-[12px] text-red-600 dark:text-red-400" role="alert">
+            <p
+              className="text-[12px] text-red-600 dark:text-red-400"
+              role="alert"
+              data-testid="operator-login-error"
+            >
               {error}
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button type="submit" className="w-full" disabled={busy} data-testid="operator-login-submit">
             {busy ? "Signing in…" : "Sign in"}
           </Button>
 
           {isDemoDataEnabled ? (
-            <div className="space-y-2 border-t border-border pt-4">
+            <div className="space-y-2 border-t border-border pt-4" data-testid="operator-demo-section">
               <p className="text-[11px] text-fg-subtle">
-                Demo: one click fills credentials and signs you in.
+                Demo mode: one click fills credentials and signs you in.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -139,6 +146,7 @@ function LoginPage() {
                   size="sm"
                   variant="outline"
                   disabled={busy}
+                  data-testid="operator-demo-kipp"
                   onClick={() => void fillAndSignIn("kipp")}
                 >
                   Sign in as Kipp (demo)
@@ -148,20 +156,37 @@ function LoginPage() {
                   size="sm"
                   variant="outline"
                   disabled={busy}
+                  data-testid="operator-demo-kyle"
                   onClick={() => void fillAndSignIn("kyle")}
                 >
                   Sign in as Kyle (demo)
                 </Button>
               </div>
+              <p className="text-[10px] leading-relaxed text-fg-subtle">
+                Kipp · {DEMO_OPERATORS.kipp.email}
+                <br />
+                Kyle · {DEMO_OPERATORS.kyle.email}
+              </p>
             </div>
           ) : null}
         </form>
 
         <p className="mt-6 text-[11px] leading-relaxed text-fg-subtle">
           {isDemoDataEnabled
-            ? "Demo operators are seeded automatically. Rotate passwords and set VITE_SPLIT_ROCK_DEMO=false before public production."
+            ? "Demo operators are seeded automatically. Client portal: use /portal/login with demo client buttons."
             : "Live mode: password fill helpers are disabled. Use rotated credentials only."}
         </p>
+
+        {isDemoDataEnabled ? (
+          <p className="mt-3 text-center text-[12px]">
+            <Link
+              to="/portal/login"
+              className="text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+            >
+              Client portal demo sign-in →
+            </Link>
+          </p>
+        ) : null}
       </main>
     </div>
   );

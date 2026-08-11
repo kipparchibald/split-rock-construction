@@ -9,19 +9,20 @@
  *   Kyle            ·  kyle@splitrockconst.com  ·  SplitRock-Kyle-2026!
  */
 import { auth } from "./server";
+import { DEMO_OPERATORS } from "@/lib/demo-credentials";
 import { OPERATOR_AUTH } from "@/lib/company";
 
 export const SPLIT_ROCK_OPERATORS = [
   {
-    name: OPERATOR_AUTH.kipp.name,
-    email: OPERATOR_AUTH.kipp.email,
-    password: "SplitRock-Kipp-2026!",
+    name: DEMO_OPERATORS.kipp.name,
+    email: DEMO_OPERATORS.kipp.email,
+    password: DEMO_OPERATORS.kipp.password,
     role: OPERATOR_AUTH.kipp.role,
   },
   {
-    name: OPERATOR_AUTH.kyle.name,
-    email: OPERATOR_AUTH.kyle.email,
-    password: "SplitRock-Kyle-2026!",
+    name: DEMO_OPERATORS.kyle.name,
+    email: DEMO_OPERATORS.kyle.email,
+    password: DEMO_OPERATORS.kyle.password,
     role: OPERATOR_AUTH.kyle.role,
   },
 ] as const;

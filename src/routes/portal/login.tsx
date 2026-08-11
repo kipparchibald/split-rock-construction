@@ -1,17 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/data/store";
+import type { Client } from "@/data/types";
 import {
   authenticateClientPortal,
+  clearPortalSession,
   normalizeToken,
   readPortalSession,
   writePortalSession,
 } from "@/lib/client-portal";
 import { COMPANY } from "@/lib/company";
+import { DEMO_PORTAL_CLIENTS } from "@/lib/demo-credentials";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 import { toast } from "sonner";
 
@@ -33,13 +36,58 @@ function PortalLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Demo buttons: prefer live store clients; fall back to hardcoded seed tokens
+  // so demo mode still works if the CRM was cleared.
+  const demoClients = useMemo(() => {
+    if (!isDemoDataEnabled) return [] as Array<{ id: string; name: string; email: string; portalToken: string }>;
+
+    const fromStore = clients
+      .filter((c) => c.portalToken && (c.portalStatus === "active" || c.portalStatus === "invited"))
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        portalToken: c.portalToken!,
+      }));
+
+    if (fromStore.length > 0) return fromStore;
+
+    return DEMO_PORTAL_CLIENTS.map((c) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      portalToken: c.portalToken,
+    }));
+  }, [clients]);
+
+  // Auth list: store clients, or inject demo fallbacks so authenticate can match.
+  const authClients: Client[] = useMemo(() => {
+    if (clients.length > 0) return clients;
+    if (!isDemoDataEnabled) return clients;
+    return DEMO_PORTAL_CLIENTS.map(
+      (c): Client => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: "",
+        type: "homeowner",
+        address: "",
+        notes: "Demo fallback client",
+        portalToken: c.portalToken,
+        portalStatus: "active",
+      }),
+    );
+  }, [clients]);
+
   // Prefill email from invite deep link
   useEffect(() => {
     if (preClientId) {
-      const c = clients.find((x) => x.id === preClientId);
+      const c =
+        authClients.find((x) => x.id === preClientId) ??
+        DEMO_PORTAL_CLIENTS.find((x) => x.id === preClientId);
       if (c) setEmail(c.email);
     }
-  }, [preClientId, clients]);
+  }, [preClientId, authClients]);
 
   // Already signed in as client → portal
   useEffect(() => {
@@ -52,27 +100,35 @@ function PortalLoginPage() {
   function completeLogin(emailIn: string, codeIn: string) {
     setBusy(true);
     setError(null);
-    const result = authenticateClientPortal(clients, emailIn, codeIn);
-    if (!result.ok) {
-      setError(result.error);
+    try {
+      // Drop any previous portal session so token rotation always rebinds cleanly.
+      clearPortalSession();
+
+      const result = authenticateClientPortal(authClients, emailIn, codeIn);
+      if (!result.ok) {
+        setError(result.error);
+        setBusy(false);
+        return;
+      }
+      writePortalSession(result.session);
+      try {
+        markClientPortalLogin(result.client.id);
+      } catch {
+        /* store may not have this client if using demo fallback */
+      }
+      toast.success(`Welcome, ${result.client.name.split("&")[0]?.trim()}`);
+      void navigate({ to: "/app/portal" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Portal sign-in failed");
+    } finally {
       setBusy(false);
-      return;
     }
-    writePortalSession(result.session);
-    markClientPortalLogin(result.client.id);
-    toast.success(`Welcome, ${result.client.name.split("&")[0]?.trim()}`);
-    void navigate({ to: "/app/portal" });
-    setBusy(false);
   }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     completeLogin(email, code);
   }
-
-  const demoClients = clients.filter(
-    (c) => c.portalToken && (c.portalStatus === "active" || c.portalStatus === "invited"),
-  );
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
@@ -145,7 +201,8 @@ function PortalLoginPage() {
                     size="sm"
                     className="w-full min-h-10 justify-start"
                     data-testid={`portal-demo-${c.id}`}
-                    onClick={() => completeLogin(c.email, c.portalToken!)}
+                    disabled={busy}
+                    onClick={() => completeLogin(c.email, c.portalToken)}
                   >
                     <span className="truncate">{c.name}</span>
                     <span className="ml-auto font-mono text-[10px] text-fg-subtle">{c.portalToken}</span>
@@ -153,6 +210,12 @@ function PortalLoginPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        ) : isDemoDataEnabled ? (
+          <div className="mt-6 border border-border bg-bg-elevated p-4" data-testid="portal-demo-empty">
+            <p className="text-[12px] text-fg-muted">
+              Demo data is on, but no portal clients are available. Reload the page or re-open demo mode.
+            </p>
           </div>
         ) : null}
 
