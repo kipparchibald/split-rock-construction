@@ -1,5 +1,5 @@
 /** Which database backend is active. */
-export type DbSource = "neon" | "pglite";
+export type DbSource = "neon" | "pglite" | "disabled";
 
 // An empty/whitespace DATABASE_URL (an easy misconfig in deploy UIs) must mean
 // "unset" — otherwise production would silently run on the PGLite fallback.
@@ -7,14 +7,21 @@ const rawDatabaseUrl =
   typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 const databaseUrl =
   rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+const isVercelRuntime =
+  typeof process !== "undefined" && Boolean(process.env.VERCEL?.trim());
 
 /**
  * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
  * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
  * the app has a working database even with nothing configured — the live preview
- * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ * included. On Vercel without `DATABASE_URL`, server DB is disabled (client-side
+ * demo data + stateless auth); PGLite WASM is not reliable in serverless.
  */
-export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
+export const dbSource: DbSource = databaseUrl
+  ? "neon"
+  : isVercelRuntime
+    ? "disabled"
+    : "pglite";
 
 /**
  * Minimal shared SQL surface, satisfied by both Neon and PGLite. Both the
@@ -174,6 +181,12 @@ async function createSql(): Promise<Sql> {
     throw new Error(
       "@/lib/db is server-only — call getSql() from a createServerFn handler " +
         "or a server route loader, never from client code.",
+    );
+  }
+  if (dbSource === "disabled") {
+    throw new Error(
+      "Server database is disabled (no DATABASE_URL on Vercel). " +
+        "Demo CRM data is client-side; set DATABASE_URL for persisted server data.",
     );
   }
   return dbSource === "neon" ? createNeonSql() : createPgliteSql();

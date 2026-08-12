@@ -18,11 +18,14 @@ function envFlag(key: string): string | undefined {
   return undefined;
 }
 
-/** When true, load fictional projects / crews / COIs for training. */
-export const isDemoDataEnabled: boolean = (() => {
-  const v = (envFlag("VITE_SPLIT_ROCK_DEMO") ?? "true").toLowerCase();
+/** Parse `VITE_SPLIT_ROCK_DEMO` (or any tri-state flag) into a boolean. */
+export function parseDemoFlag(raw: string | undefined): boolean {
+  const v = (raw ?? "true").toLowerCase();
   return v !== "false" && v !== "0" && v !== "off";
-})();
+}
+
+/** When true, load fictional projects / crews / COIs for training. */
+export const isDemoDataEnabled: boolean = parseDemoFlag(envFlag("VITE_SPLIT_ROCK_DEMO"));
 
 /** Soft banner in the shell when demo data is active. */
 export const DEMO_BANNER =

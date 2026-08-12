@@ -34,7 +34,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
-import { ensureDbReady, getPglite } from "../db";
+import { dbSource, ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -45,8 +45,10 @@ import {
   PREVIEW_CLIENT_SECRET,
 } from "./preview";
 
-// Kick (and share) PGLite bootstrap as soon as the auth server module loads.
-void ensureDbReady();
+// Kick PGLite bootstrap only when the preview fallback is active (not on Vercel).
+if (dbSource === "pglite") {
+  void ensureDbReady();
+}
 
 /**
  * Preview secret must outlive module reloads: PGLite (and its session rows) is
@@ -125,6 +127,16 @@ const trustedOrigins: string[] = explicitBaseURL
 
 const databaseUrl = env("DATABASE_URL");
 
+/**
+ * PGLite (WASM) is reliable in the Grok sandbox preview but not on Vercel
+ * serverless — auth POSTs 500 when the dialect fails to boot. Without Neon,
+ * use Better Auth's stateless memory adapter + JWE session cookies instead:
+ * demo operators are re-seeded on each cold start and sessions validate from the
+ * cookie without a database round-trip.
+ */
+const isVercelRuntime = Boolean(env("VERCEL"));
+const usePgliteAuthDb = !databaseUrl && !isVercelRuntime;
+
 // Static broker OAuth endpoints (skip OIDC discovery on every sign-in / callback).
 // Discovery would cost an extra network hop to the broker before the popup can
 // even redirect to Google/X — the live-preview popup felt stuck on the app for
@@ -134,13 +146,15 @@ const grokAuthorizationUrl = `${issuerBase}/api/auth/oauth2/authorize`;
 const grokTokenUrl = `${issuerBase}/api/auth/oauth2/token`;
 const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 
-// Real Postgres when `DATABASE_URL` is set (deployed apps), else the app's
-// embedded PGLite (preview) via a Kysely dialect — so Better Auth persists to the
-// SAME DB as app data, including email/password users. Both use the Better Auth
-// schema from `migrations/0001_auth.sql`.
-const database = databaseUrl
-  ? new Pool({ connectionString: databaseUrl })
-  : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
+// Real Postgres when `DATABASE_URL` is set (deployed apps), else embedded
+// PGLite in the sandbox preview, else omit `database` so Better Auth uses the
+// memory adapter + encrypted cookie sessions (demo / no-Neon production).
+const database: Pool | { dialect: ReturnType<typeof pgliteDialect>; type: "postgres" } | undefined =
+  databaseUrl
+    ? new Pool({ connectionString: databaseUrl })
+    : usePgliteAuthDb
+      ? { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const }
+      : undefined;
 
 /** Session token cookie name — also read by the live-preview popup completion page. */
 export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
@@ -198,11 +212,18 @@ export const auth = betterAuth({
     },
   },
 
-  // Cache the session in the short-lived signed `session_data` cookie so reads
-  // (incl. the client's `/get-session`) skip the DB — this shrinks the "loading"
-  // window and reduces auth flicker. See the `auth` skill for the full
-  // flicker-prevention guidance (gate on `isPending`; SSR the session).
-  session: { cookieCache: { enabled: true, maxAge: 300 } },
+  // Stateful (Neon / PGLite): short cookie cache to skip DB on reads.
+  // Stateless (no DATABASE_URL on Vercel): JWE sessions in the cookie — no DB.
+  session: database
+    ? { cookieCache: { enabled: true, maxAge: 300 } }
+    : {
+        cookieCache: {
+          enabled: true,
+          strategy: "jwe" as const,
+          refreshCache: true,
+          maxAge: 60 * 60 * 24 * 7,
+        },
+      },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
