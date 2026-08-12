@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FilterChips } from "@/components/layout/filter-chips";
 import { PageHeader } from "@/components/layout/page-header";
@@ -19,8 +19,10 @@ import {
   stageLabel,
   timelineLabel,
 } from "@/lib/prospects";
+import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { ProspectStage, TourKind } from "@/data/types";
+import type { BudgetBand, LeadSource, LeadType, ProspectStage, TimelineBand, TourKind } from "@/data/types";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/prospects")({ component: ProspectsPage });
 
@@ -29,18 +31,41 @@ type Filter = "all" | "hot" | "followup" | "tours" | ProspectStage;
 function ProspectsPage() {
   const {
     prospects, tours, proposals, tetonLots, tetonPackages,
+    addProspect, updateProspect, convertProspectToClient,
     setProspectStage, touchProspect, acknowledgeProspectDualRole,
     scheduleTour, setTourStatus, createProposalFromProspect, setProposalStatus, setLotStatus,
   } = useAppStore();
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState(prospects[0]?.id ?? "");
+  const [showAdd, setShowAdd] = useState(false);
   const [tourKind, setTourKind] = useState<TourKind>("model_home");
   const [tourAt, setTourAt] = useState("");
   const [tourLoc, setTourLoc] = useState("Teton Heights Div #6 — Model Lot 12");
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formLeadType, setFormLeadType] = useState<LeadType>("lot_and_build");
+  const [formSource, setFormSource] = useState<LeadSource>("phone");
+  const [formBudget, setFormBudget] = useState<BudgetBand>("unknown");
+  const [formTimeline, setFormTimeline] = useState<TimelineBand>("browsing");
+  const [formInterest, setFormInterest] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+  const [formAssigned, setFormAssigned] = useState("Sales");
+  const [editInterest, setEditInterest] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editAssigned, setEditAssigned] = useState("");
 
   const selected = prospects.find((p) => p.id === selectedId) ?? prospects[0];
   const selectedTours = tours.filter((t) => t.prospectId === selected?.id);
   const selectedProps = proposals.filter((p) => p.prospectId === selected?.id);
+
+  useEffect(() => {
+    if (selected) {
+      setEditInterest(selected.interest);
+      setEditNotes(selected.notes);
+      setEditAssigned(selected.assignedTo);
+    }
+  }, [selected?.id, selected?.interest, selected?.notes, selected?.assignedTo]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return prospects.filter((p) => p.stage !== "lost" && p.stage !== "won");
@@ -80,17 +105,135 @@ function ProspectsPage() {
     }
   }
 
+  function resetProspectForm() {
+    setFormName("");
+    setFormEmail("");
+    setFormPhone("");
+    setFormLeadType("lot_and_build");
+    setFormSource("phone");
+    setFormBudget("unknown");
+    setFormTimeline("browsing");
+    setFormInterest("");
+    setFormNotes("");
+    setFormAssigned("Sales");
+  }
+
+  function submitProspect(e: React.FormEvent) {
+    e.preventDefault();
+    const id = addProspect({
+      name: formName,
+      email: formEmail,
+      phone: formPhone,
+      leadType: formLeadType,
+      source: formSource,
+      budgetBand: formBudget,
+      timeline: formTimeline,
+      interest: formInterest,
+      notes: formNotes,
+      dualRoleFlag: false,
+      dualRoleAcknowledged: false,
+      assignedTo: formAssigned,
+    });
+    setSelectedId(id);
+    resetProspectForm();
+    setShowAdd(false);
+    toast.success("Prospect added");
+  }
+
+  function saveProspectEdits() {
+    if (!selected) return;
+    updateProspect(selected.id, {
+      interest: editInterest,
+      notes: editNotes,
+      assignedTo: editAssigned,
+    });
+    toast.success("Prospect updated");
+  }
+
+  function handleConvert(startJob: boolean) {
+    if (!selected) return;
+    const clientId = convertProspectToClient(selected.id, { startJob });
+    if (clientId) {
+      toast.success(
+        startJob ? "Client created and planning job opened" : "Prospect converted to client",
+      );
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title="Prospects"
         description="Lead pipeline, tours, proposals — website, Teton Heights estimator, and agent referrals land here."
         actions={
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/estimate">Public estimator</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setShowAdd((v) => !v)} data-testid="add-prospect-btn">
+              {showAdd ? "Cancel" : "Add prospect"}
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/estimate">Public estimator</Link>
+            </Button>
+          </div>
         }
       />
+
+      {showAdd ? (
+        <form
+          onSubmit={submitProspect}
+          className="mb-5 grid gap-3 border border-border bg-bg-elevated p-4 sm:grid-cols-2 lg:grid-cols-3"
+          data-testid="prospect-form"
+        >
+          <div>
+            <Label>Name</Label>
+            <Input className="mt-1" value={formName} onChange={(e) => setFormName(e.target.value)} required />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input className="mt-1" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required />
+          </div>
+          <div>
+            <Label>Phone</Label>
+            <Input className="mt-1" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} required />
+          </div>
+          <div>
+            <Label>Lead type</Label>
+            <select
+              className="mt-1 flex h-9 w-full border border-border bg-bg px-3 text-[13px]"
+              value={formLeadType}
+              onChange={(e) => setFormLeadType(e.target.value as LeadType)}
+            >
+              <option value="lot_only">Lot only</option>
+              <option value="lot_and_build">Lot + build</option>
+              <option value="custom_own_land">Custom on own land</option>
+              <option value="commercial">Commercial</option>
+              <option value="referral">Referral</option>
+            </select>
+          </div>
+          <div>
+            <Label>Source</Label>
+            <select
+              className="mt-1 flex h-9 w-full border border-border bg-bg px-3 text-[13px]"
+              value={formSource}
+              onChange={(e) => setFormSource(e.target.value as LeadSource)}
+            >
+              <option value="phone">Phone</option>
+              <option value="website">Website</option>
+              <option value="teton_estimator">Teton estimator</option>
+              <option value="referral_agent">Referral agent</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <Label>Assigned to</Label>
+            <Input className="mt-1" value={formAssigned} onChange={(e) => setFormAssigned(e.target.value)} />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <Label>Interest / project summary</Label>
+            <Textarea className="mt-1" value={formInterest} onChange={(e) => setFormInterest(e.target.value)} rows={2} />
+          </div>
+          <Button type="submit" className="sm:w-fit">Save prospect</Button>
+        </form>
+      ) : null}
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Open pipeline" value={String(prospects.filter((p) => !["won", "lost"].includes(p.stage)).length)} />
@@ -144,7 +287,17 @@ function ProspectsPage() {
             </button>
           ))}
           {!filtered.length ? (
-            <p className="border border-border px-4 py-8 text-center text-[13px] text-fg-muted">No prospects in this filter.</p>
+            <div className="border border-dashed border-border px-4 py-8 text-center">
+              <p className="text-[13px] font-medium">No prospects in this filter</p>
+              <p className="mt-2 text-[12px] text-fg-muted">
+                {prospects.length === 0 && !isDemoDataEnabled ? LIVE_EMPTY_HINT : "Try another filter or add a lead."}
+              </p>
+              {prospects.length === 0 ? (
+                <Button className="mt-3" size="sm" onClick={() => setShowAdd(true)}>
+                  Add prospect
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -175,7 +328,29 @@ function ProspectsPage() {
                     <p><span className="text-fg-subtle">Owner</span><br /><span className="font-medium">{selected.assignedTo}</span></p>
                   </div>
                   <p className="text-[13px] text-fg-muted">{selected.interest}</p>
-                  {selected.notes ? <p className="text-[12px] text-fg-subtle">{selected.notes}</p> : null}
+                  <div className="space-y-2 border border-border p-3">
+                    <Label className="text-[11px]">Edit details</Label>
+                    <Textarea
+                      value={editInterest}
+                      onChange={(e) => setEditInterest(e.target.value)}
+                      rows={2}
+                      placeholder="Interest / project summary"
+                    />
+                    <Textarea
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      rows={2}
+                      placeholder="Internal notes"
+                    />
+                    <Input
+                      value={editAssigned}
+                      onChange={(e) => setEditAssigned(e.target.value)}
+                      placeholder="Assigned to"
+                    />
+                    <Button size="sm" variant="outline" onClick={saveProspectEdits}>
+                      Save edits
+                    </Button>
+                  </div>
                   {selected.lotId ? (
                     <p className="text-[12px]">
                       Lot:{" "}
@@ -235,6 +410,16 @@ function ProspectsPage() {
                     <Button size="sm" variant="outline" onClick={() => setProspectStage(selected.id, "won")}>
                       Won
                     </Button>
+                    {selected.stage !== "won" ? (
+                      <>
+                        <Button size="sm" onClick={() => handleConvert(false)}>
+                          Convert to client
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleConvert(true)}>
+                          Convert + start job
+                        </Button>
+                      </>
+                    ) : null}
                     <Button
                       size="sm"
                       variant="outline"

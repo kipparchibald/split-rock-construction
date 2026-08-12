@@ -77,6 +77,17 @@ Set on **`split-rock-construction-kx9x`** for **Production** (and Preview if you
 
 After changing env vars: **Redeploy** Production (Deployments → … → Redeploy).
 
+### Live CRM (Postgres)
+
+When you are ready for a real multi-session CRM (not browser-only demo state):
+
+1. Provision Postgres (Neon, Supabase, or Vercel Postgres) and set **`DATABASE_URL`** on **`split-rock-construction-kx9x`** for Production (and Preview if desired).
+2. Set **`VITE_SPLIT_ROCK_DEMO=false`** so fictional seed jobs are hidden and `/app` requires operator sign-in.
+3. Redeploy — `npm run build` runs **`migrations/*.sql`** automatically (`0001_auth.sql` + `0002_crm.sql` for clients, prospects, projects, bids, tours, proposals).
+4. Operators sign in at `/login`; CRM changes persist per user in Postgres.
+
+Without `DATABASE_URL`, the app keeps the demo / localStorage fallback so previews and tryouts still work.
+
 ---
 
 ## Ongoing: ship from `main`
