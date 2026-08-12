@@ -260,7 +260,7 @@ function ClientsPage() {
           </div>
           <div>
             <Label>Phone</Label>
-            <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required data-testid="client-phone" />
           </div>
           <div>
             <Label>Type</Label>

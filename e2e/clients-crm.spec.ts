@@ -10,7 +10,7 @@ test.describe("clients CRM", () => {
     await page.getByRole("button", { name: /add client/i }).click();
     await page.getByTestId("client-name").fill("E2E Test Client");
     await page.getByTestId("client-email").fill("e2e-client@splitrock.test");
-    await page.getByLabel("Phone").fill("(208) 555-0199");
+    await page.getByTestId("client-phone").fill("(208) 555-0199");
     await page.getByTestId("client-save").click();
 
     await expect(page.getByText("E2E Test Client")).toBeVisible({ timeout: 10_000 });
