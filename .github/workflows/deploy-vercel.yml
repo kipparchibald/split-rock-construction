@@ -43,8 +43,14 @@ jobs:
       - name: Project isolation check
         run: npm run check:project
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm test
+
+      - name: Production build
+        run: npm run build
 
       - name: Require Vercel secrets
         env:

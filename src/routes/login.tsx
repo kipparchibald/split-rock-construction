@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({ component: LoginPage });
 function LoginPage() {
   const navigate = useNavigate();
   const { user, isPending } = useCurrentUserState();
-  const [email, setEmail] = useState(OPERATOR_AUTH.kipp.email);
+  const [email, setEmail] = useState<string>(OPERATOR_AUTH.kipp.email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

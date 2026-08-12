@@ -113,8 +113,8 @@ npx vercel --prod
 
 ```bash
 npm run check:project   # isolation guard
+npm run typecheck       # generates route tree + tsc (same as CI)
 npm test                # unit
-npm run typecheck       # when clean enough for CI
 npm run build           # production bundle (what Vercel runs)
 ```
 
