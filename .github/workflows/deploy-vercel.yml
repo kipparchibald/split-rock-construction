@@ -1,13 +1,13 @@
-# Deploys main → Vercel project split-rock-construction (team voxli),
+# Deploys main → Vercel project split-rock-construction-kx9x (team voxli),
 # then verifies production is READY and serves HTML.
 #
 # Required repo secrets (Settings → Secrets → Actions):
 #   VERCEL_TOKEN          — https://vercel.com/account/tokens
 #   VERCEL_ORG_ID         — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
-#   VERCEL_PROJECT_ID     — set after first project create (prj_…)
+#   VERCEL_PROJECT_ID     — prj_… from split-rock-construction-kx9x (NOT stale split-rock-construction)
 #
-# First-time: create the empty project in Vercel UI (import this repo),
-# copy Project ID into VERCEL_PROJECT_ID, then re-run this workflow.
+# Production project already exists (splitrockconst.com is on kx9x). Copy Project ID
+# from Vercel → split-rock-construction-kx9x → Settings → General if secrets are missing.
 #
 # Prefer Git integration for day-to-day deploys; this workflow is the
 # explicit production path + automated post-deploy checks.

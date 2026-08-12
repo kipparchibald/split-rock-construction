@@ -31,7 +31,7 @@ npm run dev   # 0.0.0.0:8080
 
 ## Deploy (`main` → Vercel)
 
-Production ships **only from `main`** to the Vercel project **`split-rock-construction`** (team **voxli**). Custom domain **`splitrockconst.com`** belongs to Split Rock Construction only — not IdeaSpeak or Archibald-Bagley (see [PROJECT.md](./PROJECT.md)).
+Production ships **only from `main`** to the Vercel project **`split-rock-construction-kx9x`** (team **voxli**). Custom domain **`splitrockconst.com`** is on that project — do **not** use the stale Vercel project named `split-rock-construction` (no `-kx9x`). Domain belongs to Split Rock Construction only — not IdeaSpeak or Archibald-Bagley (see [PROJECT.md](./PROJECT.md)).
 
 Full steps, env vars, domain, and rollback: **[DEPLOY.md](./DEPLOY.md)**  
 Product isolation rules: **[PROJECT.md](./PROJECT.md)**
@@ -39,7 +39,7 @@ Product isolation rules: **[PROJECT.md](./PROJECT.md)**
 ```bash
 git push origin main          # auto-deploy when Git is connected
 # or
-npx vercel --prod             # CLI, after vercel link to split-rock-construction
+npx vercel --prod             # CLI, after vercel link to split-rock-construction-kx9x
 ```
 
 Inspired by strengths of Buildertrend (client + residential), CoConstruct (custom homes), and Procore (document/job cost spine) — simplified for a small GC in Eastern Idaho.
