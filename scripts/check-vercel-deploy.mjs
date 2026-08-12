@@ -7,7 +7,7 @@
  *
  * Project resolution (one of):
  *   VERCEL_PROJECT_ID   — prj_…
- *   VERCEL_PROJECT_NAME — default: split-rock-construction
+ *   VERCEL_PROJECT_NAME — default: split-rock-construction-kx9x
  *
  * Team:
  *   VERCEL_ORG_ID       — default: team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
@@ -29,7 +29,7 @@ const ORG_ID =
   process.env.VERCEL_ORG_ID || "team_ZEZVchkfVnLrlfIFcBD32tFl";
 const PROJECT_ID = process.env.VERCEL_PROJECT_ID || "";
 const PROJECT_NAME =
-  process.env.VERCEL_PROJECT_NAME || "split-rock-construction";
+  process.env.VERCEL_PROJECT_NAME || "split-rock-construction-kx9x";
 const EXPECTED_SHA = (process.env.EXPECTED_SHA || "").trim();
 const DEPLOY_URL = (process.env.DEPLOY_URL || "").trim();
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 300_000);

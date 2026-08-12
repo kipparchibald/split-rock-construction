@@ -4,7 +4,7 @@
 # Secrets (Settings → Secrets and variables → Actions):
 #   VERCEL_TOKEN       — https://vercel.com/account/tokens
 #   VERCEL_ORG_ID      — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
-#   VERCEL_PROJECT_ID  — prj_… from Vercel → Project → Settings → General
+#   VERCEL_PROJECT_ID  — prj_… from split-rock-construction-kx9x (NOT stale split-rock-construction)
 #
 # Optional repo variables:
 #   PRODUCTION_URL     — e.g. https://splitrockconst.com (preferred smoke target)

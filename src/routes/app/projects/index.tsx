@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { FilterChips } from "@/components/layout/filter-chips";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/data/store";
 import type { ProjectStatus } from "@/data/types";
+import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { formatCurrency } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/projects/")({ component: ProjectsPage });
@@ -54,7 +57,29 @@ function ProjectsPage() {
           <span>Job</span><span>Client</span><span>Phase</span><span>Status</span><span>Budget</span><span>%</span>
         </div>
         {filtered.length === 0 ? (
-          <p className="px-4 py-8 text-center text-[13px] text-fg-muted">No jobs match this filter.</p>
+          <div className="px-4 py-10 text-center">
+            <p className="text-[13px] font-medium text-fg">
+              {projects.length === 0 && !isDemoDataEnabled ? "No jobs yet" : "No jobs match this filter"}
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-[12px] leading-relaxed text-fg-muted">
+              {projects.length === 0 && !isDemoDataEnabled
+                ? LIVE_EMPTY_HINT
+                : "Try another filter or start a job from Book of Plans."}
+            </p>
+            {projects.length === 0 && !isDemoDataEnabled ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Button size="sm" asChild>
+                  <Link to="/app/clients">
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    Add client
+                  </Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/app/pricing">Price a bid</Link>
+                </Button>
+              </div>
+            ) : null}
+          </div>
         ) : filtered.map((p) => {
           const client = clients.find((c) => c.id === p.clientId);
           return (

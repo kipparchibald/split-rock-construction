@@ -12,7 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED = {
   packageName: "split-rock-construction",
   githubRepo: "kipparchibald/split-rock-construction",
-  vercelProjectName: "split-rock-construction",
+  vercelProjectName: "split-rock-construction-kx9x",
   /** Known foreign projects under the same team — never allow a local link to these */
   forbiddenVercelProjectIds: [
     "prj_HeZZVc1ibtK1Qaz3e3xUeVW23zw5", // ideaspeak-app
@@ -22,6 +22,8 @@ const EXPECTED = {
     "ideaspeak-platform",
     "voxli",
     "ideaspeak",
+    /** Stale leftover — production is split-rock-construction-kx9x (domain already there) */
+    "split-rock-construction",
   ],
   companyName: "Split Rock Construction",
 };
@@ -73,7 +75,8 @@ if (existsSync(vercelProjectPath)) {
     }
     if (
       projectName &&
-      String(projectName).toLowerCase() !== EXPECTED.vercelProjectName
+      String(projectName).toLowerCase() !==
+        EXPECTED.vercelProjectName.toLowerCase()
     ) {
       errors.push(
         `.vercel/project.json project name is "${projectName}" — expected "${EXPECTED.vercelProjectName}".`,
@@ -116,6 +119,6 @@ console.log(`  github:  ${EXPECTED.githubRepo}`);
 console.log(`  vercel:  ${EXPECTED.vercelProjectName} (own project under team voxli)`);
 if (!existsSync(vercelProjectPath)) {
   console.log(
-    "  note: no local .vercel link yet — when you deploy, create/link project name exactly: split-rock-construction",
+    "  note: no local .vercel link yet — when you deploy, link project name exactly: split-rock-construction-kx9x (NOT stale split-rock-construction)",
   );
 }

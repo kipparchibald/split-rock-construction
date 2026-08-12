@@ -21,7 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAppStore } from "@/data/store";
 import type { ChangeOrder } from "@/data/types";
 import { projectsForClient } from "@/lib/client-portal";
+import { COMPANY } from "@/lib/company";
 import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
+import { isDemoDataEnabled } from "@/lib/runtime-config";
 import { usePortalSession } from "@/lib/use-portal-session";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -266,11 +268,25 @@ function PortalPage() {
   // Client not signed in — send to portal login (operators can still preview with banner)
   if (!isClientUser && visibleProjects.length === 0) {
     return (
-      <div>
+      <div data-testid="portal-empty">
         <PageHeader title="Your home build" description="Sign in to see your jobs." />
-        <Button asChild>
-          <Link to="/portal/login">Client sign-in</Link>
-        </Button>
+        <Card className="mt-4 max-w-lg border-dashed">
+          <CardContent className="space-y-3 py-6">
+            <p className="text-[13px] leading-relaxed text-fg-muted">
+              Use the email on your contract and the access code Split Rock sent you. Each household
+              only sees their own jobs — never another client&apos;s information.
+            </p>
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/portal/login">Client sign-in</Link>
+            </Button>
+            <p className="text-[11px] text-fg-subtle">
+              Need help?{" "}
+              <a href={COMPANY.phoneHref} className="underline-offset-2 hover:underline">
+                {COMPANY.phone}
+              </a>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -294,15 +310,31 @@ function PortalPage() {
             ) : null
           }
         />
-        <p className="text-[13px] text-fg-muted">
-          When Split Rock starts your job, decisions and money show up here — only for your
-          household.
-        </p>
-        {!isClientUser ? (
-          <Button className="mt-4" asChild>
-            <Link to="/portal/login">Client sign-in</Link>
-          </Button>
-        ) : null}
+        <Card className="mt-4 max-w-lg border-dashed">
+          <CardContent className="space-y-3 py-6">
+            <p className="text-[13px] leading-relaxed text-fg-muted">
+              {isClientUser
+                ? isDemoDataEnabled
+                  ? "When Split Rock starts your job, decisions, draws, and progress photos show up here — only for your household."
+                  : "Your portal is ready. Split Rock will link your build here once the contract is active — you'll get an email with your access code."
+                : "When Split Rock starts a client job, decisions and money show up here. Sign in as a client to enforce household isolation."}
+            </p>
+            {isClientUser ? (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={signOut}>
+                  Sign out
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <a href={COMPANY.phoneHref}>{COMPANY.phone}</a>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild>
+                <Link to="/portal/login">Client sign-in</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }

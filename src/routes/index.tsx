@@ -16,18 +16,11 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { COMPANY } from "@/lib/company";
 
 export const Route = createFileRoute("/")({ component: LandingPage });
 
-/** Public marketing contact */
-const CONTACT = {
-  phone: "(208) 200-0605",
-  phoneHref: "2082000605",
-  emailKipp: "Kipp@splitrockconst.com",
-  emailKyle: "Kyle@splitrockconst.com",
-  location: "Rigby · Jefferson County, Idaho",
-  lotsUrl: "https://www.rigbylots.com/",
-};
+const MARKETING_LOCATION = "Rigby · Jefferson County, Idaho";
 
 const NAV_LINKS = [
   { href: "#lots", label: "Lots" },
@@ -43,7 +36,7 @@ const pathways = [
     body: "Build-ready parcels in Teton Heights Division #6 — 0.6+ acres, utilities to the lot line, owner financing available.",
     icon: LandPlot,
     cta: "View available lots",
-    href: CONTACT.lotsUrl,
+    href: COMPANY.lotsUrl,
     external: true,
   },
   {
@@ -105,12 +98,12 @@ function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+              <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
                 Lot inventory
               </a>
             </Button>
             <Button size="sm" asChild className="hidden sm:inline-flex">
-              <a href={`tel:${CONTACT.phoneHref}`}>Call {CONTACT.phone}</a>
+              <a href={COMPANY.phoneHref}>Call {COMPANY.phone}</a>
             </Button>
             <Button
               variant="ghost"
@@ -146,7 +139,7 @@ function LandingPage() {
                 </a>
               ))}
               <a
-                href={CONTACT.lotsUrl}
+                href={COMPANY.lotsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg-muted"
@@ -155,12 +148,19 @@ function LandingPage() {
                 Lot inventory
               </a>
               <a
-                href={`tel:${CONTACT.phoneHref}`}
+                href={COMPANY.phoneHref}
                 className="mt-2 flex min-h-11 items-center justify-center gap-2 border border-border bg-primary px-3 text-[13px] font-medium text-primary-fg"
               >
                 <Phone className="h-4 w-4" strokeWidth={1.75} />
-                Call {CONTACT.phone}
+                Call {COMPANY.phone}
               </a>
+              <Link
+                to="/portal/login"
+                className="flex min-h-11 items-center justify-center text-[13px] font-medium text-fg-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                Client portal
+              </Link>
               <Link
                 to="/login"
                 className="flex min-h-11 items-center justify-center text-[13px] font-medium text-fg-muted"
@@ -179,7 +179,7 @@ function LandingPage() {
           <div>
             <p className="label-caps mb-4 inline-flex items-center gap-2">
               <MapPin className="h-3 w-3" strokeWidth={1.75} />
-              {CONTACT.location}
+              {MARKETING_LOCATION}
             </p>
             <h1 className="max-w-xl text-3xl font-medium tracking-[-0.03em] text-fg sm:text-4xl lg:text-[2.65rem] lg:leading-[1.12]">
               Lots to build on. Homes built to suit.
@@ -191,7 +191,7 @@ function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               <Button size="lg" asChild>
-                <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
                   Browse Teton Heights lots
                   <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                 </a>
@@ -279,7 +279,7 @@ function LandingPage() {
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Button asChild>
-                  <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                  <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
                     Open rigbylots.com
                     <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </a>
@@ -302,7 +302,7 @@ function LandingPage() {
               <p className="mt-5 border-t border-border pt-4 text-[11px] leading-relaxed text-fg-subtle">
                 Live inventory, plats, and documents are maintained at{" "}
                 <a
-                  href={CONTACT.lotsUrl}
+                  href={COMPANY.lotsUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-fg underline-offset-2 hover:underline"
@@ -402,29 +402,29 @@ function LandingPage() {
               </p>
               <div className="mt-6 flex flex-col gap-2 text-[13px]">
                 <a
-                  href={`tel:${CONTACT.phoneHref}`}
+                  href={COMPANY.phoneHref}
                   className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
                 >
                   <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {CONTACT.phone}
+                  {COMPANY.phone}
                 </a>
                 <a
-                  href={`mailto:${CONTACT.emailKipp}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  href={`mailto:${COMPANY.emailKipp}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
                   className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
                 >
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {CONTACT.emailKipp}
+                  {COMPANY.emailKipp}
                 </a>
                 <a
-                  href={`mailto:${CONTACT.emailKyle}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  href={`mailto:${COMPANY.emailKyle}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
                   className="inline-flex items-center gap-2 text-primary-fg/90 hover:text-primary-fg"
                 >
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {CONTACT.emailKyle}
+                  {COMPANY.emailKyle}
                 </a>
                 <span className="inline-flex items-center gap-2 text-primary-fg/65">
                   <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {CONTACT.location}
+                  {MARKETING_LOCATION}
                 </span>
               </div>
             </div>
@@ -435,7 +435,7 @@ function LandingPage() {
                 className="bg-bg-elevated text-fg hover:bg-bg"
                 asChild
               >
-                <a href={CONTACT.lotsUrl} target="_blank" rel="noreferrer">
+                <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
                   See lots at rigbylots.com
                   <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                 </a>
@@ -446,7 +446,7 @@ function LandingPage() {
                 className="border-primary-fg/30 text-primary-fg hover:bg-primary-fg/10"
                 asChild
               >
-                <a href={`mailto:${CONTACT.emailKipp}?subject=Hunter%20Chase%20interest%20list`}>
+                <a href={`mailto:${COMPANY.emailKipp}?subject=Hunter%20Chase%20interest%20list`}>
                   Hunter Chase interest list
                 </a>
               </Button>
@@ -458,17 +458,23 @@ function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-bg-elevated">
+      <footer className="bg-bg-elevated pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex flex-col gap-1">
             <Logo />
             <p className="text-[11px] text-fg-subtle">
               Lots · build-to-suit · land-home packages · Rigby & Jefferson County
             </p>
+            <a
+              href={`https://${COMPANY.website}`}
+              className="text-[11px] text-fg-subtle hover:text-fg"
+            >
+              {COMPANY.website}
+            </a>
           </div>
           <div className="flex flex-col items-start gap-1 sm:items-end">
-            <a href={`tel:${CONTACT.phoneHref}`} className="text-[11px] text-fg-subtle hover:text-fg">
-              {CONTACT.phone}
+            <a href={COMPANY.phoneHref} className="text-[11px] text-fg-subtle hover:text-fg">
+              {COMPANY.phone}
             </a>
             <Link to="/estimate" className="text-[11px] text-fg-subtle hover:text-fg">
               Lot + build estimate

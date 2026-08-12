@@ -50,10 +50,10 @@ const POLICY_TYPES: { value: InsurancePolicyType; label: string }[] = [
 
 const ADDITIONAL_INSURED_NAME = COI_REQUIREMENTS.additionalInsuredName;
 
-function statusBadgeVariant(status: CoiStatus | string): "success" | "warning" | "destructive" | "secondary" {
+function statusBadgeVariant(status: CoiStatus | string): "success" | "warning" | "danger" | "secondary" {
   if (status === "valid" || status === "active" || status === "passed") return "success";
   if (status === "expiring_soon" || status === "pending_review" || status === "needs_review") return "warning";
-  if (status === "expired" || status === "missing" || status === "failed") return "destructive";
+  if (status === "expired" || status === "missing" || status === "failed") return "danger";
   return "secondary";
 }
 

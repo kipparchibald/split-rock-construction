@@ -10,11 +10,11 @@ export async function gotoApp(page: Page, path: string, heading: RegExp) {
 export async function selectTab(page: Page, name: string | RegExp) {
   const tab = page.getByRole("tab", { name }).first();
   await expect(tab).toBeVisible();
-  await tab.click({ force: true });
-  // Prefer content assertion by callers; still try to wait for active when possible
+  await tab.scrollIntoViewIfNeeded();
+  await tab.click();
   try {
     await expect(tab).toHaveAttribute("data-state", "active", { timeout: 3_000 });
   } catch {
-    // Controlled tabs can lag under force-click; content asserts cover correctness.
+    // Controlled tabs can lag; content assertions below cover correctness.
   }
 }

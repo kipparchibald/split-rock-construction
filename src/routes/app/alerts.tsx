@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/alerts")({ component: AlertsPage });
 
-function severityVariant(s: CostAlert["severity"]): "destructive" | "warning" | "secondary" | "outline" {
-  if (s === "critical") return "destructive";
+function severityVariant(s: CostAlert["severity"]): "danger" | "warning" | "secondary" | "outline" {
+  if (s === "critical") return "danger";
   if (s === "warning") return "warning";
   if (s === "watch") return "secondary";
   return "outline";

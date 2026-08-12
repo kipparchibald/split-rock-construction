@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock, DollarSign, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/layout/stat-card";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/data/store";
+import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
+import { COMPANY } from "@/lib/company";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
@@ -217,6 +219,38 @@ function Dashboard() {
 
       <NextActionBanner action={primaryAction} className="mb-4" />
 
+      {!isDemoDataEnabled && projects.length === 0 ? (
+        <Card className="mb-5 border-dashed">
+          <CardContent className="flex flex-col items-start gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[13px] font-medium text-fg">Ready for your first job</p>
+              <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-fg-muted">{LIVE_EMPTY_HINT}</p>
+              <p className="mt-2 text-[11px] text-fg-subtle">
+                Production runs at{" "}
+                <a
+                  href={`https://${COMPANY.website}`}
+                  className="underline-offset-2 hover:underline"
+                >
+                  {COMPANY.website}
+                </a>{" "}
+                with demo seed jobs off.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" asChild>
+                <Link to="/app/clients">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add client
+                </Link>
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/app/pricing">Price a bid</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Operator quick strip */}
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
         <OperatorQuick
@@ -397,7 +431,24 @@ function Dashboard() {
           </Button>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {active.map((p) => {
+          {active.length === 0 ? (
+            <div className="col-span-full border border-dashed border-border px-4 py-10 text-center">
+              <p className="text-[13px] font-medium text-fg">
+                {isDemoDataEnabled ? "No active jobs on this board." : "No active jobs yet"}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-[12px] leading-relaxed text-fg-muted">
+                {isDemoDataEnabled
+                  ? "Try a different filter or add a job from Book of Plans."
+                  : LIVE_EMPTY_HINT}
+              </p>
+              <Button size="sm" className="mt-4" asChild>
+                <Link to={isDemoDataEnabled ? "/app/projects" : "/app/pricing"}>
+                  {isDemoDataEnabled ? "View all jobs" : "Start with a bid"}
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            active.map((p) => {
             const client = clients.find((c) => c.id === p.clientId);
             return (
               <Link
@@ -420,7 +471,8 @@ function Dashboard() {
                 </div>
               </Link>
             );
-          })}
+          })
+          )}
         </CardContent>
       </Card>
     </div>

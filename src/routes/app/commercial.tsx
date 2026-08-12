@@ -61,7 +61,7 @@ function CommercialPage() {
       />
 
       <Tabs defaultValue="subs">
-        <TabsList>
+        <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="subs">Subcontracts</TabsTrigger>
           <TabsTrigger value="payapps">Pay applications</TabsTrigger>
           <TabsTrigger value="jobs">Job cards</TabsTrigger>
