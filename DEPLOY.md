@@ -63,7 +63,7 @@ Set for **Production** (and Preview if you want previews to match).
 
 | Name | Recommended production | Effect |
 | --- | --- | --- |
-| `VITE_SPLIT_ROCK_DEMO` | `false` | Hides fictional seed jobs (live empty CRM) |
+| `VITE_SPLIT_ROCK_DEMO` | `false` | Hides fictional seed jobs (live empty CRM); **requires operator sign-in** for `/app` |
 | `VITE_AUTH_ENABLED` | omit or `true` | Set `false` only for temporary open demos |
 
 ### Optional

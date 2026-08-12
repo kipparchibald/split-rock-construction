@@ -217,7 +217,17 @@ function PortalLoginPage() {
               Demo data is on, but no portal clients are available. Reload the page or re-open demo mode.
             </p>
           </div>
-        ) : null}
+        ) : (
+          <div className="mt-6 border border-border bg-bg-elevated p-4" data-testid="portal-live-hint">
+            <p className="text-[12px] leading-relaxed text-fg-muted">
+              Live mode: use the email and access code Split Rock issued with your contract. Need a code? Call{" "}
+              <a href={COMPANY.phoneHref} className="text-fg underline-offset-2 hover:underline">
+                {COMPANY.phone}
+              </a>
+              .
+            </p>
+          </div>
+        )}
 
         <p className="mt-8 text-center text-[11px] text-fg-subtle">
           Need help?{" "}
