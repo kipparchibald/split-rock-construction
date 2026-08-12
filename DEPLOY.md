@@ -4,7 +4,9 @@
 **Only branch to ship:** `main`  
 **Vercel project name (exact):** `split-rock-construction`  
 **Vercel team:** `voxli`  
-**Never deploy this app into** `ideaspeak-app` or any other product project.
+**Never deploy this app into** `ideaspeak-app`, **Archibald-Bagley**, or any other product project.
+
+**Domain (authoritative):** `splitrockconst.com` + `www` are **Split Rock Construction** production domains only — attach them to Vercel project `split-rock-construction`, not IdeaSpeak or Archibald-Bagley.
 
 ---
 
@@ -122,11 +124,13 @@ npm run build           # production bundle (what Vercel runs)
 
 ## Custom domain (`splitrockconst.com`)
 
+**Split Rock Construction owns this domain.** Link it only to the **`split-rock-construction`** Vercel project. Do not add or document `splitrockconst.com` on IdeaSpeak, Archibald-Bagley, or any other product.
+
 1. Vercel → **`split-rock-construction`** → **Settings → Domains**.
 2. Add `splitrockconst.com` and `www.splitrockconst.com`.
 3. At your DNS host, apply the records Vercel shows (apex A/ALIAS + `www` CNAME).
 4. Set `BETTER_AUTH_URL` to `https://splitrockconst.com` and redeploy.
-5. Confirm the domain is **not** attached to `ideaspeak-app`.
+5. Confirm the domain is **not** attached to `ideaspeak-app`, **Archibald-Bagley**, or any other project.
 
 ---
 
@@ -154,8 +158,9 @@ npm run build           # production bundle (what Vercel runs)
 
 | Do | Don’t |
 | --- | --- |
-| Deploy only `kipparchibald/split-rock-construction` | Link this repo to `ideaspeak-app` |
+| Deploy only `kipparchibald/split-rock-construction` | Link this repo to `ideaspeak-app` or **Archibald-Bagley** |
 | Project name `split-rock-construction` | Create new Vercel projects per sandbox session |
+| Attach `splitrockconst.com` only to this project | Point Split Rock domains at IdeaSpeak or Archibald-Bagley |
 | Env vars only on this project | Copy IdeaSpeak `DATABASE_URL` / secrets here |
 | Production branch `main` | Ship from random feature branches as Production |
 

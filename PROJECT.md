@@ -23,7 +23,7 @@ env vars, domains, or deploy hooks between them.
    Create it under team **voxli** if it does not exist yet. Do not reuse `ideaspeak-app`.
 3. **Domains stay product-scoped.**  
    IdeaSpeak domains (`ideaspeak.dev`, …) must not be added here. Split Rock domains
-   must not be added to IdeaSpeak.
+   must not be added to IdeaSpeak, **Archibald-Bagley**, or any other Voxli product.
 4. **Env vars are per-project.**  
    Auth secrets, databases, and API keys for Split Rock live only on the
    `split-rock-construction` Vercel project.
@@ -50,13 +50,15 @@ env vars, domains, or deploy hooks between them.
 
 ## Domain: splitrockconst.com
 
+**Authoritative:** `splitrockconst.com` and `www.splitrockconst.com` belong to **Split Rock Construction** only. They are the public marketing and OS surface for this repo (`kipparchibald/split-rock-construction` → Vercel project `split-rock-construction`). Do **not** attach, redirect, or document these domains on **IdeaSpeak**, **Archibald-Bagley**, or any other product.
+
 After the **split-rock-construction** Vercel project exists under team **voxli**:
 
 1. Vercel → Project → Settings → Domains → Add **`splitrockconst.com`** and **`www.splitrockconst.com`**
 2. At your DNS host, point:
    - `A` / apex → Vercel’s documented IPs (or use their nameserver transfer)
    - `CNAME` `www` → `cname.vercel-dns.com` (or the target Vercel shows)
-3. Do **not** add this domain to `ideaspeak-app` or any other project.
+3. Do **not** add this domain to `ideaspeak-app`, **Archibald-Bagley**, or any other project.
 
 ## Related historical code (do not dual-develop)
 

@@ -31,7 +31,7 @@ npm run dev   # 0.0.0.0:8080
 
 ## Deploy (`main` → Vercel)
 
-Production ships **only from `main`** to the Vercel project **`split-rock-construction`** (team **voxli**).
+Production ships **only from `main`** to the Vercel project **`split-rock-construction`** (team **voxli**). Custom domain **`splitrockconst.com`** belongs to Split Rock Construction only — not IdeaSpeak or Archibald-Bagley (see [PROJECT.md](./PROJECT.md)).
 
 Full steps, env vars, domain, and rollback: **[DEPLOY.md](./DEPLOY.md)**  
 Product isolation rules: **[PROJECT.md](./PROJECT.md)**
