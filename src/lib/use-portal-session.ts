@@ -18,9 +18,9 @@ export function usePortalSession(): {
   setSession: (s: PortalSession) => void;
 } {
   const clients = useAppStore((s) => s.clients);
-  const [session, setSessionState] = useState<PortalSession | null>(() =>
-    typeof window !== "undefined" ? readPortalSession() : null,
-  );
+  // Always null on first render so SSR HTML matches the client before hydration.
+  // Portal sessions live in localStorage — read after mount to avoid mismatches.
+  const [session, setSessionState] = useState<PortalSession | null>(null);
 
   const refresh = useCallback(() => {
     setSessionState(readPortalSession());

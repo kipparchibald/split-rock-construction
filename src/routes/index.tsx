@@ -97,6 +97,12 @@ function LandingPage() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link to="/portal/login">Client portal</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link to="/login">Operator sign-in</Link>
+            </Button>
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
                 Lot inventory
