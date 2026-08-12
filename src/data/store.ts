@@ -167,6 +167,7 @@ interface AppState {
   setBidStatus: (id: string, status: BidStatus) => void;
   setEquipmentStatus: (id: string, status: Equipment["status"]) => void;
   addClient: (client: Omit<Client, "id">) => void;
+  updateClient: (id: string, patch: Partial<Omit<Client, "id">>) => void;
   /** Issue or rotate portal access code and mark invited */
   inviteClientPortal: (clientId: string) => { token: string } | null;
   revokeClientPortal: (clientId: string) => void;
@@ -229,6 +230,12 @@ interface AppState {
       referralBrokerage?: string;
     },
   ) => string;
+  updateProspect: (id: string, patch: Partial<Omit<Prospect, "id" | "score" | "createdAt">>) => void;
+  /** Create a client from a won prospect; optionally seed a planning job */
+  convertProspectToClient: (
+    prospectId: string,
+    opts?: { startJob?: boolean; jobName?: string; jobAddress?: string },
+  ) => string | null;
   setProspectStage: (id: string, stage: ProspectStage, lostReason?: string) => void;
   touchProspect: (id: string) => void;
   acknowledgeProspectDualRole: (id: string) => void;
@@ -586,6 +593,29 @@ function createAppStore() {
           },
           ...s.clients,
         ],
+      })),
+
+    updateClient: (id, patch) =>
+      set((s) => ({
+        clients: s.clients.map((c) =>
+          c.id !== id
+            ? c
+            : {
+                ...c,
+                ...(patch.name !== undefined ? { name: clampText(patch.name, LIMITS.clientName) } : {}),
+                ...(patch.email !== undefined ? { email: clampText(patch.email, 160) } : {}),
+                ...(patch.phone !== undefined ? { phone: clampText(patch.phone, 40) } : {}),
+                ...(patch.address !== undefined ? { address: clampText(patch.address, 240) } : {}),
+                ...(patch.notes !== undefined ? { notes: clampText(patch.notes, LIMITS.clientNotes) } : {}),
+                ...(patch.type !== undefined ? { type: patch.type } : {}),
+                ...(patch.portalToken !== undefined ? { portalToken: patch.portalToken } : {}),
+                ...(patch.portalStatus !== undefined ? { portalStatus: patch.portalStatus } : {}),
+                ...(patch.portalInvitedAt !== undefined ? { portalInvitedAt: patch.portalInvitedAt } : {}),
+                ...(patch.portalLastLoginAt !== undefined
+                  ? { portalLastLoginAt: patch.portalLastLoginAt }
+                  : {}),
+              },
+        ),
       })),
 
     inviteClientPortal: (clientId) => {
@@ -1105,6 +1135,101 @@ function createAppStore() {
         }),
       }));
       return id;
+    },
+
+    updateProspect: (id, patch) =>
+      set((s) => ({
+        prospects: s.prospects.map((p) => {
+          if (p.id !== id) return p;
+          const merged = {
+            ...p,
+            ...patch,
+            ...(patch.interest !== undefined ? { interest: clampText(patch.interest, 500) } : {}),
+            ...(patch.notes !== undefined ? { notes: clampText(patch.notes, 2000) } : {}),
+            ...(patch.name !== undefined ? { name: clampText(patch.name, LIMITS.clientName) } : {}),
+          };
+          const rescored =
+            patch.leadType !== undefined ||
+            patch.budgetBand !== undefined ||
+            patch.timeline !== undefined ||
+            patch.lotId !== undefined ||
+            patch.packageId !== undefined ||
+            patch.dualRoleAcknowledged !== undefined ||
+            patch.source !== undefined
+              ? scoreProspect(merged)
+              : merged.score;
+          return { ...merged, score: rescored };
+        }),
+      })),
+
+    convertProspectToClient: (prospectId, opts) => {
+      const prospect = get().prospects.find((p) => p.id === prospectId);
+      if (!prospect) return null;
+      const clientId = uid("c");
+      const clientType: Client["type"] =
+        prospect.leadType === "commercial" ? "commercial" : "homeowner";
+      const today = new Date().toISOString().slice(0, 10);
+      const jobName = opts?.jobName ?? `${prospect.name.split(" ")[0]} residence`;
+      const jobAddress = opts?.jobAddress ?? "";
+      let projectId: string | null = null;
+
+      set((s) => {
+        const client: Client = {
+          id: clientId,
+          name: prospect.name,
+          email: prospect.email,
+          phone: prospect.phone,
+          type: clientType,
+          address: jobAddress,
+          notes: prospect.notes || `Converted from prospect ${prospect.id}`,
+          portalStatus: "none",
+        };
+        const next: Partial<AppState> = {
+          clients: [client, ...s.clients],
+          prospects: s.prospects.map((p) =>
+            p.id === prospectId
+              ? { ...p, stage: "won" as const, lastContactAt: new Date().toISOString() }
+              : p,
+          ),
+          activity: pushActivity(s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Prospect converted to client · ${prospect.name}`,
+            kind: "project",
+          }),
+        };
+        if (opts?.startJob) {
+          projectId = uid("p");
+          const project: Project = {
+            id: projectId,
+            name: jobName,
+            address: jobAddress || "Address TBD",
+            clientId,
+            type: clientType === "commercial" ? "commercial" : "residential",
+            status: "planning",
+            phase: "Site Work",
+            progress: 0,
+            budget: 0,
+            spent: 0,
+            startDate: today,
+            endDate: today,
+            superintendent: prospect.assignedTo || "Unassigned",
+            sqft: 0,
+            description: prospect.interest || "New job from prospect conversion",
+            milestones: [],
+            schedule: [],
+          };
+          next.projects = [project, ...s.projects];
+          next.activity = pushActivity(next.activity ?? s.activity, {
+            id: uid("a"),
+            at: new Date().toISOString(),
+            text: `Job opened from prospect · ${jobName}`,
+            kind: "project",
+          });
+        }
+        return next;
+      });
+      return clientId;
     },
 
     setProspectStage: (id, stage, lostReason) =>

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
+import { CrmBootstrap } from "@/components/crm/crm-bootstrap";
 import { AppShell } from "@/components/layout/app-shell";
 import { authEnabled } from "@/lib/auth/client";
 import { RedirectToSignIn } from "@/lib/auth/gates";
@@ -46,6 +47,7 @@ function AppLayout() {
   // Slim shell for pure client sessions — hide operator chrome via CSS class
   return (
     <AppShell clientMode={isClientUser}>
+      {!isClientUser ? <CrmBootstrap /> : null}
       <Outlet />
     </AppShell>
   );

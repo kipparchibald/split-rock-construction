@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Copy, Link2, ShieldOff } from "lucide-react";
+import { Copy, Link2, Pencil, ShieldOff } from "lucide-react";
 import { FilterChips } from "@/components/layout/filter-chips";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/layout/stat-card";
@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/data/store";
 import type { Client } from "@/data/types";
 import { portalInvitePath, writePortalSession } from "@/lib/client-portal";
+import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -31,13 +33,17 @@ function ClientsPage() {
   const projects = useAppStore((s) => s.projects);
   const bids = useAppStore((s) => s.bids);
   const addClient = useAppStore((s) => s.addClient);
+  const updateClient = useAppStore((s) => s.updateClient);
   const inviteClientPortal = useAppStore((s) => s.inviteClientPortal);
   const revokeClientPortal = useAppStore((s) => s.revokeClientPortal);
   const markClientPortalLogin = useAppStore((s) => s.markClientPortalLogin);
   const [show, setShow] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const [type, setType] = useState<Client["type"]>("homeowner");
   const [filter, setFilter] = useState<Filter>("all");
   const [inviteAlso, setInviteAlso] = useState(true);
@@ -61,23 +67,48 @@ function ClientsPage() {
     (c) => c.portalStatus === "invited" || c.portalStatus === "active",
   ).length;
 
+  function resetForm() {
+    setName("");
+    setEmail("");
+    setPhone("");
+    setAddress("");
+    setNotes("");
+    setType("homeowner");
+    setEditingId(null);
+  }
+
+  function startEdit(c: Client) {
+    setEditingId(c.id);
+    setName(c.name);
+    setEmail(c.email);
+    setPhone(c.phone);
+    setAddress(c.address);
+    setNotes(c.notes);
+    setType(c.type);
+    setShow(true);
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (editingId) {
+      updateClient(editingId, { name, email, phone, type, address, notes });
+      toast.success("Client updated");
+      resetForm();
+      setShow(false);
+      return;
+    }
     addClient({
       name,
       email,
       phone,
       type,
-      address: "",
-      notes: "",
+      address,
+      notes,
       portalStatus: "none",
     });
     // Find newly added (first in list) after state update — invite by email next tick
     const emailSaved = email.trim().toLowerCase();
-    setName("");
-    setEmail("");
-    setPhone("");
-    setType("homeowner");
+    resetForm();
     setShow(false);
     toast.success("Client added");
 
@@ -151,7 +182,7 @@ function ClientsPage() {
             <Button size="sm" variant="outline" asChild>
               <Link to="/portal/login">Client sign-in page</Link>
             </Button>
-            <Button size="sm" onClick={() => setShow((v) => !v)}>
+            <Button size="sm" onClick={() => { resetForm(); setShow((v) => !v); }}>
               {show ? "Cancel" : "Add client"}
             </Button>
           </div>
@@ -210,10 +241,11 @@ function ClientsPage() {
         <form
           onSubmit={submit}
           className="mb-6 grid gap-3 border border-border bg-bg-elevated p-4 sm:grid-cols-2 lg:grid-cols-4"
+          data-testid="client-form"
         >
           <div>
             <Label>Name</Label>
-            <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} required data-testid="client-name" />
           </div>
           <div>
             <Label>Email (portal login)</Label>
@@ -223,11 +255,12 @@ function ClientsPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              data-testid="client-email"
             />
           </div>
           <div>
             <Label>Phone</Label>
-            <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required data-testid="client-phone" />
           </div>
           <div>
             <Label>Type</Label>
@@ -241,18 +274,42 @@ function ClientsPage() {
               <option value="commercial">Commercial</option>
             </select>
           </div>
-          <label className="flex items-center gap-2 text-[12px] text-fg-muted sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={inviteAlso}
-              onChange={(e) => setInviteAlso(e.target.checked)}
-            />
-            Invite to portal immediately (generate access code)
-          </label>
-          <Button type="submit" className="sm:col-span-2 lg:col-span-4 sm:w-fit">
-            Save client
+          <div className="sm:col-span-2">
+            <Label>Address</Label>
+            <Input className="mt-1" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Notes</Label>
+            <Textarea className="mt-1" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+          </div>
+          {!editingId ? (
+            <label className="flex items-center gap-2 text-[12px] text-fg-muted sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={inviteAlso}
+                onChange={(e) => setInviteAlso(e.target.checked)}
+              />
+              Invite to portal immediately (generate access code)
+            </label>
+          ) : null}
+          <Button type="submit" className="sm:col-span-2 lg:col-span-4 sm:w-fit" data-testid="client-save">
+            {editingId ? "Save changes" : "Save client"}
           </Button>
         </form>
+      ) : null}
+
+      {clients.length === 0 ? (
+        <div className="border border-dashed border-border bg-bg-elevated px-6 py-12 text-center">
+          <p className="text-[15px] font-medium">No clients yet</p>
+          <p className="mt-2 text-[13px] text-fg-muted">
+            {isDemoDataEnabled
+              ? "Demo clients appear when VITE_SPLIT_ROCK_DEMO is on."
+              : LIVE_EMPTY_HINT}
+          </p>
+          <Button className="mt-4" size="sm" onClick={() => { resetForm(); setShow(true); }}>
+            Add your first client
+          </Button>
+        </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -276,6 +333,15 @@ function ClientsPage() {
                   <Badge variant={pb.variant}>{pb.label}</Badge>
                 </div>
               </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 h-7 w-fit px-2 text-[11px] text-fg-muted"
+                onClick={() => startEdit(c)}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
               <p className="mt-1 text-[12px] text-fg-muted">{c.email}</p>
               <p className="text-[12px] text-fg-muted">{c.phone}</p>
               <p className="mt-2 text-[11px] text-fg-subtle">{c.address || "—"}</p>
