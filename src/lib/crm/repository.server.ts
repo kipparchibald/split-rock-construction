@@ -115,6 +115,60 @@ export async function deleteProspect(userId: string, id: string): Promise<void> 
   await sql`delete from crm_prospects where user_id = ${userId} and id = ${id}`;
 }
 
+export type IngestProspectMeta = {
+  ingestSource: string;
+  ingestExternalId: string | null;
+};
+
+/** Insert or update a prospect including external ingest idempotency columns. */
+export async function upsertProspectWithIngest(
+  userId: string,
+  prospect: Prospect,
+  meta: IngestProspectMeta,
+): Promise<void> {
+  const sql = await getSql();
+  const row = prospectToRow(userId, prospect);
+  await sql`
+    insert into crm_prospects (
+      id, user_id, name, email, phone, lead_type, stage, source, budget_band, timeline,
+      interest, notes, dual_role_flag, dual_role_acknowledged, score, lot_id, package_id,
+      assigned_to, created_at, last_contact_at, lost_reason, referral_agent, referral_brokerage,
+      ingest_source, ingest_external_id, updated_at
+    ) values (
+      ${row.id}, ${row.userId}, ${row.name}, ${row.email}, ${row.phone}, ${row.leadType},
+      ${row.stage}, ${row.source}, ${row.budgetBand}, ${row.timeline}, ${row.interest},
+      ${row.notes}, ${row.dualRoleFlag}, ${row.dualRoleAcknowledged}, ${row.score},
+      ${row.lotId}, ${row.packageId}, ${row.assignedTo}, ${row.createdAt},
+      ${row.lastContactAt}, ${row.lostReason}, ${row.referralAgent}, ${row.referralBrokerage},
+      ${meta.ingestSource}, ${meta.ingestExternalId}, now()
+    )
+    on conflict (user_id, id) do update set
+      name = excluded.name,
+      email = excluded.email,
+      phone = excluded.phone,
+      lead_type = excluded.lead_type,
+      stage = excluded.stage,
+      source = excluded.source,
+      budget_band = excluded.budget_band,
+      timeline = excluded.timeline,
+      interest = excluded.interest,
+      notes = excluded.notes,
+      dual_role_flag = excluded.dual_role_flag,
+      dual_role_acknowledged = excluded.dual_role_acknowledged,
+      score = excluded.score,
+      lot_id = excluded.lot_id,
+      package_id = excluded.package_id,
+      assigned_to = excluded.assigned_to,
+      last_contact_at = excluded.last_contact_at,
+      lost_reason = excluded.lost_reason,
+      referral_agent = excluded.referral_agent,
+      referral_brokerage = excluded.referral_brokerage,
+      ingest_source = excluded.ingest_source,
+      ingest_external_id = excluded.ingest_external_id,
+      updated_at = now()
+  `;
+}
+
 export async function upsertProject(userId: string, project: Project): Promise<void> {
   const sql = await getSql();
   const row = projectToRow(userId, project);
