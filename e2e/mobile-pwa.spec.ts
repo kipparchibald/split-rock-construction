@@ -4,6 +4,8 @@ test.describe("mobile shell + PWA", () => {
   test("key routes have no horizontal overflow at phone width", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chrome", "Mobile only");
     const routes = [
+      "/",
+      "/portal/login",
       "/app",
       "/app/field",
       "/app/portal",
