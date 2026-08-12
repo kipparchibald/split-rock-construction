@@ -83,10 +83,45 @@ When you are ready for a real multi-session CRM (not browser-only demo state):
 
 1. Provision Postgres (Neon, Supabase, or Vercel Postgres) and set **`DATABASE_URL`** on **`split-rock-construction-kx9x`** for Production (and Preview if desired).
 2. Set **`VITE_SPLIT_ROCK_DEMO=false`** so fictional seed jobs are hidden and `/app` requires operator sign-in.
-3. Redeploy — `npm run build` runs **`migrations/*.sql`** automatically (`0001_auth.sql` + `0002_crm.sql` for clients, prospects, projects, bids, tours, proposals).
+3. Redeploy — `npm run build` runs **`migrations/*.sql`** automatically (`0001_auth.sql` + `0002_crm.sql` for clients, prospects, projects, bids, tours, proposals; `0003_crm_ingest.sql` for external lead ingest idempotency).
 4. Operators sign in at `/login`; CRM changes persist per user in Postgres.
 
 Without `DATABASE_URL`, the app keeps the demo / localStorage fallback so previews and tryouts still work.
+
+### External lead ingest (Rigby Lots → prospects CRM)
+
+Partner sites (e.g. **Rigby Lots** at `rigbylots.com`) can push new lot leads into Split Rock’s prospects CRM via `POST /api/crm/ingest-lead`. Ingest **requires Postgres** — without `DATABASE_URL` the endpoint returns **503** (leads are not silently dropped).
+
+| Name | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | **Yes** (for ingest) | Postgres — ingest returns 503 if missing |
+| `CRM_INGEST_SECRET` | **Yes** | Shared secret; send as `Authorization: Bearer <secret>` or `X-CRM-Ingest-Secret` |
+| `CRM_INGEST_USER_ID` | Recommended | Better Auth `user.id` that owns ingested prospects (defaults to earliest operator in `user` table if unset) |
+
+Set all three on **`split-rock-construction-kx9x`** Production. After deploy, verify:
+
+```bash
+curl -sS -X POST "https://splitrockconst.com/api/crm/ingest-lead" \
+  -H "Authorization: Bearer <CRM_INGEST_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "rigbylots",
+    "externalId": "rl-test-001",
+    "name": "Test Lead",
+    "email": "lead@example.com",
+    "phone": "208-555-0100",
+    "interest": "Lot 12 / Teton Heights",
+    "leadType": "lot_and_build",
+    "dualRole": true
+  }'
+```
+
+- **201** — new prospect created (`prospectId` in JSON body)
+- **200** + `"duplicate": true` — same `source` + `externalId` already ingested (idempotent)
+- **401** — wrong or missing secret
+- **503** — `DATABASE_URL` or `CRM_INGEST_SECRET` not configured
+
+Ingested rows appear in `/app` → Prospects for the configured operator. Never attach Rigby Lots domains to this Vercel project — only `splitrockconst.com`.
 
 ---
 
@@ -198,7 +233,7 @@ See also [PROJECT.md](./PROJECT.md).
 ```text
 1. Vercel team voxli → project split-rock-construction-kx9x (NOT stale split-rock-construction)
 2. Git: kipparchibald/split-rock-construction · Production Branch: main
-3. Env: BETTER_AUTH_SECRET, BETTER_AUTH_URL=https://splitrockconst.com, DATABASE_URL, VITE_SPLIT_ROCK_DEMO=false
+3. Env: BETTER_AUTH_SECRET, BETTER_AUTH_URL=https://splitrockconst.com, DATABASE_URL, VITE_SPLIT_ROCK_DEMO=false, CRM_INGEST_SECRET, CRM_INGEST_USER_ID
 4. Domains: splitrockconst.com + www (already on kx9x)
 5. Every later ship: git push origin main
 ```
