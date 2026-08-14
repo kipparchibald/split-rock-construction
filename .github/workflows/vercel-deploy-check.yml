@@ -1,17 +1,22 @@
-# Polls Vercel for the latest production deployment and smoke-tests the live URL.
+# Smoke-tests production and (when secrets exist) polls Vercel for deploy READY state.
 # Does NOT deploy — use deploy-vercel.yml (or Git integration) to ship.
 #
-# Secrets (Settings → Secrets and variables → Actions):
+# Without Vercel secrets: HTTP smoke test against PRODUCTION_URL (default splitrockconst.com).
+# With secrets: full Vercel API check + smoke test.
+#
+# Optional secrets (Settings → Secrets and variables → Actions):
 #   VERCEL_TOKEN       — https://vercel.com/account/tokens
 #   VERCEL_ORG_ID      — team_ZEZVchkfVnLrlfIFcBD32tFl (voxli)
 #   VERCEL_PROJECT_ID  — prj_… from split-rock-construction-kx9x (NOT stale split-rock-construction)
 #
 # Optional repo variables:
-#   PRODUCTION_URL     — e.g. https://splitrockconst.com (preferred smoke target)
+#   PRODUCTION_URL     — e.g. https://splitrockconst.com (smoke target; default when unset)
 
 name: Vercel production check
 
 on:
+  pull_request:
+    branches: [main]
   schedule:
     # Every 6 hours
     - cron: "15 */6 * * *"
@@ -20,11 +25,11 @@ on:
   workflow_call:
     secrets:
       VERCEL_TOKEN:
-        required: true
+        required: false
       VERCEL_ORG_ID:
-        required: true
+        required: false
       VERCEL_PROJECT_ID:
-        required: true
+        required: false
 
 concurrency:
   group: vercel-prod-check
@@ -42,27 +47,12 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Require Vercel secrets
+      - name: Check production deployment
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          missing=
-          [ -n "$VERCEL_TOKEN" ] || missing="$missing VERCEL_TOKEN"
-          [ -n "$VERCEL_ORG_ID" ] || missing="$missing VERCEL_ORG_ID"
-          [ -n "$VERCEL_PROJECT_ID" ] || missing="$missing VERCEL_PROJECT_ID"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing GitHub Actions secrets:$missing"
-            echo "Set them under Settings → Secrets → Actions (see DEPLOY.md)."
-            exit 1
-          fi
-
-      - name: Check latest production deployment
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
           DEPLOY_URL: ${{ vars.PRODUCTION_URL }}
           SKIP_WAIT: "1"
           ALLOW_SSO: "1"

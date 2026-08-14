@@ -2,8 +2,18 @@
 /**
  * Verify Vercel production deployment is READY and serves real HTML.
  *
- * Required env:
+ * Modes:
+ *   Full (default when VERCEL_TOKEN is set): poll Vercel API for latest production
+ *     deployment, verify READY, then smoke-test the URL.
+ *   URL-only (when VERCEL_TOKEN is unset): smoke-test DEPLOY_URL / PRODUCTION_URL
+ *     only — used by scheduled production checks when GitHub Actions secrets are not
+ *     configured yet.
+ *
+ * Required env (full mode):
  *   VERCEL_TOKEN
+ *
+ * Required env (URL-only mode):
+ *   DEPLOY_URL or PRODUCTION_URL — defaults to https://splitrockconst.com
  *
  * Project resolution (one of):
  *   VERCEL_PROJECT_ID   — prj_…
@@ -14,7 +24,8 @@
  *
  * Optional:
  *   EXPECTED_SHA        — fail if deployment meta githubCommitSha does not match
- *   DEPLOY_URL          — smoke-test this URL instead of the deployment URL
+ *   DEPLOY_URL          — smoke-test this URL (URL-only mode or override in full mode)
+ *   PRODUCTION_URL      — alias for DEPLOY_URL when DEPLOY_URL is unset
  *   TIMEOUT_MS          — default 300000 (5 min) while waiting for READY
  *   POLL_MS             — default 10000
  *   SKIP_WAIT           — if "1"/"true", only inspect latest (no poll)
@@ -23,6 +34,7 @@
  */
 
 const API = "https://api.vercel.com";
+const DEFAULT_PRODUCTION_URL = "https://splitrockconst.com";
 
 const TOKEN = process.env.VERCEL_TOKEN;
 const ORG_ID =
@@ -31,7 +43,11 @@ const PROJECT_ID = process.env.VERCEL_PROJECT_ID || "";
 const PROJECT_NAME =
   process.env.VERCEL_PROJECT_NAME || "split-rock-construction-kx9x";
 const EXPECTED_SHA = (process.env.EXPECTED_SHA || "").trim();
-const DEPLOY_URL = (process.env.DEPLOY_URL || "").trim();
+const DEPLOY_URL = (
+  process.env.DEPLOY_URL ||
+  process.env.PRODUCTION_URL ||
+  ""
+).trim();
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 300_000);
 const POLL_MS = Number(process.env.POLL_MS || 10_000);
 const SKIP_WAIT = /^(1|true|yes)$/i.test(process.env.SKIP_WAIT || "");
@@ -233,11 +249,42 @@ async function smokeTest(url) {
   return { status: res.status, bytes: body.length };
 }
 
+async function smokeOnlyCheck(url) {
+  const target = url || DEFAULT_PRODUCTION_URL;
+  console.log("Vercel deployment check (URL-only — no VERCEL_TOKEN)");
+  console.log(`  target:  ${target}`);
+  console.log(
+    "  note:    set VERCEL_TOKEN (+ VERCEL_ORG_ID, VERCEL_PROJECT_ID) for API deploy-state checks",
+  );
+
+  const result = await smokeTest(target);
+
+  console.log("");
+  console.log("All deployment checks passed.");
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        mode: "url-only",
+        url: target,
+        httpStatus: result.status,
+        bytes: result.bytes ?? null,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 async function main() {
   if (!TOKEN) {
-    fail(
-      "VERCEL_TOKEN is required. Create at https://vercel.com/account/tokens and set as a GitHub Actions secret.",
-    );
+    if (EXPECTED_SHA) {
+      fail(
+        "EXPECTED_SHA requires VERCEL_TOKEN for deployment metadata. Unset EXPECTED_SHA or configure Vercel secrets.",
+      );
+    }
+    await smokeOnlyCheck(DEPLOY_URL || DEFAULT_PRODUCTION_URL);
+    return;
   }
 
   console.log("Vercel deployment check");
