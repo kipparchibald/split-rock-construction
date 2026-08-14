@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -164,6 +165,7 @@ function AgentsPage() {
           </form>
         )}
       </main>
+      <MarketingFooter />
     </div>
   );
 }
