@@ -28,6 +28,8 @@ import type { PricingAssumptions } from "@/lib/pricing";
 import { plans } from "./plans";
 import { buildJobFromPlan } from "@/lib/start-from-plan";
 import { generatePortalToken } from "@/lib/client-portal";
+import { loadOpsSnapshot } from "@/lib/ops-persist";
+import { resolvePlanIdForProspect } from "@/lib/prospect-plan";
 import { scoreProspect } from "@/lib/prospects";
 import { packageTotal } from "@/lib/lot-pricing";
 import {
@@ -91,36 +93,39 @@ const initial = isDemoDataEnabled
       tours: seedTours,
       proposals: seedProposals,
     }
-  : {
-      projects: liveEmpty.projects,
-      clients: liveEmpty.clients,
-      members: liveEmpty.members,
-      crews: liveEmpty.crews,
-      equipment: liveEmpty.equipment,
-      bids: liveEmpty.bids,
-      safety: liveEmpty.safety,
-      documents: liveEmpty.documents,
-      budgetLines: liveEmpty.budgetLines,
-      activity: liveEmpty.activity,
-      draws: liveEmpty.draws,
-      changeOrders: liveEmpty.changeOrders,
-      selections: liveEmpty.selections,
-      dailyLogs: liveEmpty.dailyLogs,
-      subcontracts: liveEmpty.subcontracts,
-      payApplications: liveEmpty.payApplications,
-      commercialMeta: liveEmpty.commercialMeta,
-      closeoutPackages: liveEmpty.closeoutPackages,
-      realtyDeals: liveEmpty.realtyDeals,
-      dualRolePolicy: liveEmpty.dualRolePolicy,
-      permitPackages: [] as PermitPackage[],
-      tetonLots: liveEmpty.tetonLots,
-      tetonPackages: liveEmpty.tetonPackages,
-      tetonFinance: liveEmpty.tetonFinance,
-      tetonCommunity: liveEmpty.tetonCommunity,
-      prospects: liveEmpty.prospects,
-      tours: liveEmpty.tours,
-      proposals: liveEmpty.proposals,
-    };
+  : (() => {
+      const ops = loadOpsSnapshot();
+      return {
+        projects: liveEmpty.projects,
+        clients: liveEmpty.clients,
+        members: liveEmpty.members,
+        crews: liveEmpty.crews,
+        equipment: liveEmpty.equipment,
+        bids: liveEmpty.bids,
+        safety: ops.safety ?? liveEmpty.safety,
+        documents: ops.documents ?? liveEmpty.documents,
+        budgetLines: ops.budgetLines ?? liveEmpty.budgetLines,
+        activity: ops.activity ?? liveEmpty.activity,
+        draws: ops.draws ?? liveEmpty.draws,
+        changeOrders: ops.changeOrders ?? liveEmpty.changeOrders,
+        selections: ops.selections ?? liveEmpty.selections,
+        dailyLogs: ops.dailyLogs ?? liveEmpty.dailyLogs,
+        subcontracts: liveEmpty.subcontracts,
+        payApplications: liveEmpty.payApplications,
+        commercialMeta: liveEmpty.commercialMeta,
+        closeoutPackages: ops.closeoutPackages ?? liveEmpty.closeoutPackages,
+        realtyDeals: liveEmpty.realtyDeals,
+        dualRolePolicy: liveEmpty.dualRolePolicy,
+        permitPackages: ops.permitPackages ?? ([] as PermitPackage[]),
+        tetonLots: liveEmpty.tetonLots,
+        tetonPackages: liveEmpty.tetonPackages,
+        tetonFinance: liveEmpty.tetonFinance,
+        tetonCommunity: liveEmpty.tetonCommunity,
+        prospects: liveEmpty.prospects,
+        tours: liveEmpty.tours,
+        proposals: liveEmpty.proposals,
+      };
+    })();
 
 interface AppState {
   projects: Project[]; clients: Client[]; members: CrewMember[]; crews: Crew[];
@@ -1199,33 +1204,78 @@ function createAppStore() {
           }),
         };
         if (opts?.startJob) {
-          projectId = uid("p");
-          const project: Project = {
-            id: projectId,
-            name: jobName,
-            address: jobAddress || "Address TBD",
-            clientId,
-            type: clientType === "commercial" ? "commercial" : "residential",
-            status: "planning",
-            phase: "Site Work",
-            progress: 0,
-            budget: 0,
-            spent: 0,
-            startDate: today,
-            endDate: today,
-            superintendent: prospect.assignedTo || "Unassigned",
-            sqft: 0,
-            description: prospect.interest || "New job from prospect conversion",
-            milestones: [],
-            schedule: [],
-          };
-          next.projects = [project, ...s.projects];
-          next.activity = pushActivity(next.activity ?? s.activity, {
-            id: uid("a"),
-            at: new Date().toISOString(),
-            text: `Job opened from prospect · ${jobName}`,
-            kind: "project",
-          });
+          const planId = resolvePlanIdForProspect(prospect);
+          const plan = plans.find((p) => p.id === planId && p.active);
+          const lot = prospect.lotId
+            ? s.tetonLots.find((l) => l.id === prospect.lotId)
+            : undefined;
+          const resolvedAddress =
+            jobAddress ||
+            (lot
+              ? `Teton Heights Block ${lot.block} Lot ${lot.lot}, Rigby, ID`
+              : "Address TBD");
+
+          if (plan) {
+            const built = buildJobFromPlan({
+              plan,
+              clientId,
+              lotAddress: resolvedAddress,
+              superintendent: prospect.assignedTo || "Unassigned",
+            });
+            built.project.name = jobName;
+            built.project.address = resolvedAddress;
+            built.project.description =
+              prospect.interest || built.project.description;
+            if (clientType === "commercial") {
+              built.project.type = "commercial";
+            }
+            projectId = built.project.id;
+            next.projects = [built.project, ...s.projects];
+            next.draws = [...built.draws, ...s.draws];
+            next.selections = [...built.selections, ...s.selections];
+            next.budgetLines = [...built.budgetLines, ...s.budgetLines];
+            next.documents = [...built.documents, ...s.documents];
+            next.closeoutPackages = [built.closeout, ...s.closeoutPackages];
+            next.permitPackages = [
+              createPermitPackage(built.project.id, built.project.name),
+              ...s.permitPackages,
+            ];
+            next.activity = pushActivity(next.activity ?? s.activity, built.activity);
+            next.activity = pushActivity(next.activity ?? s.activity, {
+              id: uid("a"),
+              at: new Date().toISOString(),
+              text: `Job opened from prospect · ${jobName} (${plan.code})`,
+              kind: "project",
+            });
+          } else {
+            projectId = uid("p");
+            const project: Project = {
+              id: projectId,
+              name: jobName,
+              address: resolvedAddress,
+              clientId,
+              type: clientType === "commercial" ? "commercial" : "residential",
+              status: "planning",
+              phase: "Site Work",
+              progress: 0,
+              budget: 0,
+              spent: 0,
+              startDate: today,
+              endDate: today,
+              superintendent: prospect.assignedTo || "Unassigned",
+              sqft: 0,
+              description: prospect.interest || "New job from prospect conversion",
+              milestones: [],
+              schedule: [],
+            };
+            next.projects = [project, ...s.projects];
+            next.activity = pushActivity(next.activity ?? s.activity, {
+              id: uid("a"),
+              at: new Date().toISOString(),
+              text: `Job opened from prospect · ${jobName}`,
+              kind: "project",
+            });
+          }
         }
         return next;
       });

@@ -172,8 +172,12 @@ function Dashboard() {
     payApplications, subcontracts, closeoutPackages, realtyDeals,
   ]);
 
-  // Latest field notes (not a hard-coded seed day — works as the calendar moves)
-  const todayLogs = useMemo(() => dailyLogs.slice(0, 4), [dailyLogs]);
+  // Today's field notes — matches the Field coverage strip below
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayLogs = useMemo(
+    () => dailyLogs.filter((l) => l.date === todayIso).slice(0, 4),
+    [dailyLogs, todayIso],
+  );
 
   // Elevate the single highest-priority item as the primary next action
   const primaryAction: NextAction = useMemo(() => {
@@ -338,11 +342,11 @@ function Dashboard() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent field notes</CardTitle>
+              <CardTitle>Today&apos;s field notes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {todayLogs.length === 0 ? (
-                <p className="text-[13px] text-fg-muted">No field notes yet.</p>
+                <p className="text-[13px] text-fg-muted">No logs posted today yet.</p>
               ) : (
                 todayLogs.map((l) => {
                   const p = projects.find((x) => x.id === l.projectId);

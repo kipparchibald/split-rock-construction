@@ -328,6 +328,20 @@ function BidCard({
         <p className="mt-2 line-clamp-2 text-[12px] text-fg-muted">{bid.notes}</p>
       ) : null}
 
+      {bid.lineItems.length > 0 ? (
+        <ul className="mt-2 space-y-1 border-t border-border pt-2">
+          {bid.lineItems.map((li) => (
+            <li
+              key={li.label}
+              className="flex items-center justify-between gap-2 text-[11px] text-fg-muted"
+            >
+              <span className="min-w-0 truncate">{li.label}</span>
+              <span className="shrink-0 tabular-nums">{formatCurrency(li.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       {next.length > 0 ? (
         <div className={cn("flex flex-wrap gap-2", dense ? "mt-3" : "mt-4")}>
           {next.map((n) => (
