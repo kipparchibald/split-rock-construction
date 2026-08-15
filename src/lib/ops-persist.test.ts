@@ -4,6 +4,8 @@ import { opsSnapshotHasData, pickOpsSlice } from "./ops-persist";
 describe("ops-persist", () => {
   it("pickOpsSlice extracts operational fields only", () => {
     const slice = pickOpsSlice({
+      projects: [],
+      bids: [{ id: "b1" } as never],
       draws: [{ id: "dr1" } as never],
       changeOrders: [],
       selections: [],
@@ -16,6 +18,7 @@ describe("ops-persist", () => {
       activity: [],
     });
     expect(slice.draws).toHaveLength(1);
+    expect(slice.bids).toHaveLength(1);
     expect(slice.changeOrders).toEqual([]);
   });
 

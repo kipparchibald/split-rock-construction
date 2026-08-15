@@ -6,6 +6,7 @@
 
 import type {
   ActivityItem,
+  Bid,
   BudgetLine,
   ChangeOrder,
   CloseoutPackage,
@@ -13,6 +14,7 @@ import type {
   DocumentItem,
   PermitPackage,
   ProgressDraw,
+  Project,
   SafetyIncident,
   SelectionItem,
 } from "@/data/types";
@@ -21,6 +23,8 @@ import { loadJson, saveJson } from "@/lib/local-persist";
 const OPS_KEY = "ops-snapshot";
 
 export interface OpsSnapshot {
+  projects: Project[];
+  bids: Bid[];
   draws: ProgressDraw[];
   changeOrders: ChangeOrder[];
   selections: SelectionItem[];
@@ -34,6 +38,8 @@ export interface OpsSnapshot {
 }
 
 const empty: OpsSnapshot = {
+  projects: [],
+  bids: [],
   draws: [],
   changeOrders: [],
   selections: [],
@@ -57,6 +63,8 @@ export function saveOpsSnapshot(snapshot: OpsSnapshot): void {
 }
 
 export function pickOpsSlice(state: {
+  projects: OpsSnapshot["projects"];
+  bids: OpsSnapshot["bids"];
   draws: OpsSnapshot["draws"];
   changeOrders: OpsSnapshot["changeOrders"];
   selections: OpsSnapshot["selections"];
@@ -69,6 +77,8 @@ export function pickOpsSlice(state: {
   activity: OpsSnapshot["activity"];
 }): OpsSnapshot {
   return {
+    projects: state.projects,
+    bids: state.bids,
     draws: state.draws,
     changeOrders: state.changeOrders,
     selections: state.selections,
@@ -85,6 +95,8 @@ export function pickOpsSlice(state: {
 /** True when any ops slice has persisted rows (used to avoid overwriting with empty CRM hydrate). */
 export function opsSnapshotHasData(snapshot: Partial<OpsSnapshot>): boolean {
   return (
+    (snapshot.projects?.length ?? 0) > 0 ||
+    (snapshot.bids?.length ?? 0) > 0 ||
     (snapshot.draws?.length ?? 0) > 0 ||
     (snapshot.changeOrders?.length ?? 0) > 0 ||
     (snapshot.selections?.length ?? 0) > 0 ||

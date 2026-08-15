@@ -27,6 +27,7 @@ import { calcPrice } from "@/lib/pricing";
 import type { PricingAssumptions } from "@/lib/pricing";
 import { plans } from "./plans";
 import { buildJobFromPlan } from "@/lib/start-from-plan";
+import { buildJobFromBid, jobNameFromBidTitle } from "@/lib/start-from-bid";
 import { generatePortalToken } from "@/lib/client-portal";
 import { loadOpsSnapshot } from "@/lib/ops-persist";
 import { resolvePlanIdForProspect } from "@/lib/prospect-plan";
@@ -96,12 +97,12 @@ const initial = isDemoDataEnabled
   : (() => {
       const ops = loadOpsSnapshot();
       return {
-        projects: liveEmpty.projects,
+        projects: ops.projects ?? liveEmpty.projects,
         clients: liveEmpty.clients,
         members: liveEmpty.members,
         crews: liveEmpty.crews,
         equipment: liveEmpty.equipment,
-        bids: liveEmpty.bids,
+        bids: ops.bids ?? liveEmpty.bids,
         safety: ops.safety ?? liveEmpty.safety,
         documents: ops.documents ?? liveEmpty.documents,
         budgetLines: ops.budgetLines ?? liveEmpty.budgetLines,
@@ -169,7 +170,25 @@ interface AppState {
   assignEquipment: (id: string, projectId: string | undefined) => void;
   assignMember: (id: string, projectId: string | undefined) => void;
   assignCrew: (id: string, projectId: string | undefined) => void;
-  setBidStatus: (id: string, status: BidStatus) => void;
+  setBidStatus: (id: string, status: BidStatus) => { projectId?: string } | void;
+  addBid: (
+    input: {
+      title: string;
+      clientId?: string;
+      clientName?: string;
+      type?: Project["type"];
+      amount: number;
+      lineItems: Bid["lineItems"];
+      notes?: string;
+      dueDate?: string;
+      planId?: string;
+      status?: BidStatus;
+    },
+  ) => string;
+  attachDocumentFile: (
+    id: string,
+    meta: { attachmentId: string; attachmentName: string; attachmentSize: number },
+  ) => void;
   setEquipmentStatus: (id: string, status: Equipment["status"]) => void;
   addClient: (client: Omit<Client, "id">) => void;
   updateClient: (id: string, patch: Partial<Omit<Client, "id">>) => void;
@@ -545,30 +564,155 @@ function createAppStore() {
         };
       }),
 
-    setBidStatus: (id, status) =>
+    setBidStatus: (id, status) => {
+      let openedProjectId: string | undefined;
       set((s) => {
         const bid = s.bids.find((b) => b.id === id);
+        if (!bid) return s;
+
+        let nextProjects = s.projects;
+        let nextClients = s.clients;
+        let nextDraws = s.draws;
+        let nextSelections = s.selections;
+        let nextBudgetLines = s.budgetLines;
+        let nextDocuments = s.documents;
+        let nextCloseout = s.closeoutPackages;
+        let nextPermits = s.permitPackages;
+        let nextActivity = s.activity;
+        let nextBid = {
+          ...bid,
+          status,
+          submittedAt:
+            status === "submitted" && !bid.submittedAt
+              ? new Date().toISOString().slice(0, 10)
+              : bid.submittedAt,
+        };
+
+        if (status === "won" && !bid.projectId) {
+          const existing = s.projects.find(
+            (p) =>
+              p.clientId === bid.clientId &&
+              p.name.toLowerCase() === jobNameFromBidTitle(bid.title).toLowerCase(),
+          );
+          if (existing) {
+            nextBid = { ...nextBid, projectId: existing.id };
+            openedProjectId = existing.id;
+          } else {
+            const client = s.clients.find((c) => c.id === bid.clientId);
+            const plan = bid.planId ? plans.find((p) => p.id === bid.planId && p.active) : undefined;
+            const built = buildJobFromBid({
+              bid,
+              client: client ? { id: client.id, name: client.name, address: client.address } : undefined,
+              plan,
+            });
+            nextBid = { ...nextBid, projectId: built.project.id };
+            openedProjectId = built.project.id;
+            nextProjects = [built.project, ...s.projects];
+            nextDraws = [...built.draws, ...s.draws];
+            nextSelections = [...built.selections, ...s.selections];
+            nextBudgetLines = [...built.budgetLines, ...s.budgetLines];
+            nextDocuments = [...built.documents, ...s.documents];
+            nextCloseout = [built.closeout, ...s.closeoutPackages];
+            nextPermits = [createPermitPackage(built.project.id, built.project.name), ...s.permitPackages];
+            nextActivity = pushActivity(nextActivity, built.activity);
+            if (built.client) nextClients = [built.client, ...s.clients];
+          }
+        }
+
+        nextActivity = pushActivity(nextActivity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text:
+            status === "won" && openedProjectId
+              ? `Bid awarded · ${bid.title} → job opened`
+              : `Bid ${bid.title} → ${status}`,
+          kind: "bid",
+        });
+
         return {
-          bids: s.bids.map((b) =>
-            b.id === id
-              ? {
-                  ...b,
-                  status,
-                  submittedAt:
-                    status === "submitted" && !b.submittedAt
-                      ? new Date().toISOString().slice(0, 10)
-                      : b.submittedAt,
-                }
-              : b,
-          ),
+          bids: s.bids.map((b) => (b.id === id ? nextBid : b)),
+          projects: nextProjects,
+          clients: nextClients,
+          draws: nextDraws,
+          selections: nextSelections,
+          budgetLines: nextBudgetLines,
+          documents: nextDocuments,
+          closeoutPackages: nextCloseout,
+          permitPackages: nextPermits,
+          activity: nextActivity,
+        };
+      });
+      return openedProjectId ? { projectId: openedProjectId } : undefined;
+    },
+
+    addBid: (input) => {
+      const id = uid("b");
+      const due =
+        input.dueDate ??
+        new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      let clientId = input.clientId;
+      let newClient: Client | undefined;
+
+      set((s) => {
+        if (!clientId) {
+          clientId = uid("c");
+          newClient = {
+            id: clientId,
+            name: clampText(input.clientName?.trim() || "Prospective client", LIMITS.clientName),
+            email: "",
+            phone: "",
+            type: input.type === "commercial" ? "commercial" : "homeowner",
+            address: "",
+            notes: `Created from estimator bid: ${input.title}`,
+            portalStatus: "none",
+          };
+        }
+        const bid: Bid = {
+          id,
+          title: clampText(input.title, 120),
+          clientId: clientId!,
+          type: input.type ?? "residential",
+          status: input.status ?? "draft",
+          amount: Math.max(0, Math.round(input.amount)),
+          dueDate: due,
+          notes: clampText(input.notes ?? "", 500),
+          lineItems: input.lineItems,
+          planId: input.planId,
+        };
+        return {
+          bids: [bid, ...s.bids],
+          clients: newClient ? [newClient, ...s.clients] : s.clients,
           activity: pushActivity(s.activity, {
             id: uid("a"),
             at: new Date().toISOString(),
-            text: `Bid ${bid?.title ?? id} → ${status}`,
+            text: `Bid created from estimator · ${bid.title}`,
             kind: "bid",
           }),
         };
-      }),
+      });
+      return id;
+    },
+
+    attachDocumentFile: (id, meta) =>
+      set((s) => ({
+        documents: s.documents.map((d) =>
+          d.id === id
+            ? {
+                ...d,
+                attachmentId: meta.attachmentId,
+                attachmentName: meta.attachmentName,
+                attachmentSize: meta.attachmentSize,
+                updatedAt: new Date().toISOString().slice(0, 10),
+              }
+            : d,
+        ),
+        activity: pushActivity(s.activity, {
+          id: uid("a"),
+          at: new Date().toISOString(),
+          text: `Attachment added · ${meta.attachmentName}`,
+          kind: "doc",
+        }),
+      })),
 
     setEquipmentStatus: (id, status) =>
       set((s) => ({
