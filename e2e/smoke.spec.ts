@@ -8,6 +8,7 @@ test.describe("smoke", () => {
 
     await gotoApp(page, "/", /lots to build on|built well|homes built to suit/i);
     await expect(page.getByText(/split rock/i).first()).toBeVisible();
+    await expect(page.getByText(/Idaho Contractor Registration 6481622/i).first()).toBeVisible();
     await expect(
       page.getByRole("link", { name: /browse teton|talk build|operator sign/i }).first(),
     ).toBeVisible();

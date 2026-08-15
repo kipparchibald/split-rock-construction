@@ -41,6 +41,7 @@ import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
 import { useAppStore } from "@/data/store";
+import { estimateToBidLineItems } from "@/lib/start-from-bid";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/pricing")({ component: PricingPage });
@@ -76,8 +77,12 @@ function PricingPage() {
   const [draftApplied, setDraftApplied] = useState(false);
   const [closedCount, setClosedCount] = useState(0);
   const [seedProjectId, setSeedProjectId] = useState("p6");
+  const [bidTitle, setBidTitle] = useState("");
+  const [bidClientId, setBidClientId] = useState("");
   const projects = useAppStore((s) => s.projects);
+  const clients = useAppStore((s) => s.clients);
   const seedBudgetFromEstimate = useAppStore((s) => s.seedBudgetFromEstimate);
+  const addBid = useAppStore((s) => s.addBid);
 
   useEffect(() => {
     setClosedCount(loadClosedJobs().length);
@@ -741,6 +746,77 @@ function PricingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Push estimate → bid board</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Bid title</Label>
+              <Input
+                className="mt-1"
+                placeholder={`${sqft} sf ${contractModel.replace(/_/g, " ")} proposal`}
+                value={bidTitle}
+                onChange={(e) => setBidTitle(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Client (optional)</Label>
+              <select
+                className="mt-1 w-full border border-border bg-bg px-3 py-2 text-[13px]"
+                value={bidClientId}
+                onChange={(e) => setBidClientId(e.target.value)}
+              >
+                <option value="">New prospect client</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="text-[11px] text-fg-subtle">
+            Creates a draft bid on the pipeline with this estimate's line items and contract price (
+            {formatCurrency(price.contractPrice)}). Award it on the bid board to open the full job
+            package — schedule, draws, selections, and budget.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const title =
+                bidTitle.trim() ||
+                `${sqft.toLocaleString()} sf ${CONTRACT_GUIDANCE[contractModel].title} proposal`;
+              const lineItems = estimateToBidLineItems(costs, price);
+              const client = bidClientId ? clients.find((c) => c.id === bidClientId) : undefined;
+              const bidId = addBid({
+                title,
+                clientId: bidClientId || undefined,
+                type: client?.type === "commercial" ? "commercial" : "residential",
+                amount: price.contractPrice,
+                lineItems,
+                notes: `From estimator · ${feePolicy.title} · ${sqft} sf`,
+              });
+              saveJson(PERSIST_KEYS.contractModel, contractModel);
+              toast.success("Bid added to pipeline", {
+                description: title,
+                action: {
+                  label: "View bids",
+                  onClick: () => {
+                    window.location.href = "/app/bids";
+                  },
+                },
+              });
+              void bidId;
+            }}
+          >
+            Create bid on board
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card className="mt-4">
         <CardHeader>

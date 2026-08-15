@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { FilterChips } from "@/components/layout/filter-chips";
@@ -64,6 +64,15 @@ function SchedulePage() {
   const crews = useAppStore((s) => s.crews);
   const [scope, setScope] = useState<Scope>("all");
   const [mode, setMode] = useState<"gantt" | "list">("gantt");
+
+  // Prefer list on phone — Gantt needs horizontal scroll
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setMode(mq.matches ? "gantt" : "list");
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const today = useMemo(() => {
     const t = new Date();

@@ -254,16 +254,16 @@ export const projects: Project[] = [
 ];
 
 export const bids: Bid[] = [
-  { id: "b1", title: "Hart Residence — Base Bid", clientId: "c1", type: "residential", status: "won", amount: 685000, submittedAt: "2025-09-12", dueDate: "2025-09-20", notes: "Won on schedule confidence.", lineItems: [
+  { id: "b1", title: "Hart Residence — Base Bid", clientId: "c1", type: "residential", status: "won", amount: 685000, submittedAt: "2025-09-12", dueDate: "2025-09-20", projectId: "p1", notes: "Won on schedule confidence.", lineItems: [
     { label: "Site & foundation", amount: 98000 }, { label: "Structure & envelope", amount: 210000 }, { label: "MEP", amount: 125000 }, { label: "Finishes", amount: 185000 }, { label: "Allowance & contingency", amount: 67000 },
   ]},
-  { id: "b2", title: "Willow Creek Farmhouse", clientId: "c3", type: "residential", status: "won", amount: 742000, submittedAt: "2026-02-28", dueDate: "2026-03-10", notes: "Includes ADU rough-in allowance.", lineItems: [
+  { id: "b2", title: "Willow Creek Farmhouse", clientId: "c3", type: "residential", status: "won", amount: 742000, submittedAt: "2026-02-28", dueDate: "2026-03-10", projectId: "p2", notes: "Includes ADU rough-in allowance.", lineItems: [
     { label: "Site & foundation", amount: 112000 }, { label: "Structure & envelope", amount: 245000 }, { label: "MEP", amount: 138000 }, { label: "Finishes", amount: 198000 }, { label: "Contingency", amount: 49000 },
   ]},
   { id: "b3", title: "Cole Spec Series — 3 Lots", clientId: "c2", type: "residential", status: "submitted", amount: 1245000, submittedAt: "2026-07-10", dueDate: "2026-08-01", notes: "Volume pricing if all three awarded.", lineItems: [
     { label: "Lot 7 build", amount: 425000 }, { label: "Lot 8 build", amount: 410000 }, { label: "Lot 9 build", amount: 410000 },
   ]},
-  { id: "b4", title: "Commerce Park Shell — Design Assist", clientId: "c4", type: "commercial", status: "won", amount: 2100000, submittedAt: "2026-01-05", dueDate: "2026-01-12", notes: "Won design-assist; CSI divisions in bid package.", lineItems: [
+  { id: "b4", title: "Commerce Park Shell — Design Assist", clientId: "c4", type: "commercial", status: "won", amount: 2100000, submittedAt: "2026-01-05", dueDate: "2026-01-12", projectId: "p5", notes: "Won design-assist; CSI divisions in bid package.", lineItems: [
     { label: "Div 03 Concrete", amount: 320000 }, { label: "Div 05 Metals / structure", amount: 680000 }, { label: "Div 07 Envelope", amount: 420000 }, { label: "Div 21–26 MEP core", amount: 480000 }, { label: "Div 01 GC / general conditions", amount: 200000 },
   ]},
   { id: "b6", title: "Eagle Retail TI — Suite 200", clientId: "c4", type: "commercial", status: "submitted", amount: 485000, submittedAt: "2026-07-20", dueDate: "2026-08-05", notes: "National tenant TI — unit pricing on finishes.", lineItems: [

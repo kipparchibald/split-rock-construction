@@ -32,6 +32,10 @@ export interface Bid {
   id: string; title: string; clientId: string; type: ProjectType; status: BidStatus;
   amount: number; submittedAt?: string; dueDate: string; notes: string;
   lineItems: { label: string; amount: number }[];
+  /** Job opened when bid is awarded */
+  projectId?: string;
+  /** Optional Book of Plans link when bid was created from a plan */
+  planId?: string;
 }
 export interface Project {
   id: string; name: string; address: string; clientId: string; type: ProjectType;
@@ -56,6 +60,10 @@ export interface DocumentItem {
   /** Optional agency / inspector / permit number */
   reference?: string;
   dueDate?: string;
+  /** IndexedDB attachment id — browser-local only */
+  attachmentId?: string;
+  attachmentName?: string;
+  attachmentSize?: number;
 }
 export interface ActivityItem {
   id: string; at: string; text: string; kind: "project" | "bid" | "safety" | "doc" | "crew";

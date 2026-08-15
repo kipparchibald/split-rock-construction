@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { Button } from "@/components/ui/button";
 import { COMPANY } from "@/lib/company";
 
@@ -432,6 +433,9 @@ function LandingPage() {
                   <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {MARKETING_LOCATION}
                 </span>
+                <span className="text-[12px] text-primary-fg/60">
+                  {COMPANY.idahoContractorRegistrationLabel}
+                </span>
               </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -464,42 +468,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-bg-elevated pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex flex-col gap-1">
-            <Logo />
-            <p className="text-[11px] text-fg-subtle">
-              Lots · build-to-suit · land-home packages · Rigby & Jefferson County
-            </p>
-            <a
-              href={`https://${COMPANY.website}`}
-              className="text-[11px] text-fg-subtle hover:text-fg"
-            >
-              {COMPANY.website}
-            </a>
-          </div>
-          <div className="flex flex-col items-start gap-1 sm:items-end">
-            <a href={COMPANY.phoneHref} className="text-[11px] text-fg-subtle hover:text-fg">
-              {COMPANY.phone}
-            </a>
-            <Link to="/estimate" className="text-[11px] text-fg-subtle hover:text-fg">
-              Lot + build estimate
-            </Link>
-            <Link to="/agents" className="text-[11px] text-fg-subtle hover:text-fg">
-              Agent referral
-            </Link>
-            <Link to="/portal/login" className="text-[11px] text-fg-subtle hover:text-fg">
-              Client portal
-            </Link>
-            <Link to="/login" className="text-[11px] text-fg-subtle hover:text-fg">
-              Operator sign-in
-            </Link>
-            <p className="text-[11px] text-fg-subtle">
-              © {new Date().getFullYear()} Split Rock Construction
-            </p>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

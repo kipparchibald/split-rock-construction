@@ -20,6 +20,9 @@ export const COMPANY = {
   website: "splitrockconst.com",
   lotsUrl: "https://rigbylots.com",
   builderEntity: "Split Rock Construction LLC",
+  /** Idaho DOPL General Contractor Registration (Contractors Board), active 2026-07-28 – 2028-07-28 */
+  idahoContractorRegistration: "6481622",
+  idahoContractorRegistrationLabel: "Idaho Contractor Registration 6481622",
   brokerageNote:
     "Principal is an Idaho-licensed real estate licensee — dual-capacity deals require written disclosure.",
 } as const;

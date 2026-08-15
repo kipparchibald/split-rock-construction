@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, LayoutGrid, List } from "lucide-react";
 import { FilterChips } from "@/components/layout/filter-chips";
 import { PageHeader } from "@/components/layout/page-header";
@@ -45,6 +45,7 @@ function BidsPage() {
   const bids = useAppStore((s) => s.bids);
   const clients = useAppStore((s) => s.clients);
   const setBidStatus = useAppStore((s) => s.setBidStatus);
+  const navigate = useNavigate();
   const [view, setView] = useState<View>("list");
   const [typeFilter, setTypeFilter] = useState<"all" | "residential" | "commercial">("all");
   const [statusFocus, setStatusFocus] = useState<BidStatus | "all">("all");
@@ -84,7 +85,17 @@ function BidsPage() {
   }, [bids, typeFilter]);
 
   function advance(id: string, status: BidStatus) {
-    setBidStatus(id, status);
+    const result = setBidStatus(id, status);
+    if (status === "won" && result?.projectId) {
+      toast.success("Bid awarded — job package opened", {
+        action: {
+          label: "Open job",
+          onClick: () =>
+            navigate({ to: "/app/projects/$projectId", params: { projectId: result.projectId! } }),
+        },
+      });
+      return;
+    }
     toast.success(`Bid marked ${status}`);
   }
 
@@ -326,6 +337,32 @@ function BidCard({
 
       {bid.notes ? (
         <p className="mt-2 line-clamp-2 text-[12px] text-fg-muted">{bid.notes}</p>
+      ) : null}
+
+      {bid.status === "won" && bid.projectId ? (
+        <p className="mt-2 text-[12px]">
+          <Link
+            to="/app/projects/$projectId"
+            params={{ projectId: bid.projectId }}
+            className="font-medium text-fg underline-offset-2 hover:underline"
+          >
+            Open job package →
+          </Link>
+        </p>
+      ) : null}
+
+      {bid.lineItems.length > 0 ? (
+        <ul className="mt-2 space-y-1 border-t border-border pt-2">
+          {bid.lineItems.map((li) => (
+            <li
+              key={li.label}
+              className="flex items-center justify-between gap-2 text-[11px] text-fg-muted"
+            >
+              <span className="min-w-0 truncate">{li.label}</span>
+              <span className="shrink-0 tabular-nums">{formatCurrency(li.amount)}</span>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {next.length > 0 ? (

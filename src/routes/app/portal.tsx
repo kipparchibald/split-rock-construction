@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Banknote,
+  CalendarRange,
   CheckCircle2,
   ClipboardList,
   HardHat,
@@ -263,6 +264,24 @@ function PortalPage() {
     setSelectionStatus(id, "approved", choice);
     setLastAction(`Approved selection · ${label}`);
     toast.success("Selection approved", { description: label });
+  }
+
+  function requestSelectionChanges(id: string, label: string, feedback?: string) {
+    const sel = selections.find((s) => s.id === id);
+    if (!sel || !project || sel.projectId !== project.id) {
+      toast.error("That selection is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
+    const note = feedback?.trim() || "Owner requested alternate options";
+    setSelectionStatus(id, "not_started", note);
+    setLastAction(`Requested changes · ${label}`);
+    toast.message("Feedback sent", {
+      description: "Your superintendent will revise options and resubmit for approval.",
+    });
   }
 
   // Client not signed in — send to portal login (operators can still preview with banner)
@@ -550,6 +569,7 @@ function PortalPage() {
       <nav className="mb-4 flex flex-wrap gap-2" aria-label="Portal sections">
         {[
           { id: "decisions", label: "Decisions", icon: ClipboardList, count: decisionCount },
+          { id: "schedule", label: "Schedule", icon: CalendarRange },
           { id: "money", label: "Money", icon: Banknote },
           { id: "field", label: "Field updates", icon: HardHat },
         ].map((s) => (
@@ -593,6 +613,49 @@ function PortalPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <Card id="schedule" className="mb-6">
+        <CardHeader>
+          <CardTitle>Build schedule</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {project.schedule.length === 0 ? (
+            <p className="text-[13px] text-fg-muted">
+              Your construction timeline will appear here once phases are set.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {project.schedule.map((ph) => {
+                const end = new Date(`${ph.end}T12:00:00`);
+                const today = new Date();
+                today.setHours(12, 0, 0, 0);
+                const late = end < today && ph.pct < 100;
+                return (
+                  <div
+                    key={`${ph.phase}-${ph.start}`}
+                    className={cn(
+                      "flex flex-wrap items-center justify-between gap-2 border border-border px-3 py-2.5 text-[12px]",
+                      late && "border-danger/30 bg-danger/5",
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-fg">{ph.phase}</p>
+                      <p className="text-fg-subtle">
+                        {formatDate(ph.start)} – {formatDate(ph.end)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress value={ph.pct} className="h-1.5 w-20" />
+                      <span className="tabular-nums text-fg-muted">{ph.pct}%</span>
+                      {late ? <Badge variant="danger">Behind</Badge> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card id="decisions">
@@ -698,7 +761,7 @@ function PortalPage() {
                       }
                       aria-label={`Choice for ${s.category}`}
                     />
-                    <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       <Button
                         className="min-h-11"
                         onClick={() =>
@@ -720,6 +783,20 @@ function PortalPage() {
                         }}
                       >
                         Save draft choice
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() =>
+                          requestSelectionChanges(
+                            s.id,
+                            `${s.room} · ${s.category}`,
+                            choiceDraft[s.id] ?? s.choice,
+                          )
+                        }
+                        data-testid="portal-request-selection-changes"
+                      >
+                        Request changes
                       </Button>
                     </div>
                   </div>
@@ -860,7 +937,7 @@ function PortalPage() {
                 Updates appear as the crew posts daily logs — progress, weather, and any blockers.
               </p>
             ) : (
-              <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {logs.map((l) => (
                   <div key={l.id} className="border border-border p-3">
                     <p className="text-[12px] text-fg-subtle">
@@ -871,6 +948,19 @@ function PortalPage() {
                     <p className="mt-1.5 text-[13px] leading-relaxed text-fg-muted">{l.workDone}</p>
                     {l.blockers ? (
                       <p className="mt-2 text-[11px] text-warning">Note: {l.blockers}</p>
+                    ) : null}
+                    {l.photos && l.photos.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {l.photos.slice(0, 4).map((src, i) => (
+                          <img
+                            key={`${l.id}-photo-${i}`}
+                            src={src}
+                            alt={`Field photo ${i + 1} from ${formatDate(l.date)}`}
+                            className="h-20 w-20 border border-border object-cover"
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
                     ) : null}
                   </div>
                 ))}

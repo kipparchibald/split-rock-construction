@@ -247,7 +247,7 @@ Two GitHub Actions keep production honest:
 | Workflow | When | What it does |
 | --- | --- | --- |
 | **Deploy production (main)** (`deploy-vercel.yml`) | Push to `main` or manual | Tests → Vercel `--prod` deploy → waits for **READY** → HTTP smoke (HTML + “Split Rock”) |
-| **Vercel production check** (`vercel-deploy-check.yml`) | Every 6 hours + manual | Polls latest production deploy only (no ship) → same smoke test |
+| **Vercel production check** (`vercel-deploy-check.yml`) | Every 6 hours + manual | HTTP smoke on `PRODUCTION_URL` (default `https://splitrockconst.com`); when Vercel secrets are set, also polls latest production deploy **READY** state via API |
 
 ### Script (local or CI)
 
@@ -269,14 +269,14 @@ Useful flags (env):
 | `ALLOW_SSO=1` | Soft-pass when Vercel Authentication blocks anonymous HTTP |
 | `REQUIRE_TEXT` | Substring that must appear in HTML (default `Split Rock`) |
 
-### GitHub Actions secrets (required once)
+### GitHub Actions secrets (optional for scheduled check; required for deploy workflow)
 
-| Secret | Value |
-| --- | --- |
-| `VERCEL_TOKEN` | Create at [vercel.com/account/tokens](https://vercel.com/account/tokens) |
-| `VERCEL_ORG_ID` | `team_ZEZVchkfVnLrlfIFcBD32tFl` (voxli) |
-| `VERCEL_PROJECT_ID` | `prj_…` from **`split-rock-construction-kx9x`** only (not stale `split-rock-construction`) |
+| Secret | Value | Used by |
+| --- | --- | --- |
+| `VERCEL_TOKEN` | Create at [vercel.com/account/tokens](https://vercel.com/account/tokens) | Deploy workflow (required); production check (optional — enables API deploy-state polling) |
+| `VERCEL_ORG_ID` | `team_ZEZVchkfVnLrlfIFcBD32tFl` (voxli) | Same |
+| `VERCEL_PROJECT_ID` | `prj_…` from **`split-rock-construction-kx9x`** only (not stale `split-rock-construction`) | Same |
 
-Optional **variable** (not secret): `PRODUCTION_URL` = `https://splitrockconst.com` for smoke tests.
+Optional **variable** (not secret): `PRODUCTION_URL` = `https://splitrockconst.com` for smoke tests (default when unset).
 
-If secrets are missing, the deploy/check workflows fail fast with a clear error instead of a silent no-op.
+**Vercel production check** passes without secrets by smoke-testing the live production URL. **Deploy production (main)** still requires all three secrets to ship via Actions.
