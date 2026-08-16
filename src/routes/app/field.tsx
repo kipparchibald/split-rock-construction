@@ -16,6 +16,7 @@ import {
   Wind,
 } from "lucide-react";
 import { PhotoDropzone } from "@/components/field/photo-dropzone";
+import { VoiceLogCapture } from "@/components/field/voice-log-capture";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectStatusBadge } from "@/components/layout/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -250,6 +251,23 @@ function FieldBoardPage() {
                 />
               </div>
             </div>
+
+            <VoiceLogCapture
+              form={{
+                workDone,
+                blockers: blockerNote,
+                crewCount,
+                hours,
+                weather,
+              }}
+              onFormChange={(next) => {
+                setWorkDone(next.workDone);
+                setBlockerNote(next.blockers);
+                setCrewCount(next.crewCount);
+                setHours(next.hours);
+                setWeather(next.weather);
+              }}
+            />
 
             <div>
               <Label>What got done</Label>

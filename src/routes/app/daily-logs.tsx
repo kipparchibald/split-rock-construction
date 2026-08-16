@@ -10,6 +10,7 @@ import {
   Wind,
 } from "lucide-react";
 import { PhotoDropzone } from "@/components/field/photo-dropzone";
+import { VoiceLogCapture } from "@/components/field/voice-log-capture";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -307,6 +308,17 @@ function DailyLogsPage() {
               />
             </div>
           </div>
+
+          <VoiceLogCapture
+            form={{ workDone, blockers, crewCount, hours, weather }}
+            onFormChange={(next) => {
+              setWorkDone(next.workDone);
+              setBlockers(next.blockers);
+              setCrewCount(next.crewCount);
+              setHours(next.hours);
+              setWeather(next.weather);
+            }}
+          />
 
           <div>
             <Label htmlFor="work-done">What got done</Label>
