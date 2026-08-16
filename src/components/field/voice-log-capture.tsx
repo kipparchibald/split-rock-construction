@@ -42,65 +42,101 @@ export function VoiceLogCapture({ form, onFormChange, className }: VoiceLogCaptu
     [form, onFormChange],
   );
 
-  const { supported, listening, interimTranscript, startRecognition, stopRecognition } =
-    useSpeechCapture({
-      onFinalTranscript: handleFinalTranscript,
-      onError: (message) => {
-        toast.error("Voice capture failed", { description: message });
-      },
-    });
+  const {
+    supported,
+    mounted,
+    listening,
+    interimTranscript,
+    startRecognition,
+    stopRecognition,
+  } = useSpeechCapture({
+    onFinalTranscript: handleFinalTranscript,
+    onError: (message) => {
+      toast.error("Voice capture failed", { description: message });
+    },
+  });
 
-  if (!supported) return null;
+  const showMic = mounted && supported;
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <button
-        type="button"
-        data-testid="voice-log-capture"
-        aria-pressed={listening}
-        aria-label={listening ? "Release to finish voice capture" : "Hold to talk"}
-        className={cn(
-          "flex min-h-12 w-full select-none items-center justify-center gap-2 border px-4 text-[14px] font-medium transition-colors touch-none",
-          listening
-            ? "border-danger bg-danger text-white"
-            : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 active:bg-primary/20",
-        )}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          startRecognition();
-        }}
-        onPointerUp={stopRecognition}
-        onPointerLeave={stopRecognition}
-        onPointerCancel={stopRecognition}
-        onContextMenu={(event) => event.preventDefault()}
-      >
-        {listening ? (
-          <>
-            <Square className="h-4 w-4 fill-current" strokeWidth={1.75} />
-            Release to finish
-          </>
-        ) : (
-          <>
-            <Mic className="h-4 w-4" strokeWidth={1.75} />
-            Hold to talk
-          </>
-        )}
-      </button>
-      {listening ? (
-        <p className="text-[12px] leading-relaxed text-fg-muted">
-          Listening…{" "}
-          {interimTranscript ? (
-            <span className="text-fg">{interimTranscript}</span>
-          ) : (
-            "Walk the job and narrate what got done."
+    <div
+      className={cn("space-y-2", className)}
+      data-testid="voice-log-capture-shell"
+      data-voice-ready={showMic ? "true" : "false"}
+    >
+      {showMic ? (
+        <button
+          type="button"
+          data-testid="voice-log-capture"
+          aria-pressed={listening}
+          aria-label={listening ? "Release to finish voice capture" : "Hold to talk"}
+          className={cn(
+            "flex min-h-12 w-full select-none items-center justify-center gap-2 border px-4 text-[14px] font-medium transition-colors touch-none",
+            listening
+              ? "border-danger bg-danger text-white"
+              : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 active:bg-primary/20",
           )}
-        </p>
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            startRecognition();
+          }}
+          onPointerUp={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+            stopRecognition();
+          }}
+          onPointerLeave={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+            stopRecognition();
+          }}
+          onPointerCancel={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+            stopRecognition();
+          }}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          {listening ? (
+            <>
+              <Square className="h-4 w-4 fill-current" strokeWidth={1.75} />
+              Release to finish
+            </>
+          ) : (
+            <>
+              <Mic className="h-4 w-4" strokeWidth={1.75} />
+              Hold to talk
+            </>
+          )}
+        </button>
       ) : (
-        <p className="text-[11px] text-fg-subtle">
-          Hold the mic with a gloved thumb — fills What got done and picks up blockers, crew, hours,
-          or weather when you say them.
-        </p>
+        <div
+          className="min-h-12 w-full"
+          aria-hidden={!mounted || !supported}
+          data-testid="voice-log-capture-placeholder"
+        />
       )}
+      {showMic ? (
+        listening ? (
+          <p className="text-[12px] leading-relaxed text-fg-muted">
+            Listening…{" "}
+            {interimTranscript ? (
+              <span className="text-fg">{interimTranscript}</span>
+            ) : (
+              "Walk the job and narrate what got done."
+            )}
+          </p>
+        ) : (
+          <p className="text-[11px] text-fg-subtle">
+            Hold the mic with a gloved thumb — fills What got done and picks up blockers, crew,
+            hours, or weather when you say them.
+          </p>
+        )
+      ) : null}
     </div>
   );
 }

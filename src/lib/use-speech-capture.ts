@@ -52,7 +52,8 @@ export function useSpeechCapture({
   onInterimTranscript,
   onError,
 }: UseSpeechCaptureOptions = {}) {
-  const supported = isSpeechRecognitionSupported();
+  const [supported, setSupported] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [listening, setListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -122,6 +123,11 @@ export function useSpeechCapture({
   }, [lang, onError, onFinalTranscript, onInterimTranscript]);
 
   useEffect(() => {
+    setMounted(true);
+    setSupported(isSpeechRecognitionSupported());
+  }, []);
+
+  useEffect(() => {
     return () => {
       holdActiveRef.current = false;
       recognitionRef.current?.abort();
@@ -131,6 +137,7 @@ export function useSpeechCapture({
 
   return {
     supported,
+    mounted,
     listening,
     interimTranscript,
     startRecognition,

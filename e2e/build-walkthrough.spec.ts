@@ -72,6 +72,7 @@ async function asGcWalkthrough(page: Page) {
 
   await page.goto("/app/field", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: /field board/i })).toBeVisible();
+  await expect(page.getByTestId("voice-log-capture-shell")).toBeVisible();
   const work = page.locator("textarea").first();
   if (await work.isVisible().catch(() => false)) {
     await work.fill("GC walkthrough — sheathing complete, windows staged.");
@@ -95,6 +96,7 @@ async function asGcWalkthrough(page: Page) {
 
   await page.goto("/app/daily-logs", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: /daily logs/i })).toBeVisible();
+  await expect(page.getByTestId("voice-log-capture-shell")).toBeVisible();
 
   guard.assertClean();
   return { coTitle };
