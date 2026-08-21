@@ -9,7 +9,6 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { OPERATOR_AUTH, COMPANY } from "@/lib/company";
 import { DEMO_OPERATORS, type DemoOperatorKey } from "@/lib/demo-credentials";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
-import { ModeCallout } from "@/components/layout/mode-callout";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -96,10 +95,6 @@ function LoginPage() {
           {OPERATOR_AUTH.kipp.email} / {OPERATOR_AUTH.kyle.email}).
         </p>
 
-        {!isDemoDataEnabled ? (
-          <ModeCallout empty className="mt-6" />
-        ) : null}
-
         <form onSubmit={onSubmit} className="mt-8 space-y-4 border border-border bg-bg-elevated p-5">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
@@ -178,8 +173,8 @@ function LoginPage() {
 
         <p className="mt-6 text-[11px] leading-relaxed text-fg-subtle">
           {isDemoDataEnabled
-            ? "Training mode: one-click demo sign-in below. Client portal demo: /portal/login."
-            : "Live mode: use your operator password. Demo one-click buttons are hidden."}
+            ? "Demo operators are seeded automatically. Client portal: use /portal/login with demo client buttons."
+            : "Live mode: password fill helpers are disabled. Use rotated credentials only."}
         </p>
 
         {isDemoDataEnabled ? (

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/data/store";
-import { ModeCallout } from "@/components/layout/mode-callout";
 import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { COMPANY } from "@/lib/company";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -224,33 +223,22 @@ function Dashboard() {
 
       <NextActionBanner action={primaryAction} className="mb-4" />
 
-      {projects.length === 0 ? (
+      {!isDemoDataEnabled && projects.length === 0 ? (
         <Card className="mb-5 border-dashed">
           <CardContent className="flex flex-col items-start gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-3">
-              <ModeCallout empty />
-              <div>
-              <p className="text-[13px] font-medium text-fg">
-                {isDemoDataEnabled ? "Demo command center" : "Ready for your first job"}
+            <div>
+              <p className="text-[13px] font-medium text-fg">Ready for your first job</p>
+              <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-fg-muted">{LIVE_EMPTY_HINT}</p>
+              <p className="mt-2 text-[11px] text-fg-subtle">
+                Production runs at{" "}
+                <a
+                  href={`https://${COMPANY.website}`}
+                  className="underline-offset-2 hover:underline"
+                >
+                  {COMPANY.website}
+                </a>{" "}
+                with demo seed jobs off.
               </p>
-              <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-fg-muted">
-                {isDemoDataEnabled
-                  ? "Sample Hart / Willow Creek jobs below are for training only — not live production data."
-                  : LIVE_EMPTY_HINT}
-              </p>
-              {!isDemoDataEnabled ? (
-                <p className="mt-2 text-[11px] text-fg-subtle">
-                  Production runs at{" "}
-                  <a
-                    href={`https://${COMPANY.website}`}
-                    className="underline-offset-2 hover:underline"
-                  >
-                    {COMPANY.website}
-                  </a>{" "}
-                  with live CRM (no fictional seed jobs).
-                </p>
-              ) : null}
-              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" asChild>

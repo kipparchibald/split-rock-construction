@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/data/store";
 import type { Client } from "@/data/types";
 import { portalInvitePath, writePortalSession } from "@/lib/client-portal";
-import { ModeCallout } from "@/components/layout/mode-callout";
 import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -300,12 +299,11 @@ function ClientsPage() {
       ) : null}
 
       {clients.length === 0 ? (
-        <div className="space-y-4 border border-dashed border-border bg-bg-elevated px-6 py-12 text-center">
-          <ModeCallout empty className="mx-auto max-w-lg text-left" />
+        <div className="border border-dashed border-border bg-bg-elevated px-6 py-12 text-center">
           <p className="text-[15px] font-medium">No clients yet</p>
           <p className="mt-2 text-[13px] text-fg-muted">
             {isDemoDataEnabled
-              ? "Demo clients load when training mode is on — they are not real homeowners."
+              ? "Demo clients appear when VITE_SPLIT_ROCK_DEMO is on."
               : LIVE_EMPTY_HINT}
           </p>
           <Button className="mt-4" size="sm" onClick={() => { resetForm(); setShow(true); }}>

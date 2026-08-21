@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/data/store";
 import type { ProjectStatus } from "@/data/types";
-import { ModeCallout } from "@/components/layout/mode-callout";
 import { isDemoDataEnabled, LIVE_EMPTY_HINT } from "@/lib/runtime-config";
 import { formatCurrency } from "@/lib/utils";
 
@@ -58,8 +57,7 @@ function ProjectsPage() {
           <span>Job</span><span>Client</span><span>Phase</span><span>Status</span><span>Budget</span><span>%</span>
         </div>
         {filtered.length === 0 ? (
-          <div className="space-y-4 px-4 py-10 text-center">
-            {projects.length === 0 ? <ModeCallout empty className="mx-auto max-w-lg text-left" /> : null}
+          <div className="px-4 py-10 text-center">
             <p className="text-[13px] font-medium text-fg">
               {projects.length === 0 && !isDemoDataEnabled ? "No jobs yet" : "No jobs match this filter"}
             </p>

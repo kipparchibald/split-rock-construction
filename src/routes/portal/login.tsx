@@ -15,7 +15,6 @@ import {
 } from "@/lib/client-portal";
 import { COMPANY } from "@/lib/company";
 import { DEMO_PORTAL_CLIENTS } from "@/lib/demo-credentials";
-import { ModeCallout } from "@/components/layout/mode-callout";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 import { toast } from "sonner";
 
@@ -219,10 +218,9 @@ function PortalLoginPage() {
             </p>
           </div>
         ) : (
-          <div className="mt-6 space-y-2">
-            <ModeCallout empty testId="portal-live-hint" />
-            <p className="text-[11px] text-fg-subtle">
-              Use the email on your contract and the access code Split Rock sent you. Need a code? Call{" "}
+          <div className="mt-6 border border-border bg-bg-elevated p-4" data-testid="portal-live-hint">
+            <p className="text-[12px] leading-relaxed text-fg-muted">
+              Live mode: use the email and access code Split Rock issued with your contract. Need a code? Call{" "}
               <a href={COMPANY.phoneHref} className="text-fg underline-offset-2 hover:underline">
                 {COMPANY.phone}
               </a>
