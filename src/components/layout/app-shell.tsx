@@ -33,7 +33,7 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { isDemoDataEnabled, DEMO_BANNER } from "@/lib/runtime-config";
+import { ModeCallout } from "@/components/layout/mode-callout";
 
 type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
@@ -156,11 +156,7 @@ export function AppShell({
   if (clientMode) {
     return (
       <div className="min-h-dvh bg-bg client-portal-mode" data-testid="client-shell">
-        {isDemoDataEnabled ? (
-          <div className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-[11px] text-fg-muted">
-            {DEMO_BANNER}
-          </div>
-        ) : null}
+        <ModeCallout className="border-b border-x-0 border-t-0 text-center" />
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-border bg-bg-elevated pt-[env(safe-area-inset-top)] lg:flex">
           <div className="border-b border-border px-4 py-3.5">
             <Logo className="h-8" />
@@ -271,11 +267,7 @@ export function AppShell({
         </header>
 
         <main className="px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:pb-6">
-          {isDemoDataEnabled ? (
-            <div className="mb-4 border border-border bg-bg-elevated px-3 py-2 text-[11px] leading-relaxed text-fg-muted">
-              {DEMO_BANNER}
-            </div>
-          ) : null}
+          <ModeCallout className="mb-4" />
           {children}
         </main>
 
