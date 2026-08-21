@@ -1,26 +1,32 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Braun / Rams — cool greys, black controls, as little design as necessary */
+/* Split Rock — clean white surfaces with warm Idaho accents (forest + earth) */
 @theme {
   --font-sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
   --font-display: "Segoe UI", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 
-  --color-bg: #f0f0f0;
+  --color-bg: #fafaf8;
   --color-bg-elevated: #ffffff;
-  --color-bg-subtle: #e4e4e4;
+  --color-bg-subtle: #f3f0ea;
   --color-bg-inverse: #1a1a1a;
-  --color-fg: #1a1a1a;
-  --color-fg-muted: #5c5c5c;
-  --color-fg-subtle: #8a8a8a;
+  --color-fg: #1f1f1c;
+  --color-fg-muted: #5a564e;
+  --color-fg-subtle: #8a8478;
   --color-fg-inverse: #f5f5f5;
-  --color-border: #d4d4d4;
-  --color-border-strong: #b0b0b0;
+  --color-border: #e5e0d6;
+  --color-border-strong: #c9c0b2;
   --color-primary: #1a1a1a;
   --color-primary-fg: #ffffff;
   --color-accent: #3d4a4a;
   --color-accent-fg: #ffffff;
+  --color-forest: #2d4a3e;
+  --color-forest-fg: #ffffff;
+  --color-forest-light: #e8f0ec;
+  --color-earth: #9a8470;
+  --color-earth-light: #f7f3ed;
+  --color-sand: #e8dfd0;
   --color-ring: #1a1a1a;
   --color-success: #3d5c4a;
   --color-warning: #6b5c3d;
@@ -76,6 +82,19 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-fg-subtle);
+  }
+  .label-caps-accent {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-forest);
+  }
+  .marketing-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
