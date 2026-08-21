@@ -220,7 +220,7 @@ function PortalLoginPage() {
           </div>
         ) : (
           <div className="mt-6 space-y-2">
-            <ModeCallout empty testId="portal-live-hint" />
+            <ModeCallout empty audience="client" testId="portal-live-hint" />
             <p className="text-[11px] text-fg-subtle">
               Use the email on your contract and the access code Split Rock sent you. Need a code? Call{" "}
               <a href={COMPANY.phoneHref} className="text-fg underline-offset-2 hover:underline">

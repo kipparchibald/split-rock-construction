@@ -1,21 +1,29 @@
 import { cn } from "@/lib/utils";
 import {
-  DEMO_BANNER,
-  DEMO_EMPTY_HINT,
+  demoBannerFor,
+  demoEmptyHintFor,
   isDemoDataEnabled,
-  LIVE_EMPTY_HINT,
+  liveEmptyHintFor,
   LIVE_MODE_BANNER,
+  type ModeCalloutAudience,
 } from "@/lib/runtime-config";
 
 type ModeCalloutProps = {
   /** When true, show the compact empty-state hint instead of the full shell banner. */
   empty?: boolean;
+  /** Client portal must not name other households or jobs. */
+  audience?: ModeCalloutAudience;
   className?: string;
   testId?: string;
 };
 
 /** Makes demo vs live obvious on empty boards and in the operator shell. */
-export function ModeCallout({ empty = false, className, testId }: ModeCalloutProps) {
+export function ModeCallout({
+  empty = false,
+  audience = "operator",
+  className,
+  testId,
+}: ModeCalloutProps) {
   if (isDemoDataEnabled) {
     return (
       <div
@@ -28,7 +36,7 @@ export function ModeCallout({ empty = false, className, testId }: ModeCalloutPro
         data-testid={testId ?? (empty ? "mode-callout-demo-empty" : "mode-callout-demo")}
         role="status"
       >
-        {empty ? DEMO_EMPTY_HINT : DEMO_BANNER}
+        {empty ? demoEmptyHintFor(audience) : demoBannerFor(audience)}
       </div>
     );
   }
@@ -44,7 +52,7 @@ export function ModeCallout({ empty = false, className, testId }: ModeCalloutPro
       data-testid={testId ?? (empty ? "mode-callout-live-empty" : "mode-callout-live")}
       role="status"
     >
-      {empty ? LIVE_EMPTY_HINT : LIVE_MODE_BANNER}
+      {empty ? liveEmptyHintFor(audience) : LIVE_MODE_BANNER}
     </div>
   );
 }

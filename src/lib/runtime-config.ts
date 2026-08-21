@@ -53,16 +53,49 @@ export const isDemoDataEnabled: boolean = resolveDemoDataEnabled(
   isViteProductionBuild(),
 );
 
-/** Shown in operator + client shells when fictional seed data is active. */
-export const DEMO_BANNER =
+/** Operator shell — may name demo clients/jobs for training context. */
+export const DEMO_BANNER_OPERATOR =
   "Training mode — fictional clients (Hart, Willow Creek), 555 phone numbers, and sample jobs. Not real production data.";
+
+/** Client portal — never name other households or jobs (isolation tests + privacy). */
+export const DEMO_BANNER_CLIENT =
+  "Training mode — sample data and 555 numbers. Not live production data.";
+
+/** @deprecated Use DEMO_BANNER_OPERATOR or DEMO_BANNER_CLIENT */
+export const DEMO_BANNER = DEMO_BANNER_OPERATOR;
 
 /** Shown in operator shell when live mode is active (no seed jobs). */
 export const LIVE_MODE_BANNER =
   "Live CRM — real jobs only. Fictional seed jobs are hidden. Add clients and projects, or ingest leads from partner sites.";
 
-export const LIVE_EMPTY_HINT =
+export const LIVE_EMPTY_HINT_OPERATOR =
   "Your live CRM is empty — no Hart / Willow Creek seed jobs. Add a client, price a bid, or wait for ingested leads.";
 
-export const DEMO_EMPTY_HINT =
+export const LIVE_EMPTY_HINT_CLIENT =
+  "Live mode — your portal shows only your jobs. Add a client record or wait for Split Rock to link your build.";
+
+/** @deprecated Use LIVE_EMPTY_HINT_OPERATOR or LIVE_EMPTY_HINT_CLIENT */
+export const LIVE_EMPTY_HINT = LIVE_EMPTY_HINT_OPERATOR;
+
+export const DEMO_EMPTY_HINT_OPERATOR =
   "Demo mode — sample jobs for training. Set VITE_SPLIT_ROCK_DEMO=false on production for live CRM.";
+
+export const DEMO_EMPTY_HINT_CLIENT =
+  "Demo mode — sample data for training only. Not live production data.";
+
+/** @deprecated Use DEMO_EMPTY_HINT_OPERATOR or DEMO_EMPTY_HINT_CLIENT */
+export const DEMO_EMPTY_HINT = DEMO_EMPTY_HINT_OPERATOR;
+
+export type ModeCalloutAudience = "operator" | "client";
+
+export function demoBannerFor(audience: ModeCalloutAudience): string {
+  return audience === "client" ? DEMO_BANNER_CLIENT : DEMO_BANNER_OPERATOR;
+}
+
+export function demoEmptyHintFor(audience: ModeCalloutAudience): string {
+  return audience === "client" ? DEMO_EMPTY_HINT_CLIENT : DEMO_EMPTY_HINT_OPERATOR;
+}
+
+export function liveEmptyHintFor(audience: ModeCalloutAudience): string {
+  return audience === "client" ? LIVE_EMPTY_HINT_CLIENT : LIVE_EMPTY_HINT_OPERATOR;
+}

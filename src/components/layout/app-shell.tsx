@@ -156,7 +156,7 @@ export function AppShell({
   if (clientMode) {
     return (
       <div className="min-h-dvh bg-bg client-portal-mode" data-testid="client-shell">
-        <ModeCallout className="border-b border-x-0 border-t-0 text-center" />
+        <ModeCallout audience="client" className="border-b border-x-0 border-t-0 text-center" />
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-border bg-bg-elevated pt-[env(safe-area-inset-top)] lg:flex">
           <div className="border-b border-border px-4 py-3.5">
             <Logo className="h-8" />
