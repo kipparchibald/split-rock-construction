@@ -4,7 +4,7 @@ import { COMPANY } from "@/lib/company";
 
 export function MarketingFooter() {
   return (
-    <footer className="bg-bg-elevated pb-[env(safe-area-inset-bottom)]">
+    <footer className="border-t border-sand bg-bg-elevated pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex flex-col gap-1">
           <Logo />
