@@ -1,8 +1,8 @@
 /**
  * R3F mesh material driven by Design Center catalog options.
- * Physical materials + roughness / bump derived from the procedural albedo.
+ * Prefers scanned Poly Haven PBR maps; falls back to procedural albedo.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DesignCategory, DesignOption } from "@/data/types";
 import {
   getMaterialProfile,
@@ -11,6 +11,7 @@ import {
   resolveTextureKind,
   type TextureKind,
 } from "@/lib/design-materials";
+import { resolveScannedPbr, type ScannedPbr } from "@/lib/design-pbr";
 import * as THREE from "three";
 
 function roughnessCanvasFromAlbedo(src: HTMLCanvasElement, kind: TextureKind): HTMLCanvasElement {
@@ -55,8 +56,7 @@ function bumpCanvasFromAlbedo(src: HTMLCanvasElement): HTMLCanvasElement {
   return out;
 }
 
-function makeMap(canvas: HTMLCanvasElement, colorSpace: THREE.ColorSpace) {
-  const map = new THREE.CanvasTexture(canvas);
+function configureMap(map: THREE.Texture, colorSpace: THREE.ColorSpace) {
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
   map.anisotropy = 8;
   map.colorSpace = colorSpace;
@@ -64,14 +64,70 @@ function makeMap(canvas: HTMLCanvasElement, colorSpace: THREE.ColorSpace) {
   return map;
 }
 
+function makeMap(canvas: HTMLCanvasElement, colorSpace: THREE.ColorSpace) {
+  return configureMap(new THREE.CanvasTexture(canvas), colorSpace);
+}
+
+function loadTexture(url: string): Promise<THREE.Texture> {
+  return new Promise((resolve, reject) => {
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(url, resolve, undefined, reject);
+  });
+}
+
+function useScannedMaps(spec: ScannedPbr | null) {
+  const [maps, setMaps] = useState<{
+    map: THREE.Texture;
+    roughnessMap: THREE.Texture | null;
+    normalMap: THREE.Texture | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!spec) {
+      setMaps(null);
+      return;
+    }
+    let cancelled = false;
+    Promise.all([
+      loadTexture(spec.diff),
+      loadTexture(spec.rough).catch(() => null),
+      loadTexture(spec.normal).catch(() => null),
+    ])
+      .then(([diff, rough, normal]) => {
+        if (cancelled) {
+          diff.dispose();
+          rough?.dispose();
+          normal?.dispose();
+          return;
+        }
+        configureMap(diff, THREE.SRGBColorSpace);
+        if (rough) configureMap(rough, THREE.NoColorSpace);
+        if (normal) configureMap(normal, THREE.NoColorSpace);
+        setMaps({ map: diff, roughnessMap: rough, normalMap: normal });
+      })
+      .catch(() => {
+        if (!cancelled) setMaps(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [spec?.id, spec?.diff]);
+
+  return maps;
+}
+
 export function useFinishMaps(
   option: DesignOption | undefined,
   category: DesignCategory,
   fallbackHex: string,
 ) {
-  return useMemo(() => {
-    const hex = optionColor(option, fallbackHex);
-    const profile = getMaterialProfile(option, category);
+  const hex = optionColor(option, fallbackHex);
+  const profile = useMemo(() => getMaterialProfile(option, category), [option, category]);
+  const scanned = useMemo(() => resolveScannedPbr(option, category), [option, category]);
+  const scannedMaps = useScannedMaps(scanned);
+
+  const procedural = useMemo(() => {
     const canvas = getTextureCanvas(profile.kind, hex, 512);
     const map = canvas ? makeMap(canvas, THREE.SRGBColorSpace) : null;
     const roughnessMap =
@@ -82,8 +138,30 @@ export function useFinishMaps(
       canvas && profile.kind !== "flat-color" && !profile.kind.startsWith("metal")
         ? makeMap(bumpCanvasFromAlbedo(canvas), THREE.NoColorSpace)
         : null;
-    return { map, roughnessMap, bumpMap, profile, hex };
-  }, [option, category, fallbackHex]);
+    return { map, roughnessMap, bumpMap };
+  }, [profile.kind, hex]);
+
+  if (scannedMaps) {
+    return {
+      map: scannedMaps.map,
+      roughnessMap: scannedMaps.roughnessMap,
+      bumpMap: null as THREE.Texture | null,
+      normalMap: scannedMaps.normalMap,
+      profile,
+      hex,
+      scanned: true,
+      tint: Boolean(scanned?.tint),
+    };
+  }
+
+  return {
+    ...procedural,
+    normalMap: null as THREE.Texture | null,
+    profile,
+    hex,
+    scanned: false,
+    tint: false,
+  };
 }
 
 function isPhysical(kind: TextureKind) {
@@ -115,25 +193,34 @@ export function FinishMaterial({
   transparent?: boolean;
   opacity?: number;
 }) {
-  const { map, roughnessMap, bumpMap, profile, hex } = useFinishMaps(option, category, fallbackHex);
+  const { map, roughnessMap, bumpMap, normalMap, profile, hex, scanned, tint } = useFinishMaps(
+    option,
+    category,
+    fallbackHex,
+  );
 
   if (map) map.repeat.set(repeat[0], repeat[1]);
   if (roughnessMap) roughnessMap.repeat.set(repeat[0], repeat[1]);
   if (bumpMap) bumpMap.repeat.set(repeat[0], repeat[1]);
+  if (normalMap) normalMap.repeat.set(repeat[0], repeat[1]);
+
+  const color = scanned && !tint ? "#ffffff" : hex;
 
   const shared = {
-    color: (map ? "#ffffff" : hex) as string,
+    color,
     map: map ?? undefined,
     roughnessMap: roughnessMap ?? undefined,
     bumpMap: bumpMap ?? undefined,
     bumpScale: bumpMap ? (profile.kind.includes("leather") || profile.kind === "stone" ? 0.08 : 0.035) : 0,
+    normalMap: normalMap ?? undefined,
+    normalScale: normalMap ? new THREE.Vector2(0.85, 0.85) : undefined,
     roughness: profile.roughness,
     metalness: profile.metalness,
     emissive: emissive ?? (profile.emissiveIntensity ? hex : undefined),
     emissiveIntensity: emissiveIntensity ?? profile.emissiveIntensity ?? 0,
     transparent,
     opacity,
-    envMapIntensity: isPhysical(profile.kind) ? 1.25 : 0.75,
+    envMapIntensity: isPhysical(profile.kind) ? 1.35 : scanned ? 0.95 : 0.75,
   };
 
   if (isPhysical(profile.kind)) {
