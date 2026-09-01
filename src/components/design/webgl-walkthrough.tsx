@@ -14,7 +14,7 @@ import {
 } from "@react-three/drei";
 import type { DesignCategory, DesignOption } from "@/data/types";
 import type { DesignRoom } from "@/lib/design-catalog";
-import { TOUCH } from "three";
+import { ACESFilmicToneMapping, TOUCH } from "three";
 import { FinishMaterial, ShakerCabinet } from "@/components/design/finish-material";
 import { optionColor } from "@/lib/design-materials";
 
@@ -313,7 +313,11 @@ export function WebGLWalkthrough({
       <Canvas
         shadows={!phone}
         dpr={phone ? [1, 1.25] : [1, 1.75]}
-        gl={{ antialias: !phone, alpha: false, powerPreference: phone ? "low-power" : "high-performance" }}
+        gl={{ antialias: !phone, alpha: false, powerPreference: phone ? "low-power" : "high-performance", toneMapping: ACESFilmicToneMapping }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.08;
+        }}
       >
         <color attach="background" args={[isExterior ? "#8eabbf" : "#3a3835"]} />
         {!phone ? <fog attach="fog" args={[isExterior ? "#8eabbf" : "#3a3835", 12, 28]} /> : null}
@@ -331,9 +335,9 @@ export function WebGLWalkthrough({
           <RoomModel room={room} selections={selections} />
           {!phone ? (
             !isExterior ? (
-              <Environment preset="apartment" environmentIntensity={0.55} />
+              <Environment preset="apartment" environmentIntensity={0.72} />
             ) : (
-              <Environment preset="sunset" environmentIntensity={0.4} />
+              <Environment preset="sunset" environmentIntensity={0.55} />
             )
           ) : (
             <hemisphereLight args={["#efe8dc", "#3d3a36", 0.55]} />
