@@ -182,7 +182,7 @@ function DesignCenterPage() {
           kind,
         },
         renderEngine: kind === "pdf" || kind === "image" ? "split" : session.renderEngine,
-        projectLabel: session.projectLabel === "Current home" ? file.name.replace(/\.pdf$/i, "") : session.projectLabel,
+        projectLabel: session.projectLabel === "Current home" ? file.name.replace(/\\.pdf$/i, "") : session.projectLabel,
         updatedAt: new Date().toISOString(),
       });
       setPlanReloadKey((k) => k + 1);
@@ -211,13 +211,13 @@ function DesignCenterPage() {
   const hasPlanSheet = Boolean(session.plan?.name);
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full overflow-x-clip">
       <PageHeader
         title="Design center"
         description="Works with PDF plans alone: upload the sheet, pick finishes room-by-room, preview in WebGL. No IFC or GLB required."
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[10px] text-fg-muted sm:text-[11px]">
+      <div className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-x-clip border border-border bg-bg-elevated px-3 py-2 text-[10px] text-fg-muted sm:text-[11px]">
         <Badge variant="secondary">{feePolicy.title}</Badge>
         <span>{feePolicy.referralHandlingLabel}</span>
         <span className="text-fg-subtle">·</span>
@@ -231,22 +231,22 @@ function DesignCenterPage() {
             PDF path
           </Badge>
         ) : null}
-        <span className="ml-auto text-fg-subtle">{DESIGN_OPTIONS.length} catalog options</span>
+        <span className="ml-auto shrink-0 text-fg-subtle">{DESIGN_OPTIONS.length} catalog options</span>
       </div>
 
       <Tabs defaultValue="select">
-        <TabsList className="h-auto w-full min-h-11 justify-start overflow-x-auto">
+        <TabsList className="flex h-auto min-h-11 w-full min-w-0 max-w-full justify-start overflow-x-auto overscroll-x-contain">
           <TabsTrigger value="select" className="min-h-11 shrink-0">Select finishes</TabsTrigger>
           <TabsTrigger value="allowances" className="min-h-11 shrink-0">Allowances</TabsTrigger>
           <TabsTrigger value="plans" className="min-h-11 shrink-0">Plans</TabsTrigger>
         </TabsList>
 
         <TabsContent value="select" className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex min-w-0 max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <label className="text-[11px] uppercase tracking-[0.06em] text-fg-subtle">Room</label>
             <div
               data-testid="design-room-scroller"
-              className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap"
+              className="flex w-full min-w-0 max-w-full gap-1.5 overflow-x-auto overscroll-x-contain pb-1 sm:flex-wrap"
             >
               {(Object.keys(ROOM_LABELS) as DesignRoom[]).map((r) => (
                 <button
@@ -264,7 +264,7 @@ function DesignCenterPage() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-1 overflow-x-auto sm:ml-auto sm:flex-wrap">
+            <div className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain sm:ml-auto sm:w-auto sm:flex-wrap">
               {(["split", "sheet", "webgl", "css"] as const).map((v) => (
                 <button
                   key={v}
@@ -304,7 +304,7 @@ function DesignCenterPage() {
 
           <div
             className={cn(
-              "grid gap-4",
+              "grid min-w-0 max-w-full gap-4",
               engine === "split"
                 ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)]"
                 : "lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]",
@@ -332,7 +332,7 @@ function DesignCenterPage() {
             ) : null}
 
             {engine !== "sheet" ? (
-              <div className="sticky top-0 z-10 border border-border bg-bg-elevated sm:static sm:z-auto">
+              <div className="sticky top-0 z-10 min-w-0 max-w-full overflow-x-clip border border-border bg-bg-elevated sm:static sm:z-auto">
                 <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:px-4 sm:py-2.5">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-[13px] font-medium">
@@ -377,14 +377,14 @@ function DesignCenterPage() {
                     {roomCats.map((c) => {
                       const opt = resolved[c];
                       return (
-                        <li key={c} className="flex items-center gap-2 text-[12px]">
+                        <li key={c} className="flex min-w-0 items-center gap-2 text-[12px]">
                           {opt ? (
                             <DesignSwatch option={opt} size="sm" />
                           ) : (
                             <span className="h-3 w-3 shrink-0 border border-border bg-[#ddd]" />
                           )}
                           <span className="text-fg-muted">{DESIGN_CATEGORY_LABELS[c]}:</span>
-                          <span className="truncate font-medium">{opt?.name ?? "—"}</span>
+                          <span className="min-w-0 truncate font-medium">{opt?.name ?? "—"}</span>
                           {opt ? (
                             <Badge variant="outline" className="ml-auto shrink-0 text-[9px]">
                               {opt.tier}
@@ -401,9 +401,9 @@ function DesignCenterPage() {
               </div>
             ) : null}
 
-            <div className="border border-border bg-bg-elevated">
-              <div className="border-b border-border px-3 py-2">
-                <div className="flex gap-1 overflow-x-auto sm:flex-wrap">
+            <div className="min-w-0 max-w-full overflow-x-clip border border-border bg-bg-elevated">
+              <div className="min-w-0 border-b border-border px-3 py-2">
+                <div className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain sm:flex-wrap">
                   {roomCats.map((c) => (
                     <button
                       key={c}
@@ -422,7 +422,7 @@ function DesignCenterPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-between gap-2 px-4 py-2.5">
                 <p className="text-[13px] font-medium">{DESIGN_CATEGORY_LABELS[cat]}</p>
                 <div className="flex flex-wrap gap-1">
                   {(["all", "base", "upgrade", "trendy", "premium"] as const).map((t) => (
