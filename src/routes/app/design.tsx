@@ -11,6 +11,7 @@ import {
   Unlock,
   Upload,
 } from "lucide-react";
+import { DesignSwatch } from "@/components/design/design-swatch";
 import { PlanSheetViewer } from "@/components/design/plan-sheet-viewer";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import {
 import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
 import { planKindFromFile, savePlanFile } from "@/lib/plan-file-store";
 import type { ContractModel } from "@/lib/pricing";
+import { buildSwatchStyle } from "@/lib/design-materials";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const WebGLWalkthrough = lazy(() =>
@@ -379,10 +381,11 @@ function DesignCenterPage() {
                       const opt = resolved[c];
                       return (
                         <li key={c} className="flex items-center gap-2 text-[12px]">
-                          <span
-                            className="h-3 w-3 shrink-0 border border-border"
-                            style={{ background: opt?.colorHex ?? "#ddd" }}
-                          />
+                          {opt ? (
+                            <DesignSwatch option={opt} size="sm" />
+                          ) : (
+                            <span className="h-3 w-3 shrink-0 border border-border bg-[#ddd]" />
+                          )}
                           <span className="text-fg-muted">{DESIGN_CATEGORY_LABELS[c]}:</span>
                           <span className="truncate font-medium">{opt?.name ?? "—"}</span>
                           {opt ? (
@@ -471,16 +474,7 @@ function DesignCenterPage() {
                           session.locked[cat] && "opacity-60",
                         )}
                       >
-                        <span
-                          className="mt-0.5 h-10 w-10 shrink-0 border border-border"
-                          style={{
-                            background: opt.colorHex,
-                            backgroundImage:
-                              opt.category === "flooring"
-                                ? `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 9px)`
-                                : undefined,
-                          }}
-                        />
+                        <DesignSwatch option={opt} />
                         <span className="min-w-0 flex-1">
                           <span className="flex flex-wrap items-center gap-2">
                             <span className="text-[13px] font-medium">{opt.name}</span>
@@ -698,16 +692,50 @@ function VirtualRoom({
   selections: Partial<Record<DesignCategory, DesignOption | undefined>>;
   viewMode: "perspective" | "front" | "elevation";
 }) {
-  const wall = selections.paint?.colorHex ?? "#F0EDE4";
-  const floor = selections.flooring?.colorHex ?? "#C4A574";
-  const cab = selections.cabinets?.colorHex ?? "#F7F7F5";
-  const ct = selections.countertops?.colorHex ?? "#F2EFEA";
-  const fx = selections.fixtures?.colorHex ?? "#C0C0C0";
-  const light = selections.lighting?.colorHex ?? "#F5F5F5";
-  const ext = selections.exterior?.colorHex ?? "#F4F1EA";
-  const roof = selections.roofing?.colorHex ?? "#4A4A4A";
-  const tile = selections.tile?.colorHex ?? "#E8E6E1";
-  const splash = selections.backsplash?.colorHex ?? "#F5F5F5";
+  const wallStyle = useMemo(
+    () => (selections.paint ? buildSwatchStyle(selections.paint) : { backgroundColor: "#F0EDE4" }),
+    [selections.paint],
+  );
+  const floorStyle = useMemo(
+    () =>
+      selections.flooring ? buildSwatchStyle(selections.flooring) : { backgroundColor: "#C4A574" },
+    [selections.flooring],
+  );
+  const cabStyle = useMemo(
+    () =>
+      selections.cabinets ? buildSwatchStyle(selections.cabinets) : { backgroundColor: "#F7F7F5" },
+    [selections.cabinets],
+  );
+  const ctStyle = useMemo(
+    () =>
+      selections.countertops
+        ? buildSwatchStyle(selections.countertops)
+        : { backgroundColor: "#F2EFEA" },
+    [selections.countertops],
+  );
+  const fxColor = selections.fixtures?.colorHex ?? "#C0C0C0";
+  const lightColor = selections.lighting?.colorHex ?? "#F5F5F5";
+  const extStyle = useMemo(
+    () =>
+      selections.exterior ? buildSwatchStyle(selections.exterior) : { backgroundColor: "#F4F1EA" },
+    [selections.exterior],
+  );
+  const roofStyle = useMemo(
+    () =>
+      selections.roofing ? buildSwatchStyle(selections.roofing) : { backgroundColor: "#4A4A4A" },
+    [selections.roofing],
+  );
+  const tileStyle = useMemo(
+    () => (selections.tile ? buildSwatchStyle(selections.tile) : { backgroundColor: "#E8E6E1" }),
+    [selections.tile],
+  );
+  const splashStyle = useMemo(
+    () =>
+      selections.backsplash
+        ? buildSwatchStyle(selections.backsplash)
+        : { backgroundColor: "#F5F5F5" },
+    [selections.backsplash],
+  );
 
   const isBath = room === "primary_bath" || room === "hall_bath";
   const isKitchen = room === "kitchen";
@@ -725,46 +753,103 @@ function VirtualRoom({
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-b from-[#8eabbf] to-[#c5d5e0]">
         <div
           className="absolute inset-x-[10%] bottom-[16%] top-[18%] shadow-2xl"
-          style={{ background: ext }}
+          style={{
+            ...extStyle,
+            boxShadow: "inset 0 -12px 24px rgba(0,0,0,0.08)",
+          }}
         >
           <div
             className="absolute -top-6 left-[-4%] right-[-4%] h-10"
             style={{
-              background: roof,
+              ...roofStyle,
               clipPath: "polygon(5% 100%, 50% 0%, 95% 100%)",
             }}
           />
+          <div
+            className="absolute left-[18%] top-[28%] h-[22%] w-[18%] border border-white/30 bg-[#9ec5e0]/40"
+            style={{ boxShadow: "inset 0 0 12px rgba(255,255,255,0.25)" }}
+          />
+          <div
+            className="absolute right-[18%] top-[28%] h-[22%] w-[18%] border border-white/30 bg-[#9ec5e0]/40"
+            style={{ boxShadow: "inset 0 0 12px rgba(255,255,255,0.25)" }}
+          />
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-[16%] bg-[#5a6b3a]" />
+        <div className="absolute inset-x-0 bottom-0 h-[16%] bg-gradient-to-t from-[#4a5a32] to-[#5a6b3a]" />
       </div>
     );
   }
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden bg-[#1a1a1a]/5">
+    <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-b from-[#e8e4de] to-[#d4cfc8]">
       <div
         className="absolute inset-[6%] origin-center"
         style={{ transform: perspective, transformStyle: "preserve-3d" }}
       >
-        <div className="relative h-full w-full overflow-hidden shadow-xl" style={{ background: wall }}>
+        <div
+          className="relative h-full w-full overflow-hidden shadow-xl"
+          style={{
+            ...wallStyle,
+            backgroundImage: [
+              wallStyle.backgroundImage,
+              "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 35%)",
+            ]
+              .filter(Boolean)
+              .join(", "),
+          }}
+        >
           <div
             className="absolute inset-x-0 bottom-0 h-[30%]"
-            style={{ background: floor }}
+            style={{
+              ...floorStyle,
+              boxShadow: "inset 0 8px 16px rgba(0,0,0,0.06)",
+            }}
           />
           {isKitchen ? (
             <div className="absolute bottom-[30%] left-[6%] right-[26%]">
-              <div className="h-2.5" style={{ background: ct }} />
-              <div className="h-[4.75rem]" style={{ background: cab }} />
-              <div className="absolute -top-6 left-[28%] h-6 w-1.5" style={{ background: fx }} />
-              <div className="absolute left-[8%] top-[-4rem] h-12 w-40" style={{ background: splash }} />
+              <div className="h-2.5 shadow-sm" style={ctStyle} />
+              <div
+                className="relative h-[4.75rem] shadow-md"
+                style={{
+                  ...cabStyle,
+                  backgroundImage: [
+                    cabStyle.backgroundImage,
+                    "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.06) 100%)",
+                  ]
+                    .filter(Boolean)
+                    .join(", "),
+                  border: "1px solid rgba(0,0,0,0.06)",
+                }}
+              >
+                <div
+                  className="absolute inset-[12%] border border-black/8"
+                  style={{ background: "rgba(0,0,0,0.02)" }}
+                />
+              </div>
+              <div
+                className="absolute left-[28%] top-[-4.5rem] h-6 w-1.5 rounded-sm"
+                style={{
+                  background: `linear-gradient(90deg, ${fxColor}, ${fxColor}dd)`,
+                  boxShadow: "1px 1px 2px rgba(0,0,0,0.15)",
+                }}
+              />
+              <div
+                className="absolute left-[8%] top-[-4rem] h-12 w-40 border border-black/5"
+                style={splashStyle}
+              />
             </div>
           ) : null}
           {isBath ? (
-            <div className="absolute bottom-[32%] right-[12%] h-28 w-[22%]" style={{ background: tile }} />
+            <div
+              className="absolute bottom-[32%] right-[12%] h-28 w-[22%] border border-black/5 shadow-inner"
+              style={tileStyle}
+            />
           ) : null}
           <div
-            className="absolute left-1/2 top-[8%] h-2 w-2 -translate-x-1/2 rounded-full"
-            style={{ background: light }}
+            className="absolute left-1/2 top-[8%] h-3 w-3 -translate-x-1/2 rounded-full"
+            style={{
+              background: lightColor,
+              boxShadow: `0 0 18px 6px ${lightColor}88`,
+            }}
           />
         </div>
       </div>
