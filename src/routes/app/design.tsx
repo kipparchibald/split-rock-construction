@@ -11,6 +11,7 @@ import {
   Unlock,
   Upload,
 } from "lucide-react";
+import { DesignSwatch } from "@/components/design/design-swatch";
 import { PlanSheetViewer } from "@/components/design/plan-sheet-viewer";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import {
 import { loadJson, PERSIST_KEYS, saveJson } from "@/lib/local-persist";
 import { planKindFromFile, savePlanFile } from "@/lib/plan-file-store";
 import type { ContractModel } from "@/lib/pricing";
+import { buildSwatchStyle } from "@/lib/design-materials";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const WebGLWalkthrough = lazy(() =>
@@ -169,12 +171,6 @@ function DesignCenterPage() {
     try {
       const kind = planKindFromFile(file);
       await savePlanFile(file);
-      const nextEngine: RenderEngine =
-        kind === "pdf" || kind === "image"
-          ? session.renderEngine === "css"
-            ? "split"
-            : "split"
-          : session.renderEngine;
       persist({
         ...session,
         plan: {
@@ -185,7 +181,7 @@ function DesignCenterPage() {
           bookPlanId: session.plan?.bookPlanId,
           kind,
         },
-        renderEngine: nextEngine,
+        renderEngine: kind === "pdf" || kind === "image" ? "split" : session.renderEngine,
         projectLabel: session.projectLabel === "Current home" ? file.name.replace(/\.pdf$/i, "") : session.projectLabel,
         updatedAt: new Date().toISOString(),
       });
@@ -221,7 +217,7 @@ function DesignCenterPage() {
         description="Works with PDF plans alone: upload the sheet, pick finishes room-by-room, preview in WebGL. No IFC or GLB required."
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[11px] text-fg-muted">
+      <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-bg-elevated px-3 py-2 text-[10px] text-fg-muted sm:text-[11px]">
         <Badge variant="secondary">{feePolicy.title}</Badge>
         <span>{feePolicy.referralHandlingLabel}</span>
         <span className="text-fg-subtle">·</span>
@@ -239,23 +235,26 @@ function DesignCenterPage() {
       </div>
 
       <Tabs defaultValue="select">
-        <TabsList>
-          <TabsTrigger value="select">Select finishes</TabsTrigger>
-          <TabsTrigger value="allowances">Allowances</TabsTrigger>
-          <TabsTrigger value="plans">Plans</TabsTrigger>
+        <TabsList className="h-auto w-full min-h-11 justify-start overflow-x-auto">
+          <TabsTrigger value="select" className="min-h-11 shrink-0">Select finishes</TabsTrigger>
+          <TabsTrigger value="allowances" className="min-h-11 shrink-0">Allowances</TabsTrigger>
+          <TabsTrigger value="plans" className="min-h-11 shrink-0">Plans</TabsTrigger>
         </TabsList>
 
         <TabsContent value="select" className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <label className="text-[11px] uppercase tracking-[0.06em] text-fg-subtle">Room</label>
-            <div className="flex flex-wrap gap-1.5">
+            <div
+              data-testid="design-room-scroller"
+              className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap"
+            >
               {(Object.keys(ROOM_LABELS) as DesignRoom[]).map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRoom(r)}
                   className={cn(
-                    "border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    "min-h-11 shrink-0 border px-3 py-2 text-[12px] font-medium transition-colors sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[11px]",
                     session.room === r
                       ? "border-primary bg-primary text-primary-fg"
                       : "border-border text-fg-muted hover:bg-bg-subtle",
@@ -265,7 +264,7 @@ function DesignCenterPage() {
                 </button>
               ))}
             </div>
-            <div className="ml-auto flex flex-wrap gap-1">
+            <div className="flex gap-1 overflow-x-auto sm:ml-auto sm:flex-wrap">
               {(["split", "sheet", "webgl", "css"] as const).map((v) => (
                 <button
                   key={v}
@@ -278,7 +277,7 @@ function DesignCenterPage() {
                     })
                   }
                   className={cn(
-                    "border px-2 py-1 text-[10px] uppercase tracking-[0.06em]",
+                    "min-h-11 shrink-0 border px-3 py-2 text-[10px] uppercase tracking-[0.06em] sm:min-h-0 sm:px-2 sm:py-1",
                     engine === v
                       ? "border-primary bg-primary text-primary-fg"
                       : "border-border text-fg-subtle",
@@ -312,7 +311,7 @@ function DesignCenterPage() {
             )}
           >
             {engine === "split" || engine === "sheet" ? (
-              <div className="border border-border bg-bg-elevated overflow-hidden">
+              <div className="overflow-hidden border border-border bg-bg-elevated">
                 <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
                   <div>
                     <p className="flex items-center gap-2 text-[13px] font-medium">
@@ -333,11 +332,11 @@ function DesignCenterPage() {
             ) : null}
 
             {engine !== "sheet" ? (
-              <div className="border border-border bg-bg-elevated">
-                <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                  <div>
+              <div className="sticky top-0 z-10 border border-border bg-bg-elevated sm:static sm:z-auto">
+                <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:px-4 sm:py-2.5">
+                  <div className="min-w-0">
                     <p className="flex items-center gap-2 text-[13px] font-medium">
-                      <Box className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      <Box className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                       {ROOM_LABELS[session.room]} ·{" "}
                       {engine === "css" ? "CSS preview" : "Finish studio (WebGL)"}
                     </p>
@@ -364,7 +363,7 @@ function DesignCenterPage() {
                 ) : (
                   <Suspense
                     fallback={
-                      <div className="flex aspect-[16/10] items-center justify-center bg-[#1a1c1e] text-[12px] text-white/60">
+                      <div className="flex aspect-[4/3] min-h-[13.5rem] items-center justify-center bg-[#1a1c1e] text-[12px] text-white/60 sm:aspect-[16/10] sm:min-h-0">
                         Loading WebGL…
                       </div>
                     }
@@ -379,10 +378,11 @@ function DesignCenterPage() {
                       const opt = resolved[c];
                       return (
                         <li key={c} className="flex items-center gap-2 text-[12px]">
-                          <span
-                            className="h-3 w-3 shrink-0 border border-border"
-                            style={{ background: opt?.colorHex ?? "#ddd" }}
-                          />
+                          {opt ? (
+                            <DesignSwatch option={opt} size="sm" />
+                          ) : (
+                            <span className="h-3 w-3 shrink-0 border border-border bg-[#ddd]" />
+                          )}
                           <span className="text-fg-muted">{DESIGN_CATEGORY_LABELS[c]}:</span>
                           <span className="truncate font-medium">{opt?.name ?? "—"}</span>
                           {opt ? (
@@ -403,14 +403,14 @@ function DesignCenterPage() {
 
             <div className="border border-border bg-bg-elevated">
               <div className="border-b border-border px-3 py-2">
-                <div className="flex flex-wrap gap-1">
+                <div className="flex gap-1 overflow-x-auto sm:flex-wrap">
                   {roomCats.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setActiveCat(c)}
                       className={cn(
-                        "px-2 py-1 text-[11px] font-medium transition-colors",
+                        "min-h-11 shrink-0 px-3 py-2 text-[12px] font-medium transition-colors sm:min-h-0 sm:px-2 sm:py-1 sm:text-[11px]",
                         cat === c
                           ? "bg-primary text-primary-fg"
                           : "text-fg-muted hover:bg-bg-subtle",
@@ -431,7 +431,7 @@ function DesignCenterPage() {
                       type="button"
                       onClick={() => setTierFilter(t)}
                       className={cn(
-                        "border px-1.5 py-0.5 text-[10px]",
+                        "min-h-11 border px-2.5 py-2 text-[11px] sm:min-h-0 sm:px-1.5 sm:py-0.5 sm:text-[10px]",
                         tierFilter === t
                           ? "border-primary bg-primary text-primary-fg"
                           : "border-border text-fg-subtle",
@@ -466,21 +466,13 @@ function DesignCenterPage() {
                         disabled={!!session.locked[cat]}
                         onClick={() => pick(cat, opt.id)}
                         className={cn(
-                          "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
+                          "flex min-h-11 w-full items-start gap-3 px-3 py-3 text-left transition-colors sm:px-4",
                           selected ? "bg-bg-subtle" : "hover:bg-bg-subtle/60",
                           session.locked[cat] && "opacity-60",
                         )}
                       >
-                        <span
-                          className="mt-0.5 h-10 w-10 shrink-0 border border-border"
-                          style={{
-                            background: opt.colorHex,
-                            backgroundImage:
-                              opt.category === "flooring"
-                                ? `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 9px)`
-                                : undefined,
-                          }}
-                        />
+                        <DesignSwatch option={opt} size="lg" className="sm:hidden" />
+                        <DesignSwatch option={opt} className="hidden sm:inline-block" />
                         <span className="min-w-0 flex-1">
                           <span className="flex flex-wrap items-center gap-2">
                             <span className="text-[13px] font-medium">{opt.name}</span>
@@ -494,7 +486,7 @@ function DesignCenterPage() {
                           <span className="mt-0.5 block text-[11px] text-fg-muted">
                             {[opt.brand, opt.finish, opt.woodSpecies].filter(Boolean).join(" · ")}
                           </span>
-                          <span className="mt-1 block text-[11px] text-fg-subtle">{opt.imageHint}</span>
+                          <span className="mt-1 hidden text-[11px] text-fg-subtle sm:block">{opt.imageHint}</span>
                         </span>
                         <span
                           className={cn(
@@ -592,16 +584,9 @@ function DesignCenterPage() {
                 Stored in this browser (IndexedDB). Survives refresh on this device. Suitable for
                 selection meetings without cloud BIM.
               </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,application/pdf,image/*,.png,.jpg,.jpeg,.webp"
-                className="hidden"
-                onChange={(e) => void onPlanFile(e.target.files?.[0] ?? null)}
-              />
               <Button
                 type="button"
-                className="mt-3"
+                className="mt-3 min-h-11"
                 size="sm"
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
@@ -622,7 +607,7 @@ function DesignCenterPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="mt-2"
+                    className="mt-2 min-h-11"
                     onClick={() =>
                       persist({
                         ...session,
@@ -655,7 +640,7 @@ function DesignCenterPage() {
                       type="button"
                       onClick={() => linkBookPlan(p.id)}
                       className={cn(
-                        "w-full border px-3 py-2 text-left text-[12px] transition-colors",
+                        "min-h-11 w-full border px-3 py-2.5 text-left text-[12px] transition-colors",
                         session.plan?.bookPlanId === p.id
                           ? "border-primary bg-primary/10"
                           : "border-border hover:bg-bg-subtle",
@@ -677,7 +662,6 @@ function DesignCenterPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Shared file input for Select tab upload button */}
       <input
         ref={fileRef}
         type="file"
@@ -698,16 +682,50 @@ function VirtualRoom({
   selections: Partial<Record<DesignCategory, DesignOption | undefined>>;
   viewMode: "perspective" | "front" | "elevation";
 }) {
-  const wall = selections.paint?.colorHex ?? "#F0EDE4";
-  const floor = selections.flooring?.colorHex ?? "#C4A574";
-  const cab = selections.cabinets?.colorHex ?? "#F7F7F5";
-  const ct = selections.countertops?.colorHex ?? "#F2EFEA";
-  const fx = selections.fixtures?.colorHex ?? "#C0C0C0";
-  const light = selections.lighting?.colorHex ?? "#F5F5F5";
-  const ext = selections.exterior?.colorHex ?? "#F4F1EA";
-  const roof = selections.roofing?.colorHex ?? "#4A4A4A";
-  const tile = selections.tile?.colorHex ?? "#E8E6E1";
-  const splash = selections.backsplash?.colorHex ?? "#F5F5F5";
+  const wallStyle = useMemo(
+    () => (selections.paint ? buildSwatchStyle(selections.paint) : { backgroundColor: "#F0EDE4" }),
+    [selections.paint],
+  );
+  const floorStyle = useMemo(
+    () =>
+      selections.flooring ? buildSwatchStyle(selections.flooring) : { backgroundColor: "#C4A574" },
+    [selections.flooring],
+  );
+  const cabStyle = useMemo(
+    () =>
+      selections.cabinets ? buildSwatchStyle(selections.cabinets) : { backgroundColor: "#F7F7F5" },
+    [selections.cabinets],
+  );
+  const ctStyle = useMemo(
+    () =>
+      selections.countertops
+        ? buildSwatchStyle(selections.countertops)
+        : { backgroundColor: "#F2EFEA" },
+    [selections.countertops],
+  );
+  const fxColor = selections.fixtures?.colorHex ?? "#C0C0C0";
+  const lightColor = selections.lighting?.colorHex ?? "#F5F5F5";
+  const extStyle = useMemo(
+    () =>
+      selections.exterior ? buildSwatchStyle(selections.exterior) : { backgroundColor: "#F4F1EA" },
+    [selections.exterior],
+  );
+  const roofStyle = useMemo(
+    () =>
+      selections.roofing ? buildSwatchStyle(selections.roofing) : { backgroundColor: "#4A4A4A" },
+    [selections.roofing],
+  );
+  const tileStyle = useMemo(
+    () => (selections.tile ? buildSwatchStyle(selections.tile) : { backgroundColor: "#E8E6E1" }),
+    [selections.tile],
+  );
+  const splashStyle = useMemo(
+    () =>
+      selections.backsplash
+        ? buildSwatchStyle(selections.backsplash)
+        : { backgroundColor: "#F5F5F5" },
+    [selections.backsplash],
+  );
 
   const isBath = room === "primary_bath" || room === "hall_bath";
   const isKitchen = room === "kitchen";
@@ -722,49 +740,106 @@ function VirtualRoom({
 
   if (isExterior || viewMode === "elevation") {
     return (
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-b from-[#8eabbf] to-[#c5d5e0]">
+      <div className="relative aspect-[4/3] min-h-[13.5rem] overflow-hidden bg-gradient-to-b from-[#8eabbf] to-[#c5d5e0] sm:aspect-[16/10] sm:min-h-0">
         <div
           className="absolute inset-x-[10%] bottom-[16%] top-[18%] shadow-2xl"
-          style={{ background: ext }}
+          style={{
+            ...extStyle,
+            boxShadow: "inset 0 -12px 24px rgba(0,0,0,0.08)",
+          }}
         >
           <div
             className="absolute -top-6 left-[-4%] right-[-4%] h-10"
             style={{
-              background: roof,
+              ...roofStyle,
               clipPath: "polygon(5% 100%, 50% 0%, 95% 100%)",
             }}
           />
+          <div
+            className="absolute left-[18%] top-[28%] h-[22%] w-[18%] border border-white/30 bg-[#9ec5e0]/40"
+            style={{ boxShadow: "inset 0 0 12px rgba(255,255,255,0.25)" }}
+          />
+          <div
+            className="absolute right-[18%] top-[28%] h-[22%] w-[18%] border border-white/30 bg-[#9ec5e0]/40"
+            style={{ boxShadow: "inset 0 0 12px rgba(255,255,255,0.25)" }}
+          />
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-[16%] bg-[#5a6b3a]" />
+        <div className="absolute inset-x-0 bottom-0 h-[16%] bg-gradient-to-t from-[#4a5a32] to-[#5a6b3a]" />
       </div>
     );
   }
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden bg-[#1a1a1a]/5">
+    <div className="relative aspect-[4/3] min-h-[13.5rem] overflow-hidden bg-gradient-to-b from-[#e8e4de] to-[#d4cfc8] sm:aspect-[16/10] sm:min-h-0">
       <div
         className="absolute inset-[6%] origin-center"
         style={{ transform: perspective, transformStyle: "preserve-3d" }}
       >
-        <div className="relative h-full w-full overflow-hidden shadow-xl" style={{ background: wall }}>
+        <div
+          className="relative h-full w-full overflow-hidden shadow-xl"
+          style={{
+            ...wallStyle,
+            backgroundImage: [
+              wallStyle.backgroundImage,
+              "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 35%)",
+            ]
+              .filter(Boolean)
+              .join(", "),
+          }}
+        >
           <div
             className="absolute inset-x-0 bottom-0 h-[30%]"
-            style={{ background: floor }}
+            style={{
+              ...floorStyle,
+              boxShadow: "inset 0 8px 16px rgba(0,0,0,0.06)",
+            }}
           />
           {isKitchen ? (
             <div className="absolute bottom-[30%] left-[6%] right-[26%]">
-              <div className="h-2.5" style={{ background: ct }} />
-              <div className="h-[4.75rem]" style={{ background: cab }} />
-              <div className="absolute -top-6 left-[28%] h-6 w-1.5" style={{ background: fx }} />
-              <div className="absolute left-[8%] top-[-4rem] h-12 w-40" style={{ background: splash }} />
+              <div className="h-2.5 shadow-sm" style={ctStyle} />
+              <div
+                className="relative h-[4.75rem] shadow-md"
+                style={{
+                  ...cabStyle,
+                  backgroundImage: [
+                    cabStyle.backgroundImage,
+                    "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.06) 100%)",
+                  ]
+                    .filter(Boolean)
+                    .join(", "),
+                  border: "1px solid rgba(0,0,0,0.06)",
+                }}
+              >
+                <div
+                  className="absolute inset-[12%] border border-black/8"
+                  style={{ background: "rgba(0,0,0,0.02)" }}
+                />
+              </div>
+              <div
+                className="absolute left-[28%] top-[-4.5rem] h-6 w-1.5 rounded-sm"
+                style={{
+                  background: `linear-gradient(90deg, ${fxColor}, ${fxColor}dd)`,
+                  boxShadow: "1px 1px 2px rgba(0,0,0,0.15)",
+                }}
+              />
+              <div
+                className="absolute left-[8%] top-[-4rem] h-12 w-40 border border-black/5"
+                style={splashStyle}
+              />
             </div>
           ) : null}
           {isBath ? (
-            <div className="absolute bottom-[32%] right-[12%] h-28 w-[22%]" style={{ background: tile }} />
+            <div
+              className="absolute bottom-[32%] right-[12%] h-28 w-[22%] border border-black/5 shadow-inner"
+              style={tileStyle}
+            />
           ) : null}
           <div
-            className="absolute left-1/2 top-[8%] h-2 w-2 -translate-x-1/2 rounded-full"
-            style={{ background: light }}
+            className="absolute left-1/2 top-[8%] h-3 w-3 -translate-x-1/2 rounded-full"
+            style={{
+              background: lightColor,
+              boxShadow: `0 0 18px 6px ${lightColor}88`,
+            }}
           />
         </div>
       </div>
