@@ -3,6 +3,7 @@
  * Procedural ranch kitchen / living / exterior meshes driven by catalog finishes.
  */
 import { Suspense, useMemo } from "react";
+import { usePhone } from "@/lib/use-narrow";
 import { Canvas } from "@react-three/fiber";
 import {
   ContactShadows,
@@ -13,6 +14,7 @@ import {
 } from "@react-three/drei";
 import type { DesignCategory, DesignOption } from "@/data/types";
 import type { DesignRoom } from "@/lib/design-catalog";
+import { TOUCH } from "three";
 import { FinishMaterial, ShakerCabinet } from "@/components/design/finish-material";
 import { optionColor } from "@/lib/design-materials";
 
@@ -49,19 +51,14 @@ function KitchenScene({ s }: { s: FinishSelections }) {
 
   return (
     <group>
-      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[10, 8]} />
         <FinishMaterial option={floor} category="flooring" fallbackHex="#C4A574" repeat={[4, 3.2]} />
       </mesh>
-
-      {/* Ceiling */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 3.2, 0]} receiveShadow>
         <planeGeometry args={[10, 8]} />
         <meshStandardMaterial color="#f8f7f4" roughness={0.92} />
       </mesh>
-
-      {/* Walls */}
       <mesh position={[0, 1.6, -4]} receiveShadow>
         <boxGeometry args={[10, 3.2, 0.15]} />
         <FinishMaterial option={wall} category="paint" fallbackHex="#F0EDE4" repeat={[3, 2]} />
@@ -74,8 +71,6 @@ function KitchenScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[8, 3.2, 0.15]} />
         <FinishMaterial option={wall} category="paint" fallbackHex="#F0EDE4" repeat={[2.4, 2]} />
       </mesh>
-
-      {/* Baseboards */}
       {[
         [0, 0.08, -3.92] as const,
         [-4.92, 0.08, 0] as const,
@@ -85,34 +80,19 @@ function KitchenScene({ s }: { s: FinishSelections }) {
           <meshStandardMaterial color="#ebe8e0" roughness={0.7} />
         </mesh>
       ))}
-
       <WindowLight position={[4.9, 1.8, -1]} />
-
-      {/* Upper cabinets */}
       {[-2.4, -1.2, 0, 1.2].map((x) => (
-        <ShakerCabinet
-          key={`uc-${x}`}
-          position={[x, 2.35, -3.7]}
-          size={[1.05, 0.85, 0.4]}
-          option={cab}
-          fallbackHex="#F7F7F5"
-        />
+        <ShakerCabinet key={`uc-${x}`} position={[x, 2.35, -3.7]} size={[1.05, 0.85, 0.4]} option={cab} fallbackHex="#F7F7F5" />
       ))}
-
-      {/* Backsplash */}
       <mesh position={[-0.6, 1.55, -3.84]}>
         <boxGeometry args={[4.4, 0.7, 0.04]} />
         <FinishMaterial option={splash} category="backsplash" fallbackHex="#F5F5F5" repeat={[6, 2]} />
       </mesh>
-
-      {/* Lower cabinets + counter run */}
       <ShakerCabinet position={[-0.6, 0.45, -3.55]} size={[4.4, 0.9, 0.65]} option={cab} />
       <mesh position={[-0.6, 0.95, -3.55]} castShadow>
         <boxGeometry args={[4.5, 0.08, 0.7]} />
         <FinishMaterial option={ct} category="countertops" fallbackHex="#F2EFEA" repeat={[3, 1]} />
       </mesh>
-
-      {/* Faucet */}
       <group position={[-0.6, 1.15, -3.35]}>
         <mesh>
           <cylinderGeometry args={[0.03, 0.03, 0.35, 12]} />
@@ -123,15 +103,11 @@ function KitchenScene({ s }: { s: FinishSelections }) {
           <FinishMaterial option={fx} category="fixtures" fallbackHex="#C0C0C0" />
         </mesh>
       </group>
-
-      {/* Island */}
       <ShakerCabinet position={[1.2, 0.45, -0.4]} size={[2.2, 0.9, 1.1]} option={cab} />
       <mesh position={[1.2, 0.95, -0.4]} castShadow>
         <boxGeometry args={[2.3, 0.08, 1.2]} />
         <FinishMaterial option={ct} category="countertops" fallbackHex="#F2EFEA" repeat={[2, 1]} />
       </mesh>
-
-      {/* Range + hood */}
       <mesh position={[2.6, 0.5, -3.5]} castShadow>
         <boxGeometry args={[0.9, 1.0, 0.7]} />
         <FinishMaterial option={appliance} category="appliances" fallbackHex="#C5C8CA" />
@@ -140,8 +116,6 @@ function KitchenScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[1.0, 0.5, 0.75]} />
         <meshStandardMaterial color="#2a2a2a" roughness={0.55} metalness={0.2} />
       </mesh>
-
-      {/* Pendant lights */}
       {[0.4, 1.2, 2.0].map((x) => (
         <group key={`lt-${x}`} position={[x, 2.6, -0.4]}>
           <mesh>
@@ -150,17 +124,10 @@ function KitchenScene({ s }: { s: FinishSelections }) {
           </mesh>
           <mesh position={[0, -0.35, 0]}>
             <cylinderGeometry args={[0.12, 0.15, 0.2, 16]} />
-            <FinishMaterial
-              option={light}
-              category="lighting"
-              fallbackHex="#F5F5F5"
-              emissive={optionColor(light, "#F5F5F5")}
-              emissiveIntensity={0.45}
-            />
+            <FinishMaterial option={light} category="lighting" fallbackHex="#F5F5F5" emissive={optionColor(light, "#F5F5F5")} emissiveIntensity={0.45} />
           </mesh>
         </group>
       ))}
-
       <pointLight position={[1.2, 2.4, -0.4]} intensity={14} distance={8} color="#fff5e0" />
       <pointLight position={[-0.6, 2.5, -2]} intensity={10} distance={7} color="#ffffff" />
       <hemisphereLight args={["#fff8f0", "#8a8078", 0.35]} />
@@ -172,7 +139,6 @@ function LivingScene({ s }: { s: FinishSelections }) {
   const wall = s.paint;
   const floor = s.flooring;
   const light = s.lighting;
-
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -195,10 +161,7 @@ function LivingScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[10, 3.4, 0.15]} />
         <FinishMaterial option={wall} category="paint" fallbackHex="#F0EDE4" repeat={[3, 2]} />
       </mesh>
-
       <WindowLight position={[5.9, 1.9, -1.5]} />
-
-      {/* Sofa */}
       <mesh position={[-1.5, 0.4, 0.5]} castShadow>
         <boxGeometry args={[3.2, 0.8, 1.4]} />
         <meshStandardMaterial color="#6b5b4a" roughness={0.82} />
@@ -207,27 +170,17 @@ function LivingScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[3.2, 0.55, 0.35]} />
         <meshStandardMaterial color="#5a4a3a" roughness={0.78} />
       </mesh>
-      {/* Accent chair */}
       <mesh position={[-1.2, 0.25, 2.2]} castShadow>
         <boxGeometry args={[1.4, 0.5, 0.8]} />
         <FinishMaterial option={floor} category="flooring" fallbackHex="#C4A574" repeat={[1.5, 1]} />
       </mesh>
-      {/* Coffee table */}
       <mesh position={[0.2, 0.22, 1.2]} castShadow>
         <boxGeometry args={[1.6, 0.06, 0.9]} />
         <meshStandardMaterial color="#4a3f35" roughness={0.45} metalness={0.05} />
       </mesh>
-
-      {/* Ceiling fixture */}
       <mesh position={[0, 2.9, -1]}>
         <cylinderGeometry args={[0.35, 0.35, 0.12, 24]} />
-        <FinishMaterial
-          option={light}
-          category="lighting"
-          fallbackHex="#F5F5F5"
-          emissive={optionColor(light, "#F5F5F5")}
-          emissiveIntensity={0.5}
-        />
+        <FinishMaterial option={light} category="lighting" fallbackHex="#F5F5F5" emissive={optionColor(light, "#F5F5F5")} emissiveIntensity={0.5} />
       </mesh>
       <pointLight position={[0, 2.7, -1]} intensity={16} distance={10} color="#fff8e8" />
       <hemisphereLight args={["#fff6ee", "#7a7268", 0.4]} />
@@ -242,7 +195,6 @@ function BathScene({ s }: { s: FinishSelections }) {
   const cab = s.cabinets;
   const ct = s.countertops;
   const fx = s.fixtures;
-
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -264,12 +216,10 @@ function BathScene({ s }: { s: FinishSelections }) {
           <FinishMaterial option={fx} category="fixtures" fallbackHex="#C0C0C0" />
         </mesh>
       </group>
-      {/* Shower surround */}
       <mesh position={[1.4, 1.1, -1.6]}>
         <boxGeometry args={[1.5, 2.2, 1.4]} />
         <FinishMaterial option={tile} category="tile" fallbackHex="#E8E6E1" repeat={[3, 4]} />
       </mesh>
-      {/* Tub deck */}
       <mesh position={[-1.8, 0.35, 0.8]} castShadow>
         <boxGeometry args={[1.2, 0.5, 0.7]} />
         <FinishMaterial option={ct} category="countertops" fallbackHex="#F2EFEA" repeat={[1, 1]} />
@@ -285,7 +235,6 @@ function ExteriorScene({ s }: { s: FinishSelections }) {
   const roof = s.roofing;
   const door = s.doors;
   const stone = s.exterior?.id?.includes("stone");
-
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -299,12 +248,7 @@ function ExteriorScene({ s }: { s: FinishSelections }) {
       {stone ? (
         <mesh position={[0, 0.45, 0]} castShadow>
           <boxGeometry args={[10.1, 0.9, 7.1]} />
-          <FinishMaterial
-            option={s.exterior}
-            category="exterior"
-            fallbackHex="#8B7D6B"
-            repeat={[3, 1]}
-          />
+          <FinishMaterial option={s.exterior} category="exterior" fallbackHex="#8B7D6B" repeat={[3, 1]} />
         </mesh>
       ) : null}
       <mesh position={[0, 3.6, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
@@ -323,7 +267,6 @@ function ExteriorScene({ s }: { s: FinishSelections }) {
         <boxGeometry args={[1.4, 1.2, 0.08]} />
         <meshStandardMaterial color="#9ec5e0" transparent opacity={0.55} roughness={0.1} />
       </mesh>
-      {/* Porch beam */}
       <mesh position={[0, 2.2, 3.2]} castShadow>
         <boxGeometry args={[8, 0.2, 0.25]} />
         <meshStandardMaterial color="#e8e2d8" roughness={0.75} />
@@ -351,55 +294,76 @@ export function WebGLWalkthrough({
   selections: FinishSelections;
   className?: string;
 }) {
+  const phone = usePhone();
   const isExterior = room === "exterior" || room === "garage_front";
   const cameraPos = useMemo(
     (): [number, number, number] => (isExterior ? [12, 6, 12] : [4.5, 2.4, 5.5]),
     [isExterior],
   );
+  const shadowSize = phone ? 512 : 1024;
 
   return (
-    <div className={className ?? "relative aspect-[16/10] w-full bg-[#1a1c1e]"}>
-      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: false }}>
+    <div
+      className={
+        className ??
+        "relative aspect-[4/3] min-h-[13.5rem] w-full touch-none bg-[#1a1c1e] sm:aspect-[16/10] sm:min-h-0"
+      }
+      data-testid="design-webgl"
+    >
+      <Canvas
+        shadows={!phone}
+        dpr={phone ? [1, 1.25] : [1, 1.75]}
+        gl={{ antialias: !phone, alpha: false, powerPreference: phone ? "low-power" : "high-performance" }}
+      >
         <color attach="background" args={[isExterior ? "#8eabbf" : "#3a3835"]} />
-        <fog attach="fog" args={[isExterior ? "#8eabbf" : "#3a3835", 12, 28]} />
-        <PerspectiveCamera makeDefault position={cameraPos} fov={42} />
-        <ambientLight intensity={isExterior ? 0.45 : 0.28} color="#fff8f2" />
+        {!phone ? <fog attach="fog" args={[isExterior ? "#8eabbf" : "#3a3835", 12, 28]} /> : null}
+        <PerspectiveCamera makeDefault position={cameraPos} fov={phone ? 48 : 42} />
+        <ambientLight intensity={isExterior ? 0.45 : phone ? 0.4 : 0.28} color="#fff8f2" />
         <directionalLight
           position={[6, 10, 4]}
           intensity={isExterior ? 1.2 : 0.95}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          castShadow={!phone}
+          shadow-mapSize-width={shadowSize}
+          shadow-mapSize-height={shadowSize}
           color="#fff6eb"
         />
         <Suspense fallback={null}>
           <RoomModel room={room} selections={selections} />
-          {!isExterior ? (
-            <Environment preset="apartment" environmentIntensity={0.55} />
+          {!phone ? (
+            !isExterior ? (
+              <Environment preset="apartment" environmentIntensity={0.55} />
+            ) : (
+              <Environment preset="sunset" environmentIntensity={0.4} />
+            )
           ) : (
-            <Environment preset="sunset" environmentIntensity={0.4} />
+            <hemisphereLight args={["#efe8dc", "#3d3a36", 0.55]} />
           )}
-          <ContactShadows
-            position={[0, 0.01, 0]}
-            opacity={0.42}
-            scale={22}
-            blur={2.8}
-            far={9}
-            color="#1a1816"
-          />
-          <SoftShadows size={12} samples={8} focus={0.5} />
+          {!phone ? (
+            <>
+              <ContactShadows position={[0, 0.01, 0]} opacity={0.42} scale={22} blur={2.8} far={9} color="#1a1816" />
+              <SoftShadows size={12} samples={8} focus={0.5} />
+            </>
+          ) : (
+            <ContactShadows position={[0, 0.01, 0]} opacity={0.28} scale={18} blur={1.6} far={6} color="#1a1816" />
+          )}
         </Suspense>
         <OrbitControls
           makeDefault
           target={isExterior ? [0, 1.5, 0] : [0, 1.2, -1]}
           minDistance={2}
-          maxDistance={28}
+          maxDistance={phone ? 18 : 28}
           maxPolarAngle={Math.PI / 2.05}
-          enablePan
+          enablePan={!phone}
+          enableDamping
+          dampingFactor={0.08}
+          touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
+          rotateSpeed={phone ? 0.72 : 1}
         />
       </Canvas>
-      <p className="pointer-events-none absolute bottom-2 left-3 text-[10px] text-white/70">
-        WebGL walkthrough · drag to orbit · scroll to zoom · finishes update live
+      <p className="pointer-events-none absolute bottom-2 left-3 right-3 text-[10px] leading-snug text-white/70">
+        {phone
+          ? "Drag to orbit · pinch to zoom · finishes update live"
+          : "WebGL walkthrough · drag to orbit · scroll to zoom · finishes update live"}
       </p>
     </div>
   );
