@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { vendorFor, vendorHex } from "@/lib/design-vendor";
+import { optionById } from "@/lib/design-catalog";
+import { optionColor } from "@/lib/design-materials";
 
 describe("design vendor overlay", () => {
   it("uses published SW 7008 hex for Alabaster", () => {
@@ -19,5 +21,10 @@ describe("design vendor overlay", () => {
 
   it("tags Calacatta as MSI quartz family", () => {
     expect(vendorFor("ct-quartz-calacatta")?.sku).toMatch(/Calacatta/i);
+  });
+
+  it("every catalog option has a stable id", () => {
+    expect(optionById("paint-alabaster")?.id).toBe("paint-alabaster");
+    expect(optionColor(optionById("paint-alabaster"), "#000")).toMatch(/^#/);
   });
 });
