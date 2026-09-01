@@ -2,7 +2,8 @@
  * Bootstrap internal operator accounts for Split Rock Construction.
  *
  * Runs once on server boot (PGLite preview + Neon when empty). Uses Better Auth
- * sign-up so passwords are hashed correctly — never insert raw password hashes.
+ * sign-up for new users; existing users get credential password upserts so
+ * OAuth-only rows still accept email/password sign-in.
  *
  * Credentials (ops only — rotate after first production deploy):
  *   Kipp Archibald  ·  kipp@splitrockconst.com  ·  SplitRock-Kipp-2026!
@@ -11,6 +12,7 @@
 import { auth } from "./server";
 import { DEMO_OPERATORS } from "@/lib/demo-credentials";
 import { OPERATOR_AUTH } from "@/lib/company";
+import { syncOperatorCredential } from "./operator-credential-sync";
 
 export const SPLIT_ROCK_OPERATORS = [
   {
@@ -33,20 +35,11 @@ export function ensureOperatorAccounts(): Promise<void> {
   seedPromise ??= (async () => {
     for (const op of SPLIT_ROCK_OPERATORS) {
       try {
-        await auth.api.signUpEmail({
-          body: {
-            name: op.name,
-            email: op.email,
-            password: op.password,
-          },
-        });
-        console.info(`[auth] seeded operator ${op.email}`);
+        const result = await syncOperatorCredential(op, auth);
+        console.info(`[auth] ${result} operator ${op.email}`);
       } catch (err) {
-        // Already exists or transient — safe to ignore on every boot.
         const msg = err instanceof Error ? err.message : String(err);
-        if (!/already|exists|unique/i.test(msg)) {
-          console.warn(`[auth] seed ${op.email}:`, msg);
-        }
+        console.warn(`[auth] seed ${op.email}:`, msg);
       }
     }
   })().catch((err) => {
