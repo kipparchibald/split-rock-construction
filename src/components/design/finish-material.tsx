@@ -1,5 +1,6 @@
 /**
  * R3F mesh material driven by Design Center catalog options.
+ * Physical materials + roughness derived from the procedural albedo.
  */
 import { useMemo } from "react";
 import type { DesignCategory, DesignOption } from "@/data/types";
@@ -8,8 +9,38 @@ import {
   getTextureCanvas,
   optionColor,
   resolveTextureKind,
+  type TextureKind,
 } from "@/lib/design-materials";
 import * as THREE from "three";
+
+function roughnessCanvasFromAlbedo(src: HTMLCanvasElement, kind: TextureKind): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const ctx = out.getContext("2d");
+  const inCtx = src.getContext("2d");
+  if (!ctx || !inCtx) return src;
+  const img = inCtx.getImageData(0, 0, src.width, src.height);
+  const data = img.data;
+  const glossy = kind.startsWith("metal") || kind.startsWith("quartz") || kind === "appliance-stainless";
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = (data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11) / 255;
+    const v = glossy ? 40 + lum * 90 : 110 + lum * 110;
+    data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
+}
+
+function makeMap(canvas: HTMLCanvasElement, colorSpace: THREE.ColorSpace) {
+  const map = new THREE.CanvasTexture(canvas);
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.anisotropy = 8;
+  map.colorSpace = colorSpace;
+  map.needsUpdate = true;
+  return map;
+}
 
 export function useFinishMaps(
   option: DesignOption | undefined,
@@ -19,15 +50,24 @@ export function useFinishMaps(
   return useMemo(() => {
     const hex = optionColor(option, fallbackHex);
     const profile = getMaterialProfile(option, category);
-    const canvas = getTextureCanvas(profile.kind, hex);
-    const map = canvas ? new THREE.CanvasTexture(canvas) : null;
-    if (map) {
-      map.wrapS = map.wrapT = THREE.RepeatWrapping;
-      map.colorSpace = THREE.SRGBColorSpace;
-      map.needsUpdate = true;
-    }
-    return { map, profile, hex };
+    const canvas = getTextureCanvas(profile.kind, hex, 512);
+    const map = canvas ? makeMap(canvas, THREE.SRGBColorSpace) : null;
+    const roughnessMap =
+      canvas && profile.kind !== "flat-color"
+        ? makeMap(roughnessCanvasFromAlbedo(canvas, profile.kind), THREE.NoColorSpace)
+        : null;
+    return { map, roughnessMap, profile, hex };
   }, [option, category, fallbackHex]);
+}
+
+function isPhysical(kind: TextureKind) {
+  return (
+    kind.startsWith("metal") ||
+    kind.startsWith("quartz") ||
+    kind === "slab" ||
+    kind === "appliance-stainless" ||
+    kind.includes("tile")
+  );
 }
 
 export function FinishMaterial({
@@ -49,24 +89,37 @@ export function FinishMaterial({
   transparent?: boolean;
   opacity?: number;
 }) {
-  const { map, profile, hex } = useFinishMaps(option, category, fallbackHex);
+  const { map, roughnessMap, profile, hex } = useFinishMaps(option, category, fallbackHex);
 
-  if (map) {
-    map.repeat.set(repeat[0], repeat[1]);
+  if (map) map.repeat.set(repeat[0], repeat[1]);
+  if (roughnessMap) roughnessMap.repeat.set(repeat[0], repeat[1]);
+
+  const shared = {
+    color: (map ? "#ffffff" : hex) as string,
+    map: map ?? undefined,
+    roughnessMap: roughnessMap ?? undefined,
+    roughness: profile.roughness,
+    metalness: profile.metalness,
+    emissive: emissive ?? (profile.emissiveIntensity ? hex : undefined),
+    emissiveIntensity: emissiveIntensity ?? profile.emissiveIntensity ?? 0,
+    transparent,
+    opacity,
+    envMapIntensity: isPhysical(profile.kind) ? 1.15 : 0.7,
+  };
+
+  if (isPhysical(profile.kind)) {
+    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile") ? 0.55 : 0.25;
+    return (
+      <meshPhysicalMaterial
+        {...shared}
+        clearcoat={clearcoat}
+        clearcoatRoughness={profile.kind.includes("leather") || profile.kind.includes("matte") ? 0.55 : 0.18}
+        reflectivity={0.55}
+      />
+    );
   }
 
-  return (
-    <meshStandardMaterial
-      color={map ? "#ffffff" : hex}
-      map={map ?? undefined}
-      roughness={profile.roughness}
-      metalness={profile.metalness}
-      emissive={emissive ?? (profile.emissiveIntensity ? hex : undefined)}
-      emissiveIntensity={emissiveIntensity ?? profile.emissiveIntensity ?? 0}
-      transparent={transparent}
-      opacity={opacity}
-    />
-  );
+  return <meshStandardMaterial {...shared} />;
 }
 
 export function ShakerCabinet({
