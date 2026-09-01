@@ -8,10 +8,12 @@ import {
   getMaterialProfile,
   getTextureCanvas,
   optionColor,
+  isFlatPanelCabinet,
   resolveTextureKind,
   type TextureKind,
 } from "@/lib/design-materials";
 import { resolveScannedPbr, type ScannedPbr } from "@/lib/design-pbr";
+import { vendorHex } from "@/lib/design-vendor";
 import * as THREE from "three";
 
 function roughnessCanvasFromAlbedo(src: HTMLCanvasElement, kind: TextureKind): HTMLCanvasElement {
@@ -122,7 +124,7 @@ export function useFinishMaps(
   category: DesignCategory,
   fallbackHex: string,
 ) {
-  const hex = optionColor(option, fallbackHex);
+  const hex = vendorHex(option?.id, optionColor(option, fallbackHex)) ?? optionColor(option, fallbackHex);
   const profile = useMemo(() => getMaterialProfile(option, category), [option, category]);
   const scanned = useMemo(() => resolveScannedPbr(option, category), [option, category]);
   const scannedMaps = useScannedMaps(scanned);
@@ -168,6 +170,7 @@ function isPhysical(kind: TextureKind) {
   return (
     kind.startsWith("metal") ||
     kind.startsWith("quartz") ||
+    kind.startsWith("cabinet") ||
     kind === "slab" ||
     kind === "appliance-stainless" ||
     kind.includes("tile")
@@ -224,7 +227,11 @@ export function FinishMaterial({
   };
 
   if (isPhysical(profile.kind)) {
-    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile") ? 0.62 : 0.28;
+    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile")
+      ? 0.62
+      : profile.kind.startsWith("cabinet")
+        ? 0.38
+        : 0.28;
     return (
       <meshPhysicalMaterial
         {...shared}
@@ -243,46 +250,152 @@ export function ShakerCabinet({
   size,
   option,
   fallbackHex = "#F7F7F5",
+  variant = "base",
 }: {
   position: [number, number, number];
   size: [number, number, number];
   option: DesignOption | undefined;
   fallbackHex?: string;
+  variant?: "base" | "upper" | "tall";
 }) {
   const [w, h, d] = size;
-  const frame = 0.06;
-  const panelInset = 0.04;
+  const kind = variant === "upper" || (variant !== "tall" && h <= 0.86 && d <= 0.45) ? "upper" : variant;
+  const flat = isFlatPanelCabinet(option);
+  const toe = kind === "base" ? 0.1 : 0;
+  const doorH = h - toe;
+  const reveal = 0.006;
+  const stile = Math.min(0.068, Math.max(0.055, w * 0.08));
+  const doorT = 0.02;
+  const panelSink = flat ? 0.002 : 0.01;
+  const targetDoor = kind === "upper" ? 0.42 : 0.36;
+  const doorCount = Math.max(1, Math.round(w / targetDoor));
+  const doorW = (w - reveal * (doorCount + 1)) / doorCount;
+  const faceZ = d / 2 + 0.001;
+  const pullDark =
+    (option?.id ?? "").includes("navy") ||
+    (option?.id ?? "").includes("walnut") ||
+    (option?.id ?? "").includes("black");
+  const pullHex = pullDark ? "#2A2A2A" : "#A8A9AD";
+
+  const doors = Array.from({ length: doorCount }, (_, i) => {
+    const x = -w / 2 + reveal + doorW / 2 + i * (doorW + reveal);
+    const drawer = kind === "base" && doorH > 0.7 && i === 0;
+    return { x, drawer };
+  });
 
   return (
     <group position={position}>
-      <mesh castShadow receiveShadow>
+      <mesh castShadow receiveShadow position={[0, 0, 0]}>
         <boxGeometry args={[w, h, d]} />
         <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[2, 2]} />
       </mesh>
-      <mesh position={[0, 0, d / 2 + 0.005]} castShadow>
-        <boxGeometry args={[w - frame * 2, h - frame * 2, panelInset]} />
-        <FinishMaterial
-          option={option}
-          category="cabinets"
-          fallbackHex={fallbackHex}
-          repeat={[1.5, 1.5]}
-        />
+      {toe > 0 ? (
+        <mesh position={[0, -h / 2 + toe / 2, d / 2 - 0.02]} castShadow>
+          <boxGeometry args={[w - 0.04, toe, 0.08]} />
+          <meshStandardMaterial color="#1c1c1c" roughness={0.7} />
+        </mesh>
+      ) : null}
+      {kind === "upper" ? (
+        <mesh position={[0, h / 2 + 0.018, 0.02]} castShadow>
+          <boxGeometry args={[w + 0.02, 0.036, d + 0.04]} />
+          <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
+        </mesh>
+      ) : null}
+      {doors.map((door, i) => {
+        const y0 = -h / 2 + toe;
+        if (door.drawer) {
+          const dh = 0.2;
+          const lowerH = doorH - dh - reveal;
+          return (
+            <group key={`d-${i}`}>
+              <ShakerDoor
+                position={[door.x, y0 + dh / 2 + reveal * 0.5, faceZ]}
+                size={[doorW, dh, doorT]}
+                stile={stile * 0.85}
+                panelSink={panelSink}
+                flat={flat}
+                option={option}
+                fallbackHex={fallbackHex}
+                pull="horizontal"
+                pullHex={pullHex}
+              />
+              <ShakerDoor
+                position={[door.x, y0 + dh + reveal + lowerH / 2, faceZ]}
+                size={[doorW, lowerH, doorT]}
+                stile={stile}
+                panelSink={panelSink}
+                flat={flat}
+                option={option}
+                fallbackHex={fallbackHex}
+                pull="vertical"
+                pullHex={pullHex}
+              />
+            </group>
+          );
+        }
+        return (
+          <ShakerDoor
+            key={`d-${i}`}
+            position={[door.x, y0 + doorH / 2, faceZ]}
+            size={[doorW, doorH - reveal, doorT]}
+            stile={stile}
+            panelSink={panelSink}
+            flat={flat}
+            option={option}
+            fallbackHex={fallbackHex}
+            pull="vertical"
+            pullHex={pullHex}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+function ShakerDoor({
+  position,
+  size,
+  stile,
+  panelSink,
+  flat,
+  option,
+  fallbackHex,
+  pull,
+  pullHex,
+}: {
+  position: [number, number, number];
+  size: [number, number, number];
+  stile: number;
+  panelSink: number;
+  flat: boolean;
+  option: DesignOption | undefined;
+  fallbackHex: string;
+  pull: "vertical" | "horizontal";
+  pullHex: string;
+}) {
+  const [w, h, t] = size;
+  const innerW = Math.max(0.04, w - stile * 2);
+  const innerH = Math.max(0.04, h - stile * 2);
+  const pullW = pull === "horizontal" ? Math.min(0.14, w * 0.45) : 0.012;
+  const pullH = pull === "horizontal" ? 0.012 : Math.min(0.13, h * 0.22);
+  const pullX = pull === "horizontal" ? 0 : w * 0.32;
+  const pullY = pull === "horizontal" ? 0 : h * 0.12;
+
+  return (
+    <group position={position}>
+      <mesh castShadow>
+        <boxGeometry args={[w, h, t]} />
+        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[1.2, 1.2]} />
       </mesh>
-      <mesh position={[0, h / 2 - frame / 2, d / 2 + 0.008]}>
-        <boxGeometry args={[w - frame, frame * 0.8, panelInset * 0.5]} />
-        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
-      </mesh>
-      <mesh position={[0, -h / 2 + frame / 2, d / 2 + 0.008]}>
-        <boxGeometry args={[w - frame, frame * 0.8, panelInset * 0.5]} />
-        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
-      </mesh>
-      <mesh position={[-w / 2 + frame / 2, 0, d / 2 + 0.008]}>
-        <boxGeometry args={[frame * 0.8, h - frame, panelInset * 0.5]} />
-        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
-      </mesh>
-      <mesh position={[w / 2 - frame / 2, 0, d / 2 + 0.008]}>
-        <boxGeometry args={[frame * 0.8, h - frame, panelInset * 0.5]} />
-        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
+      {!flat ? (
+        <mesh position={[0, 0, t / 2 - panelSink]} castShadow>
+          <boxGeometry args={[innerW, innerH, t * 0.45]} />
+          <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[1, 1]} />
+        </mesh>
+      ) : null}
+      <mesh position={[pullX, pullY, t / 2 + 0.008]} castShadow>
+        <boxGeometry args={[pullW, pullH, 0.012]} />
+        <meshStandardMaterial color={pullHex} roughness={0.35} metalness={0.7} />
       </mesh>
     </group>
   );
