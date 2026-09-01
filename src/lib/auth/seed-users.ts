@@ -29,10 +29,12 @@ export const SPLIT_ROCK_OPERATORS = [
   },
 ] as const;
 
-let seedPromise: Promise<void> | null = null;
+let seedInFlight: Promise<void> | null = null;
 
 export function ensureOperatorAccounts(): Promise<void> {
-  seedPromise ??= (async () => {
+  if (seedInFlight) return seedInFlight;
+
+  seedInFlight = (async () => {
     for (const op of SPLIT_ROCK_OPERATORS) {
       try {
         const result = await syncOperatorCredential(op, auth);
@@ -42,11 +44,15 @@ export function ensureOperatorAccounts(): Promise<void> {
         console.warn(`[auth] seed ${op.email}:`, msg);
       }
     }
-  })().catch((err) => {
-    seedPromise = null;
-    console.error("[auth] operator seed failed:", err);
-  });
-  return seedPromise;
+  })()
+    .catch((err) => {
+      console.error("[auth] operator seed failed:", err);
+    })
+    .finally(() => {
+      seedInFlight = null;
+    });
+
+  return seedInFlight;
 }
 
 // Kick seed when the auth server module loads (same pattern as ensureDbReady).

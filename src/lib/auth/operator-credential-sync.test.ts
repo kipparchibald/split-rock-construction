@@ -70,6 +70,55 @@ describe("syncOperatorCredential", () => {
     expect(signIn.user.email).toBe(email.toLowerCase());
   });
 
+  it("creates a missing operator when the sibling operator already exists", async () => {
+    const auth = createTestAuth();
+    const ctx = await auth.$context;
+
+    const kyleEmail = "seed-kyle-only@splitrockconst.com";
+    const kippEmail = "seed-kipp-missing@splitrockconst.com";
+
+    await ctx.internalAdapter.createUser({
+      email: kyleEmail,
+      name: DEMO_OPERATORS.kyle.name,
+      emailVerified: true,
+    });
+    await ctx.internalAdapter.linkAccount({
+      userId: (await ctx.internalAdapter.findUserByEmail(kyleEmail))!.user.id,
+      providerId: "google",
+      accountId: "kyle-google-subject",
+    });
+
+    const kippResult = await syncOperatorCredential(
+      {
+        name: DEMO_OPERATORS.kipp.name,
+        email: kippEmail,
+        password: DEMO_OPERATORS.kipp.password,
+      },
+      auth,
+    );
+    expect(kippResult).toBe("created");
+
+    const kyleResult = await syncOperatorCredential(
+      {
+        name: DEMO_OPERATORS.kyle.name,
+        email: kyleEmail,
+        password: DEMO_OPERATORS.kyle.password,
+      },
+      auth,
+    );
+    expect(kyleResult).toBe("updated");
+
+    const kippSignIn = await auth.api.signInEmail({
+      body: { email: kippEmail, password: DEMO_OPERATORS.kipp.password },
+    });
+    expect(kippSignIn.user.email).toBe(kippEmail.toLowerCase());
+
+    const kyleSignIn = await auth.api.signInEmail({
+      body: { email: kyleEmail, password: DEMO_OPERATORS.kyle.password },
+    });
+    expect(kyleSignIn.user.email).toBe(kyleEmail.toLowerCase());
+  });
+
   it("re-hashes credential password when operator already has a credential account", async () => {
     const auth = createTestAuth();
     const email = "seed-credential-kipp@splitrockconst.com";
