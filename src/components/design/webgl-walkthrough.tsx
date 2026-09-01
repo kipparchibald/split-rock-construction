@@ -306,7 +306,7 @@ export function WebGLWalkthrough({
     <div
       className={
         className ??
-        "relative aspect-[4/3] min-h-[13.5rem] w-full touch-none bg-[#1a1c1e] sm:aspect-[16/10] sm:min-h-0"
+        "relative aspect-[4/3] min-h-[13.5rem] w-full min-w-0 max-w-full overflow-hidden touch-none bg-[#1a1c1e] sm:aspect-[16/10] sm:min-h-0"
       }
       data-testid="design-webgl"
     >
