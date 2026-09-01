@@ -1,6 +1,6 @@
 /**
  * R3F mesh material driven by Design Center catalog options.
- * Physical materials + roughness derived from the procedural albedo.
+ * Physical materials + roughness / bump derived from the procedural albedo.
  */
 import { useMemo } from "react";
 import type { DesignCategory, DesignOption } from "@/data/types";
@@ -23,10 +23,32 @@ function roughnessCanvasFromAlbedo(src: HTMLCanvasElement, kind: TextureKind): H
   const img = inCtx.getImageData(0, 0, src.width, src.height);
   const data = img.data;
   const glossy = kind.startsWith("metal") || kind.startsWith("quartz") || kind === "appliance-stainless";
+  const tile = kind.includes("tile");
   for (let i = 0; i < data.length; i += 4) {
     const lum = (data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11) / 255;
-    const v = glossy ? 40 + lum * 90 : 110 + lum * 110;
+    let v: number;
+    if (glossy) v = 28 + lum * 85;
+    else if (tile) v = 70 + lum * 90;
+    else v = 110 + lum * 110;
     data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
+}
+
+function bumpCanvasFromAlbedo(src: HTMLCanvasElement): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const ctx = out.getContext("2d");
+  const inCtx = src.getContext("2d");
+  if (!ctx || !inCtx) return src;
+  const img = inCtx.getImageData(0, 0, src.width, src.height);
+  const data = img.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+    data[i] = data[i + 1] = data[i + 2] = lum;
     data[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
@@ -56,7 +78,11 @@ export function useFinishMaps(
       canvas && profile.kind !== "flat-color"
         ? makeMap(roughnessCanvasFromAlbedo(canvas, profile.kind), THREE.NoColorSpace)
         : null;
-    return { map, roughnessMap, profile, hex };
+    const bumpMap =
+      canvas && profile.kind !== "flat-color" && !profile.kind.startsWith("metal")
+        ? makeMap(bumpCanvasFromAlbedo(canvas), THREE.NoColorSpace)
+        : null;
+    return { map, roughnessMap, bumpMap, profile, hex };
   }, [option, category, fallbackHex]);
 }
 
@@ -89,32 +115,35 @@ export function FinishMaterial({
   transparent?: boolean;
   opacity?: number;
 }) {
-  const { map, roughnessMap, profile, hex } = useFinishMaps(option, category, fallbackHex);
+  const { map, roughnessMap, bumpMap, profile, hex } = useFinishMaps(option, category, fallbackHex);
 
   if (map) map.repeat.set(repeat[0], repeat[1]);
   if (roughnessMap) roughnessMap.repeat.set(repeat[0], repeat[1]);
+  if (bumpMap) bumpMap.repeat.set(repeat[0], repeat[1]);
 
   const shared = {
     color: (map ? "#ffffff" : hex) as string,
     map: map ?? undefined,
     roughnessMap: roughnessMap ?? undefined,
+    bumpMap: bumpMap ?? undefined,
+    bumpScale: bumpMap ? (profile.kind.includes("leather") || profile.kind === "stone" ? 0.08 : 0.035) : 0,
     roughness: profile.roughness,
     metalness: profile.metalness,
     emissive: emissive ?? (profile.emissiveIntensity ? hex : undefined),
     emissiveIntensity: emissiveIntensity ?? profile.emissiveIntensity ?? 0,
     transparent,
     opacity,
-    envMapIntensity: isPhysical(profile.kind) ? 1.15 : 0.7,
+    envMapIntensity: isPhysical(profile.kind) ? 1.25 : 0.75,
   };
 
   if (isPhysical(profile.kind)) {
-    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile") ? 0.55 : 0.25;
+    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile") ? 0.62 : 0.28;
     return (
       <meshPhysicalMaterial
         {...shared}
         clearcoat={clearcoat}
-        clearcoatRoughness={profile.kind.includes("leather") || profile.kind.includes("matte") ? 0.55 : 0.18}
-        reflectivity={0.55}
+        clearcoatRoughness={profile.kind.includes("leather") || profile.kind.includes("matte") ? 0.55 : 0.14}
+        reflectivity={0.62}
       />
     );
   }
