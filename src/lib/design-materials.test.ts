@@ -157,6 +157,12 @@ describe("textureCacheKey", () => {
       textureCacheKey("wood-plank", "#c4a574"),
     );
   });
+
+  it("separates swatch size from WebGL size", () => {
+    expect(textureCacheKey("wood-plank", "#c4a574", 96)).not.toBe(
+      textureCacheKey("wood-plank", "#c4a574", 512),
+    );
+  });
 });
 
 describe("catalog coverage", () => {
