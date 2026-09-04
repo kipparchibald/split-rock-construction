@@ -1,0 +1,52 @@
+{
+  "id": "job-holwege-lot16",
+  "lane": "SRC",
+  "status": "draft_packet",
+  "doNotSend": true,
+  "client": {
+    "id": "client-holwege",
+    "name": "Lauren and Cindy Holwege",
+    "email": "holwegefam@comcast.net",
+    "portalStatus": "none"
+  },
+  "property": {
+    "label": "Lot 16, Block 8, Teton Heights Division 6",
+    "county": "Jefferson County, Idaho",
+    "mls": "2184829",
+    "titleFile": "1100920",
+    "deedInstrument": "501245",
+    "closed": "2026-08-24",
+    "lotPaid": 98000
+  },
+  "contractor": {
+    "legalName": "Split Rock Construction LLC",
+    "registration": "6481622",
+    "qualifyingParty": "Kipp Archibald",
+    "fieldSub": "Kyle Christensen",
+    "fieldSubIsParty": false
+  },
+  "plans": {
+    "file": "Lauren and Cindy Holwege 8-31-2026b.pdf",
+    "driveFileId": "13jA0FWR4imq5HU55AH9CJrSs0B1M4RoQ",
+    "drafter": "Elise Shurtliff, River Bend Drafting and Design",
+    "dated": "2026-08-31",
+    "sheets": "P-1 through P-8",
+    "crawlspace": "4ft",
+    "basement": false
+  },
+  "pricing": {
+    "sheetTotalIncludingLot": 697391,
+    "lotAlreadyPaid": 98000,
+    "contractPrice": 599391,
+    "profitAndOverheadPctPrinted": 10,
+    "profitAndOverheadInTotal": 0,
+    "contingencyInTotal": 0,
+    "supervisionLine": 32000
+  },
+  "legal": {
+    "primaryInstrument": "construction_agreement",
+    "notRE22": true,
+    "need452525BeforeSignature": true,
+    "needDualCapacity": true
+  }
+}
