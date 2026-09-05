@@ -1,14 +1,17 @@
 /**
- * Teton Heights (Rigby / Jefferson County, ID) — operational GIS + improvement-plan
- * dataset for site-plan aerial overlays.
+ * Teton Heights Division No. 6 — operational GIS + recorded well & septic
+ * improvement plan (Jefferson County Instrument No. 492361).
  *
- * Geometry is approximate for field/demo use (not a recorded survey). Aligns with
- * public Jefferson County GIS intent and typical Teton Heights improvement-plan
- * elements (ROW, utilities, well/septic). Confirm parcels on:
- *   https://gisportal.co.jefferson.id.us/portweb/home/
- *   https://www.jcgov.us/224/Geographic-Information-Systems-GIS-Mappi
+ * Well and septic locations follow the recorded Thompson Land Surveying sheet:
+ *   - Domestic well (W) at the street / 15' PUE frontage
+ *   - 90' x 38' standard rock-and-pipe drainfield + replacement field
+ *   - 100' domestic well separation
+ *   - 20' drainfield-to-basement dwelling (IDAPA 58.01.03.008.d)
+ *   - 68' x 61' building footprint as shown on the sheet
  *
- * Live county parcel polygons load separately via `@/lib/county-parcels` (IDWR).
+ * Lot rings below remain a schematic working grid for the operator overlay.
+ * Confirm bearings and pins on the recorded plat + a PLS mark-out before staking.
+ * County parcels: https://gisportal.co.jefferson.id.us/portweb/home/
  */
 
 export const JEFFERSON_GIS = {
@@ -18,13 +21,41 @@ export const JEFFERSON_GIS = {
   aerialTiles:
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   attribution:
-    "Esri World Imagery · Jefferson County GIS (reference) · Teton Heights improvement plan overlay (approximate)",
+    "Esri World Imagery · Jefferson County GIS · Teton Heights Div. 6 Well & Septic Improvement Plans, Inst. 492361",
+} as const;
+
+/** Recorded well & septic improvement plan — Thompson Land Surveying, 6/26/2025. */
+export const TETON_HEIGHTS_RECORDED_PLAN = {
+  title: "Teton Heights Division No. 6 Well & Septic Improvement Plans",
+  instrument: "492361",
+  surveyor: "Kevin L. Thompson, PLS 10563 — Thompson Land Surveying, Inc.",
+  jobNumber: "2005-036",
+  date: "2025-06-26",
+  scale: "1 in = 100 ft",
+  driveFileId: "1ttXCVRfvBTApwH4mDmALiqhZ3O2BeLzc",
+  driveUrl: "https://drive.google.com/file/d/1ttXCVRfvBTApwH4mDmALiqhZ3O2BeLzc/view",
+  location: "S 1/2 of Section 29, T4N, R39E, B.M., Jefferson County, Idaho",
+} as const;
+
+/** Rules printed on the recorded sheet. */
+export const TETON_HEIGHTS_PLAN_RULES = {
+  wellSeparationFt: 100,
+  drainfieldToBasementDwellingFt: 20,
+  drainfieldPrimaryFt: { width: 90, depth: 38 },
+  drainfieldReplacementFt: { width: 90, depth: 38 },
+  buildingFootprintFt: { width: 68, depth: 61 },
+  publicUtilityEasementFt: 15,
+  canalSetbackFt: 60,
+  streetSetbackFromCenterlineFt: 65,
+  idapa: "IDAPA 58.01.03.008.d",
+  zoning: "Jefferson County Zoning Ordinance Chapter 112-263",
+  note: "90 x 38 drainfield as shown is for a 6-bedroom home standard rock and pipe drainfield. Alternate systems must fit the shown drainfield site. Lot owner shall hire a PLS to mark the drainfield area prior to septic installation.",
 } as const;
 
 export const TETON_HEIGHTS_CENTER = {
   lat: 43.6892,
   lng: -111.8685,
-  streetRef: "N 3950 E / Teton Heights, Rigby, ID 83442",
+  streetRef: "Teton Heights Loop / E 146 N / E 136 N / E 121 N, Rigby, ID 83442",
 } as const;
 
 export type PlanLayerId =
@@ -38,7 +69,8 @@ export type PlanLayerId =
   | "septic"
   | "well"
   | "easements"
-  | "contours";
+  | "contours"
+  | "recordedPlan";
 
 export interface PlanLayerMeta {
   id: PlanLayerId;
@@ -57,6 +89,13 @@ export const PLAN_LAYERS: PlanLayerMeta[] = [
     color: "#888",
   },
   {
+    id: "recordedPlan",
+    label: "Recorded well & septic plan",
+    description: "Inst. 492361 — Thompson sheet is the source of truth for well and drainfield",
+    defaultOn: true,
+    color: "#e7e5e4",
+  },
+  {
     id: "parcels",
     label: "County parcels",
     description: "Jefferson County assessor boundaries (IDWR)",
@@ -65,36 +104,36 @@ export const PLAN_LAYERS: PlanLayerMeta[] = [
   },
   {
     id: "lots",
-    label: "Lot lines (plat)",
-    description: "Teton Heights Div. #6 lot boundaries",
+    label: "Lot lines (working grid)",
+    description: "Operator overlay — confirm on recorded plat",
     defaultOn: true,
     color: "#f5f0e6",
   },
   {
     id: "easements",
-    label: "Utility / drainage easements",
-    description: "Improvement-plan easement corridors",
+    label: "15' public utility easement",
+    description: "Street-front PUE as shown on Inst. 492361",
     defaultOn: true,
     color: "#fbbf24",
   },
   {
     id: "utilities",
     label: "Power / gas routes",
-    description: "Proposed service laterals from ROW",
+    description: "Service laterals from ROW",
     defaultOn: true,
     color: "#38bdf8",
   },
   {
     id: "well",
-    label: "Pre-approved well sites",
-    description: "Plat-designated private well locations",
+    label: "Domestic well (W)",
+    description: "Recorded frontage well + 100' separation ring",
     defaultOn: true,
     color: "#22d3ee",
   },
   {
     id: "septic",
-    label: "Septic / drainfield zones",
-    description: "EIPH-oriented placement envelopes",
+    label: "Drainfield + replacement",
+    description: "90 x 38 primary and replacement rock-and-pipe fields",
     defaultOn: true,
     color: "#a3e635",
   },
@@ -108,7 +147,7 @@ export const PLAN_LAYERS: PlanLayerMeta[] = [
   {
     id: "building",
     label: "Building footprint",
-    description: "Proposed home footprint on selected lot",
+    description: "68 x 61 footprint as shown on the improvement plan",
     defaultOn: true,
     color: "#f87171",
   },
@@ -121,8 +160,8 @@ export const PLAN_LAYERS: PlanLayerMeta[] = [
   },
   {
     id: "contours",
-    label: "Spot grades (improve. plan)",
-    description: "Illustrative elevation spots — flat buildable lots",
+    label: "Spot grades",
+    description: "Illustrative elevation spots",
     defaultOn: false,
     color: "#94a3b8",
   },
@@ -152,7 +191,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [40, 80],
     ],
     centroid: [130, 180],
-    acres: 0.62,
+    acres: 0.63,
   },
   {
     lotNumber: 2,
@@ -165,7 +204,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [230, 80],
     ],
     centroid: [320, 180],
-    acres: 0.62,
+    acres: 0.63,
   },
   {
     lotNumber: 3,
@@ -178,7 +217,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [420, 80],
     ],
     centroid: [510, 180],
-    acres: 0.62,
+    acres: 0.63,
   },
   {
     lotNumber: 4,
@@ -191,7 +230,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [610, 80],
     ],
     centroid: [700, 180],
-    acres: 0.62,
+    acres: 0.63,
   },
   {
     lotNumber: 5,
@@ -204,7 +243,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [800, 80],
     ],
     centroid: [890, 180],
-    acres: 0.62,
+    acres: 0.63,
   },
   {
     lotNumber: 6,
@@ -217,7 +256,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [40, 300],
     ],
     centroid: [130, 400],
-    acres: 0.68,
+    acres: 0.6,
   },
   {
     lotNumber: 7,
@@ -230,7 +269,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [230, 300],
     ],
     centroid: [320, 400],
-    acres: 0.68,
+    acres: 0.6,
     projectId: "p4",
     notes: "Cole Spec — active Split Rock job",
   },
@@ -245,7 +284,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [420, 300],
     ],
     centroid: [510, 400],
-    acres: 0.68,
+    acres: 0.6,
   },
   {
     lotNumber: 9,
@@ -258,7 +297,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [610, 300],
     ],
     centroid: [700, 400],
-    acres: 0.68,
+    acres: 0.6,
   },
   {
     lotNumber: 10,
@@ -271,7 +310,7 @@ export const TETON_HEIGHTS_LOTS: LotPlan[] = [
       [800, 300],
     ],
     centroid: [890, 400],
-    acres: 0.68,
+    acres: 0.6,
   },
   {
     lotNumber: 11,
@@ -308,23 +347,13 @@ export const TETON_STREET_ROW: PlanPoint[] = [
 
 export const UTILITY_EASEMENTS: { id: string; ring: PlanPoint[] }[] = [
   {
-    id: "ue-south",
+    id: "pue-street",
     ring: [
-      [40, 260],
-      [980, 260],
-      [980, 280],
-      [40, 280],
-      [40, 260],
-    ],
-  },
-  {
-    id: "ue-mid",
-    ring: [
-      [40, 480],
-      [980, 480],
-      [980, 500],
-      [40, 500],
-      [40, 480],
+      [40, 40],
+      [980, 40],
+      [980, 55],
+      [40, 55],
+      [40, 40],
     ],
   },
 ];
@@ -343,13 +372,23 @@ export interface LotImprovements {
   driveway: PlanPoint[];
   setbacks: PlanPoint[];
   well: PlanPoint;
+  wellSeparationFt: number;
   septicTank: PlanPoint;
   drainfield: PlanPoint[];
+  replacementDrainfield: PlanPoint[];
   powerLateral: PlanPoint[];
   gasLateral: PlanPoint[];
   spotGrades: { pt: PlanPoint; elev: number }[];
+  source: "recorded-plan-492361";
 }
 
+/**
+ * Place well, septic, and drainfields the way Inst. 492361 shows them:
+ * well (W) at the street frontage inside the 15' PUE side of the lot,
+ * 68x61 house set back from the street, 90x38 primary drainfield in the
+ * rear opposite the well, replacement field stacked behind it, tank between
+ * house and field. 100' well ring is drawn by the overlay.
+ */
 export function defaultImprovements(lot: LotPlan): LotImprovements {
   const xs = lot.ring.map((p) => p[0]);
   const ys = lot.ring.map((p) => p[1]);
@@ -361,25 +400,31 @@ export function defaultImprovements(lot: LotPlan): LotImprovements {
   const d = maxY - minY;
   const cx = (minX + maxX) / 2;
 
+  const pue = TETON_HEIGHTS_PLAN_RULES.publicUtilityEasementFt;
+  const bw = TETON_HEIGHTS_PLAN_RULES.buildingFootprintFt.width;
+  const bd = TETON_HEIGHTS_PLAN_RULES.buildingFootprintFt.depth;
+  const dfW = TETON_HEIGHTS_PLAN_RULES.drainfieldPrimaryFt.width;
+  const dfD = TETON_HEIGHTS_PLAN_RULES.drainfieldPrimaryFt.depth;
+  const houseGap = TETON_HEIGHTS_PLAN_RULES.drainfieldToBasementDwellingFt;
+
   const setbacks: PlanPoint[] = [
-    [minX + 10, minY + 30],
-    [maxX - 10, minY + 30],
-    [maxX - 10, maxY - 20],
-    [minX + 10, maxY - 20],
-    [minX + 10, minY + 30],
+    [minX + 10, minY + pue + 10],
+    [maxX - 10, minY + pue + 10],
+    [maxX - 10, maxY - 15],
+    [minX + 10, maxY - 15],
+    [minX + 10, minY + pue + 10],
   ];
 
-  const bw = Math.min(48, w * 0.35);
-  const bd = Math.min(56, d * 0.32);
-  const bx = cx - bw / 2;
-  const by = minY + 45;
+  const bx = Math.max(minX + 12, cx - bw / 2);
+  const by = minY + pue + 18;
   const building: PlanPoint[] = [
     [bx, by],
-    [bx + bw, by],
-    [bx + bw, by + bd],
-    [bx, by + bd],
+    [bx + Math.min(bw, w - 24), by],
+    [bx + Math.min(bw, w - 24), by + Math.min(bd, d * 0.42)],
+    [bx, by + Math.min(bd, d * 0.42)],
     [bx, by],
   ];
+  const houseBottom = by + Math.min(bd, d * 0.42);
 
   const driveway: PlanPoint[] = [
     [cx - 8, minY],
@@ -389,15 +434,27 @@ export function defaultImprovements(lot: LotPlan): LotImprovements {
     [cx - 8, minY],
   ];
 
-  const well: PlanPoint = [minX + w * 0.18, maxY - 35];
-  const septicTank: PlanPoint = [maxX - w * 0.22, by + bd + 25];
+  // Recorded pattern: domestic well (W) at street frontage, offset from driveway.
+  const well: PlanPoint = [minX + Math.min(28, w * 0.22), minY + pue + 6];
+
+  const fieldTop = Math.min(maxY - dfD * 2 - 8, houseBottom + houseGap);
+  const fieldLeft = Math.max(minX + 8, maxX - dfW - 12);
   const drainfield: PlanPoint[] = [
-    [maxX - w * 0.42, by + bd + 40],
-    [maxX - w * 0.1, by + bd + 40],
-    [maxX - w * 0.1, by + bd + 85],
-    [maxX - w * 0.42, by + bd + 85],
-    [maxX - w * 0.42, by + bd + 40],
+    [fieldLeft, fieldTop],
+    [fieldLeft + Math.min(dfW, w - 16), fieldTop],
+    [fieldLeft + Math.min(dfW, w - 16), fieldTop + dfD],
+    [fieldLeft, fieldTop + dfD],
+    [fieldLeft, fieldTop],
   ];
+  const replacementDrainfield: PlanPoint[] = [
+    [fieldLeft, fieldTop + dfD + 4],
+    [fieldLeft + Math.min(dfW, w - 16), fieldTop + dfD + 4],
+    [fieldLeft + Math.min(dfW, w - 16), fieldTop + dfD * 2 + 4],
+    [fieldLeft, fieldTop + dfD * 2 + 4],
+    [fieldLeft, fieldTop + dfD + 4],
+  ];
+
+  const septicTank: PlanPoint = [fieldLeft + 16, houseBottom + houseGap / 2];
 
   const powerLateral: PlanPoint[] = [
     [cx + 20, minY],
@@ -420,11 +477,14 @@ export function defaultImprovements(lot: LotPlan): LotImprovements {
     driveway,
     setbacks,
     well,
+    wellSeparationFt: TETON_HEIGHTS_PLAN_RULES.wellSeparationFt,
     septicTank,
     drainfield,
+    replacementDrainfield,
     powerLateral,
     gasLateral,
     spotGrades,
+    source: "recorded-plan-492361",
   };
 }
 
@@ -480,7 +540,7 @@ export function tileUrl(z: number, x: number, y: number) {
 export function projectMercator(lat: number, lng: number, z: number) {
   const scale = 256 * 2 ** z;
   const x = ((lng + 180) / 360) * scale;
-  const sinLat = Math.sin((lat * Math.PI) / 180);
+  const sinLat = (Math.sin((lat * Math.PI) / 180));
   const y = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale;
   return { x, y };
 }
@@ -488,27 +548,24 @@ export function projectMercator(lat: number, lng: number, z: number) {
 export function sitePlanNarrative(lot: LotPlan, projectName?: string): string {
   const imp = defaultImprovements(lot);
   return [
-    `TETON HEIGHTS — SITE PLAN AERIAL OVERLAY (COUNTY PARCELS + IMPROVEMENT PLAN)`,
+    `TETON HEIGHTS DIV. 6 — RECORDED WELL & SEPTIC IMPROVEMENT PLAN`,
+    `${TETON_HEIGHTS_RECORDED_PLAN.title}`,
+    `Instrument No. ${TETON_HEIGHTS_RECORDED_PLAN.instrument} · ${TETON_HEIGHTS_RECORDED_PLAN.surveyor}`,
     `Lot ${lot.lotNumber} · ${lot.acres} ac · ${lot.label}`,
     projectName ? `Job: ${projectName}` : "",
-    `Plat reference: Division #6 (schematic) · ${TETON_HEIGHTS_CENTER.streetRef}`,
+    TETON_HEIGHTS_CENTER.streetRef,
     ``,
-    `Basemap: Esri World Imagery`,
-    `County parcels: Idaho IDWR / Jefferson County Assessor (live or cached)`,
-    `County GIS portal: ${JEFFERSON_GIS.portal}`,
+    `Domestic well (W): street frontage / 15' PUE — plan (${imp.well[0].toFixed(0)}, ${imp.well[1].toFixed(0)})`,
+    `100' domestic well separation required around the well.`,
+    `Septic tank: (${imp.septicTank[0].toFixed(0)}, ${imp.septicTank[1].toFixed(0)})`,
+    `Primary drainfield: 90 x 38 standard rock and pipe (6-bedroom size as shown).`,
+    `Replacement drainfield: 90 x 38, must stay inside the shown site.`,
+    `Drainfield to basement dwelling: ${TETON_HEIGHTS_PLAN_RULES.drainfieldToBasementDwellingFt} ft (${TETON_HEIGHTS_PLAN_RULES.idapa}).`,
+    `Building footprint on sheet: 68 x 61.`,
+    TETON_HEIGHTS_PLAN_RULES.note,
     ``,
-    `Layers: county parcel polygons, lot lines, setbacks, building footprint, driveway,`,
-    `utility laterals, pre-approved well, septic tank + drainfield envelope, easements.`,
-    ``,
-    `Building footprint (plan ft, local): ${imp.building
-      .slice(0, 4)
-      .map((p) => `(${p[0].toFixed(0)},${p[1].toFixed(0)})`)
-      .join(" → ")}`,
-    `Well site: (${imp.well[0].toFixed(0)}, ${imp.well[1].toFixed(0)}) plan ft`,
-    `Septic tank: (${imp.septicTank[0].toFixed(0)}, ${imp.septicTank[1].toFixed(0)}) plan ft`,
-    ``,
-    `NOT A SURVEY — Parcel lines are tax mapping only. Confirm bearings, setbacks, and`,
-    `easements on recorded plat + Jefferson County GIS before filing.`,
+    `Recorded sheet: ${TETON_HEIGHTS_RECORDED_PLAN.driveUrl}`,
+    `NOT A SURVEY — hire a PLS to mark the drainfield before EIPH install, per the recorded notes.`,
   ]
     .filter(Boolean)
     .join("\n");
