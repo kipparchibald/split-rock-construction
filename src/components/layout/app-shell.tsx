@@ -27,6 +27,8 @@ import {
   BookOpen,
   ShoppingBag,
   Radio,
+  MapPinned,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -80,6 +82,8 @@ const groups: NavGroup[] = [
     label: "Tools",
     items: [
       { to: "/app/documents", label: "Documents", icon: FileText },
+      { to: "/app/estimator", label: "AI estimator", icon: Sparkles },
+      { to: "/app/site-plan", label: "Site plan / GIS", icon: MapPinned },
       { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
       { to: "/app/design", label: "Design center", icon: Palette },
       { to: "/app/cost-codes", label: "Cost codes / QB", icon: Layers },
