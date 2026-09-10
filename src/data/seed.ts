@@ -1,6 +1,18 @@
 import type {
   ActivityItem, Bid, BudgetLine, BuildPackage, ChangeOrder, Client, CloseoutPackage, CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment, LotFinanceOption, PayApplication, ProgressDraw, Project, Proposal, Prospect, RealtyDeal, SafetyIncident, SelectionItem, Subcontract, SubdivisionLot, Tour,
 } from "./types";
+import {
+  holwegeActivity,
+  holwegeBid,
+  holwegeBudgetLines,
+  holwegeClient,
+  holwegeCloseout,
+  holwegeDailyLog,
+  holwegeDocuments,
+  holwegeDraws,
+  holwegeProject,
+  holwegeRealtyDeal,
+} from "./holwege";
 
 export const COMPANY = {
   name: "Split Rock Construction",
@@ -34,6 +46,7 @@ export const dualRolePolicy: DualRolePolicy = {
 };
 
 export const clients: Client[] = [
+  holwegeClient,
   {
     id: "c1",
     name: "James & Elena Hart",
@@ -124,6 +137,7 @@ export const equipment: Equipment[] = [
 ];
 
 export const projects: Project[] = [
+  holwegeProject,
   {
     id: "p1", name: "Hart Residence", address: "1842 River Bend Dr, Rigby", clientId: "c1", type: "residential",
     status: "in_progress", phase: "MEP Rough-In", progress: 62, budget: 685000, spent: 412400,
@@ -254,6 +268,7 @@ export const projects: Project[] = [
 ];
 
 export const bids: Bid[] = [
+  holwegeBid,
   { id: "b1", title: "Hart Residence — Base Bid", clientId: "c1", type: "residential", status: "won", amount: 685000, submittedAt: "2025-09-12", dueDate: "2025-09-20", projectId: "p1", notes: "Won on schedule confidence.", lineItems: [
     { label: "Site & foundation", amount: 98000 }, { label: "Structure & envelope", amount: 210000 }, { label: "MEP", amount: 125000 }, { label: "Finishes", amount: 185000 }, { label: "Allowance & contingency", amount: 67000 },
   ]},
@@ -284,6 +299,7 @@ export const safetyIncidents: SafetyIncident[] = [
 ];
 
 export const documents: DocumentItem[] = [
+  ...holwegeDocuments,
   { id: "d1", title: "RFI-014 Structural hold-down schedule", type: "rfi", projectId: "p1", status: "open", updatedAt: "2026-07-25", author: "Sam Ortega" },
   { id: "d2", title: "Submittal — Exterior windows package", type: "submittal", projectId: "p1", status: "pending", updatedAt: "2026-07-20", author: "Morgan Ellis" },
   { id: "d3", title: "A-series drawings Rev C", type: "drawing", projectId: "p2", status: "approved", updatedAt: "2026-06-18", author: "Morgan Ellis" },
@@ -300,6 +316,7 @@ export const documents: DocumentItem[] = [
 ];
 
 export const budgetLines: BudgetLine[] = [
+  ...holwegeBudgetLines,
   { id: "bl1", projectId: "p1", costCodeId: "01-LAB", category: "Self-perform labor", budgeted: 210000, committed: 198000, actual: 172400 },
   { id: "bl2", projectId: "p1", costCodeId: "01-MAT", category: "Materials", budgeted: 245000, committed: 230000, actual: 151200 },
   { id: "bl3", projectId: "p1", costCodeId: "01-SUB", category: "Subcontractors", budgeted: 160000, committed: 155000, actual: 72000 },
@@ -334,6 +351,7 @@ export const budgetLines: BudgetLine[] = [
 ];
 
 export const activity: ActivityItem[] = [
+  ...holwegeActivity,
   { id: "a0", at: "2026-07-28T10:00:00", text: "Pay app #3 submitted — Commerce Park Shell", kind: "project" },
   { id: "a0b", at: "2026-07-27T09:00:00", text: "Sub buyout: FireGuard bid received for fire protection", kind: "bid" },
   { id: "a1", at: "2026-07-28T09:15:00", text: "Rough electrical inspection scheduled for Hart Residence", kind: "project" },
@@ -345,6 +363,7 @@ export const activity: ActivityItem[] = [
 ];
 
 export const progressDraws: ProgressDraw[] = [
+  ...holwegeDraws,
   { id: "pd1", projectId: "p1", name: "Contract deposit", pct: 0.1, amount: 68500, status: "paid", paidDate: "2025-10-25", trigger: "Signed contract" },
   { id: "pd2", projectId: "p1", name: "Foundation complete", pct: 0.15, amount: 102750, status: "paid", paidDate: "2025-12-14", trigger: "Foundation inspected" },
   { id: "pd3", projectId: "p1", name: "Dried-in / shell", pct: 0.2, amount: 137000, status: "paid", paidDate: "2026-03-30", trigger: "Weather-tight" },
@@ -373,6 +392,7 @@ export const selections: SelectionItem[] = [
 ];
 
 export const dailyLogs: DailyLog[] = [
+  holwegeDailyLog,
   { id: "dl1", projectId: "p1", date: "2026-07-28", weather: "clear", crewCount: 6, hours: 48, workDone: "Finished second-floor electrical rough. Plumber set tub valves.", blockers: "Waiting on RFI-014 hold-downs before sheathing punch.", author: "Tyler Brooks", photos: ["/site-photos/mep.svg", "/site-photos/framing.svg"] },
   { id: "dl2", projectId: "p1", date: "2026-07-27", weather: "overcast", crewCount: 5, hours: 40, workDone: "HVAC trunk runs main floor. Window flashing check complete.", author: "Tyler Brooks", photos: ["/site-photos/framing.svg"] },
   { id: "dl3", projectId: "p2", date: "2026-07-28", weather: "clear", crewCount: 4, hours: 32, workDone: "Footings poured east wing. Rebar inspection passed AM.", author: "Riley Chen", photos: ["/site-photos/foundation.svg", "/site-photos/site.svg"] },
@@ -464,6 +484,7 @@ export const payApplications: PayApplication[] = [
 
 
 export const closeoutPackages: CloseoutPackage[] = [
+  holwegeCloseout,
   {
     id: "co1", projectId: "p3", substantialDate: "2026-07-10", architectCertifier: "Owner walk + Split Rock PM (no outside architect)",
     punchOpen: 6, punchClosed: 18,
@@ -535,6 +556,7 @@ export const closeoutPackages: CloseoutPackage[] = [
 ];
 
 export const realtyDeals: RealtyDeal[] = [
+  holwegeRealtyDeal,
   {
     id: "rd1", projectId: "p3", status: "pending_close", agencyRole: "seller_agent", dualCapacity: "disclosed",
     brokerage: "Split Rock Realty (demo)", agentName: "Kipp Archibald",

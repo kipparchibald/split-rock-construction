@@ -55,7 +55,7 @@ export const isDemoDataEnabled: boolean = resolveDemoDataEnabled(
 
 /** Operator shell — may name demo clients/jobs for training context. */
 export const DEMO_BANNER_OPERATOR =
-  "Training mode — fictional clients (Hart, Willow Creek), 555 phone numbers, and sample jobs. Not real production data.";
+  "Training mode — fictional clients (Hart, Willow Creek), 555 phone numbers, and sample jobs. Holwege Lot 16 uses verified contract figures as the system-of-record showcase (still training UI, not live production CRM).";
 
 /** Client portal — never name other households or jobs (isolation tests + privacy). */
 export const DEMO_BANNER_CLIENT =
@@ -66,10 +66,10 @@ export const DEMO_BANNER = DEMO_BANNER_OPERATOR;
 
 /** Shown in operator shell when live mode is active (no seed jobs). */
 export const LIVE_MODE_BANNER =
-  "Live CRM — real jobs only. Fictional seed jobs are hidden. Add clients and projects, or ingest leads from partner sites.";
+  "Live CRM — real jobs only (Holwege Lot 16 seeds as system of record on first load). Fictional Hart / Willow Creek seed jobs are hidden.";
 
 export const LIVE_EMPTY_HINT_OPERATOR =
-  "Your live CRM is empty — no Hart / Willow Creek seed jobs. Add a client, price a bid, or wait for ingested leads.";
+  "Your live CRM has no jobs yet — Holwege Lot 16 seeds automatically on first load. Add another client, price a bid, or wait for ingested leads.";
 
 export const LIVE_EMPTY_HINT_CLIENT =
   "Live mode — your portal shows only your jobs. Add a client record or wait for Split Rock to link your build.";

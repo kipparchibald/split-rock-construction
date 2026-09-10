@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useAppStore } from "@/data/store";
+import { ensureHolwegeLiveSeed } from "@/data/holwege";
 import { pickOpsSlice, saveOpsSnapshot } from "@/lib/ops-persist";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 
@@ -16,10 +17,12 @@ function scheduleOpsSave() {
 /**
  * Persists draws, logs, COs, and related ops slices to localStorage in live mode.
  * Demo mode keeps everything in memory for a clean showcase.
+ * Also idempotently seeds Holwege SOR when live CRM has no p-holwege yet.
  */
 export function OpsBootstrap() {
   useEffect(() => {
     if (isDemoDataEnabled) return;
+    ensureHolwegeLiveSeed(useAppStore);
     const unsub = useAppStore.subscribe(scheduleOpsSave);
     return () => {
       unsub();
