@@ -81,6 +81,7 @@ const moreGroups: NavGroup[] = [
       { to: "/app/prospects", label: "Prospects", icon: Users },
       { to: "/app/teton-heights", label: "Teton Heights", icon: Landmark },
       { to: "/app/proposals", label: "Proposals", icon: FileText },
+      { to: "/app/packet", label: "Signable packet", icon: FileSignature },
       { to: "/app/closing", label: "Closing", icon: Scale },
     ],
   },
