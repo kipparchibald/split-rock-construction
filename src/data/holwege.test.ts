@@ -25,7 +25,7 @@ describe("Holwege SOR seed (SRC-2)", () => {
     expect(holwegeClient.notes).toMatch(/98,?000/);
   });
 
-  it("uses verified draw schedule amounts from the construction agreement", () => {
+  it("uses verified draw base and schedule amounts from the construction agreement", () => {
     expect(HOLWEGE_DRAW_BASE).toBe(659_330.1);
     const draws15 = holwegeDraws.filter((d) => d.id !== "pd-holwege-6");
     expect(draws15).toHaveLength(5);
