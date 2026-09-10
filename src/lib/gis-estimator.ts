@@ -138,14 +138,17 @@ export function draftGisEstimate(options: GisEstimateOptions): GisEstimate {
     if (includeLand && costs.land <= 0) costs.land = TETON_BASE_LOT;
   }
 
+  const allowanceTotal =
+    TETON_SITE_ALLOWANCES.well + TETON_SITE_ALLOWANCES.septic + TETON_SITE_ALLOWANCES.driveway;
+
+  // Always expose typical allowance amounts so "shown separately" is truthful when not rolled in.
   const siteAllowances = {
-    well: includeSite ? TETON_SITE_ALLOWANCES.well : 0,
-    septic: includeSite ? TETON_SITE_ALLOWANCES.septic : 0,
-    driveway: includeSite ? TETON_SITE_ALLOWANCES.driveway : 0,
-    total: 0,
+    well: TETON_SITE_ALLOWANCES.well,
+    septic: TETON_SITE_ALLOWANCES.septic,
+    driveway: TETON_SITE_ALLOWANCES.driveway,
+    total: allowanceTotal,
     includedInContract: includeSite,
   };
-  siteAllowances.total = siteAllowances.well + siteAllowances.septic + siteAllowances.driveway;
 
   if (includeSite) {
     costs.other = Math.round(costs.other + siteAllowances.total);
@@ -153,7 +156,7 @@ export function draftGisEstimate(options: GisEstimateOptions): GisEstimate {
 
   const price = calcPrice(costs, draft.assumptions, draft.sqft);
   const contractPrice = price.contractPrice;
-  const allInWithSite = includeSite ? contractPrice : contractPrice + siteAllowances.total;
+  const allInWithSite = includeSite ? contractPrice : contractPrice + allowanceTotal;
 
   const platConstraints = lot ? platConstraintsFor(lot) : [];
   const gisNotes: string[] = [

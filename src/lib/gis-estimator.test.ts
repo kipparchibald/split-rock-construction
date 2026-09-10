@@ -74,10 +74,14 @@ describe("draftGisEstimate", () => {
       includeSiteAllowances: true,
       closedJobs: [],
     });
-    expect(off.siteAllowances.total).toBe(0);
-    expect(on.siteAllowances.total).toBe(
-      TETON_SITE_ALLOWANCES.well + TETON_SITE_ALLOWANCES.septic + TETON_SITE_ALLOWANCES.driveway,
-    );
+    const allowanceTotal =
+      TETON_SITE_ALLOWANCES.well + TETON_SITE_ALLOWANCES.septic + TETON_SITE_ALLOWANCES.driveway;
+    expect(off.siteAllowances.total).toBe(allowanceTotal);
+    expect(off.siteAllowances.includedInContract).toBe(false);
+    expect(on.siteAllowances.total).toBe(allowanceTotal);
+    expect(on.siteAllowances.includedInContract).toBe(true);
+    expect(off.allInWithSite).toBe(off.contractPrice + allowanceTotal);
+    expect(on.allInWithSite).toBe(on.contractPrice);
     expect(on.costs.other).toBeGreaterThan(off.costs.other);
     expect(on.costs.land).toBe(TETON_BASE_LOT);
     expect(on.contractPrice).toBeGreaterThan(off.contractPrice);

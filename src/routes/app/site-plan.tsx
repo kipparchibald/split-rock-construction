@@ -44,8 +44,9 @@ function SitePlanPage() {
   const imp = useMemo(() => defaultImprovements(lot), [lot]);
 
   const inventory = tetonLots.find((l) => Number(l.lot) === lotNumber);
+  const lotLinkRe = new RegExp(`lot\\s*#?\\s*${lotNumber}\\b`, "i");
   const linkedJob = projects.find(
-    (p) => p.id === lot.projectId || /lot\s*#?\s*7/i.test(`${p.address} ${p.name}`),
+    (p) => p.id === lot.projectId || lotLinkRe.test(`${p.address} ${p.name}`),
   );
 
   return (
