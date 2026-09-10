@@ -14,11 +14,11 @@ describe("buildGisBrief", () => {
       label: "Lot 7",
       ring: [],
       centroid: [0, 0] as [number, number],
-      acres: 0.68,
+      acres: 0.6,
     };
     const out = buildGisBrief("1600 sf ranch + basement", lot);
     expect(out).toMatch(/Lot 7/);
-    expect(out).toMatch(/0\.68 ac/);
+    expect(out).toMatch(/0\.6 ac/);
   });
 
   it("does not duplicate lot tag", () => {
@@ -27,7 +27,7 @@ describe("buildGisBrief", () => {
       label: "Lot 7",
       ring: [],
       centroid: [0, 0] as [number, number],
-      acres: 0.68,
+      acres: 0.6,
     };
     const out = buildGisBrief("1600 sf ranch on Lot 7 Teton Heights", lot);
     expect(out.match(/Lot 7/g)?.length).toBe(1);
@@ -43,6 +43,24 @@ describe("draftGisEstimate", () => {
       includeSiteAllowances: false,
       closedJobs: [],
     });
+    // Lot 11 is 0.75 ac (> 0.62 baseline). Lots 6–10 are 0.6 ac after Inst. 492361.
+    const lot11 = draftGisEstimate({
+      brief: "1600 sf ranch + basement, 3-car spec",
+      lotNumber: 11,
+      includeLand: false,
+      includeSiteAllowances: false,
+      closedJobs: [],
+    });
+    expect(lot11.lot?.lotNumber).toBe(11);
+    expect(lot11.acres).toBeGreaterThan(BASELINE_LOT_ACRES);
+    expect(lot11.costs.siteWork).toBeGreaterThan(base.costs.siteWork);
+    expect(lot11.platConstraints.some((c) => c.id === "well")).toBe(true);
+    expect(lot11.platConstraints.some((c) => c.id === "septic")).toBe(true);
+    expect(lot11.narrative).toMatch(/LOT 11/i);
+    expect(lot11.contractPrice).toBeGreaterThan(100000);
+  });
+
+  it("uses Inst. 492361 acreage for Lot 7 (at or under baseline)", () => {
     const lot7 = draftGisEstimate({
       brief: "1600 sf ranch + basement, 3-car spec",
       lotNumber: 7,
@@ -51,12 +69,9 @@ describe("draftGisEstimate", () => {
       closedJobs: [],
     });
     expect(lot7.lot?.lotNumber).toBe(7);
-    expect(lot7.acres).toBeGreaterThan(BASELINE_LOT_ACRES);
-    expect(lot7.costs.siteWork).toBeGreaterThan(base.costs.siteWork);
-    expect(lot7.platConstraints.some((c) => c.id === "well")).toBe(true);
-    expect(lot7.platConstraints.some((c) => c.id === "septic")).toBe(true);
+    expect(lot7.acres).toBe(0.6);
+    expect(lot7.acres!).toBeLessThanOrEqual(BASELINE_LOT_ACRES);
     expect(lot7.narrative).toMatch(/LOT 7/i);
-    expect(lot7.contractPrice).toBeGreaterThan(100000);
   });
 
   it("rolls well/septic/driveway into other when requested", () => {
