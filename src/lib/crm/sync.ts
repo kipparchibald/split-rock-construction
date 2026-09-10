@@ -1,5 +1,6 @@
 import { useAppStore } from "@/data/store";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
+import { ensureHolwegeLiveSeed } from "@/data/holwege";
 import {
   fetchCrmSnapshot,
   getCrmCapabilities,
@@ -194,6 +195,8 @@ export async function bootstrapCrmPersistence(): Promise<CrmPersistenceMode> {
   }
 
   attachStoreSubscription();
+  // SRC-2: ensure Holwege SOR after CRM hydrate (idempotent)
+  ensureHolwegeLiveSeed(useAppStore);
   return mode;
 }
 
