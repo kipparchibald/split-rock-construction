@@ -1,1 +1,1 @@
-FILE:/workspace/src5-field-money/parts/src_data_store.ts
+PLACEHOLDER_LOAD_FROM_/workspace/src5-field-money/parts/src_data_store.ts
