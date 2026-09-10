@@ -123,3 +123,37 @@ export function authenticateClientPortal(
   };
   return { ok: true, client, session };
 }
+
+/**
+ * Scrub operator draw-trigger language for owner portal Money list.
+ * Removes draw-base dollars, contingency-credit ops notes, and invent/retainage jargon.
+ * Does not mutate seed data — display-only mapping.
+ */
+export function scrubDrawTriggerForOwner(trigger: string): string {
+  let t = trigger.trim();
+  if (!t) return "Construction milestone";
+
+  // Parenthetical % of draw base (with or without $amount)
+  t = t.replace(/\s*\(\s*\d+%\s+of\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?\s*\)/gi, "");
+  // Inline "of draw base $X" / "of draw base"
+  t = t.replace(/\bof\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?/gi, "");
+  t = t.replace(/\bdraw\s+base\s*\$[\d,]+(?:\.\d+)?/gi, "");
+  t = t.replace(/\bdraw\s+base\b/gi, "");
+
+  // Contingency credit / invent / retainage ops asides
+  t = t.replace(/[.;:—–-]?\s*credit\s+unused\s+owner\s+contingency[^.]*\.?/gi, "");
+  t = t.replace(/[.;:—–-]?\s*Amount\s+at\s+least[^.]*\.?/gi, "");
+  t = t.replace(/[.;:—–-]?\s*do\s+not\s+invent[^.]*\.?/gi, "");
+  t = t.replace(/\bretainage-style\s+/gi, "");
+  t = t.replace(/\bcloseout\s+of\b/gi, "closeout");
+  t = t.replace(/\(\$[\d,]+(?:\.\d+)?\s+reserve\)/gi, "");
+
+  // Collapse whitespace / dangling punctuation
+  t = t.replace(/\s{2,}/g, " ");
+  t = t.replace(/\s+([.,;:])/g, "$1");
+  t = t.replace(/[.;,\s]+$/g, "");
+  t = t.replace(/^[.;,\s]+/g, "");
+  t = t.trim();
+
+  return t || "Construction milestone";
+}

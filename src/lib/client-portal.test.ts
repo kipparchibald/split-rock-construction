@@ -6,6 +6,7 @@ import {
   normalizeToken,
   projectsForClient,
   resolvePortalClient,
+  scrubDrawTriggerForOwner,
 } from "./client-portal";
 import type { Client, Project } from "@/data/types";
 
@@ -100,5 +101,31 @@ describe("client portal isolation", () => {
     expect(normalizeEmail("  Elena.Hart@Email.COM ")).toBe("elena.hart@email.com");
     expect(normalizeToken(" ha-rt 20 26 ")).toBe("HART2026");
     expect(generatePortalToken()).toHaveLength(8);
+  });
+});
+
+describe("scrubDrawTriggerForOwner", () => {
+  it("strips draw-base dollars from Holwege Draw 1 trigger", () => {
+    const scrubbed = scrubDrawTriggerForOwner(
+      "Signed agreement + permit + mobilization (10% of draw base $659,330.10)",
+    );
+    expect(scrubbed).toBe("Signed agreement + permit + mobilization");
+    expect(scrubbed).not.toMatch(/draw base/i);
+    expect(scrubbed).not.toMatch(/659/);
+  });
+
+  it("scrubs contingency credit ops language from final draw", () => {
+    const scrubbed = scrubDrawTriggerForOwner(
+      "CO + punch + lien waivers + Idaho §45-525(3) completion disclosure. Amount at least $32,966.50 retainage-style closeout of draw base; credit unused owner contingency ($29,969.55 reserve) on this draw — do not invent the credit until closeout.",
+    );
+    expect(scrubbed).toMatch(/CO \+ punch \+ lien waivers/i);
+    expect(scrubbed).not.toMatch(/draw base/i);
+    expect(scrubbed).not.toMatch(/contingency/i);
+    expect(scrubbed).not.toMatch(/do not invent/i);
+    expect(scrubbed).not.toMatch(/retainage/i);
+  });
+
+  it("leaves simple milestone text intact", () => {
+    expect(scrubDrawTriggerForOwner("Foundation complete")).toBe("Foundation complete");
   });
 });
