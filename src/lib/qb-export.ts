@@ -259,7 +259,8 @@ export type QbExportKind =
   | "products"
   | "chart"
   | "job-lines"
-  | "scaffold-json";
+  | "scaffold-json"
+  | "labor-burn";
 
 export function downloadTextFile(filename: string, content: string, mime: string) {
   if (typeof document === "undefined") return;
@@ -286,5 +287,7 @@ export function filenameForExport(kind: QbExportKind): string {
       return `${base}-qb-job-cost-lines-${d}.csv`;
     case "scaffold-json":
       return `${base}-qb-sync-scaffold-${d}.json`;
+    case "labor-burn":
+      return `${base}-labor-burn-${d}.csv`;
   }
 }
