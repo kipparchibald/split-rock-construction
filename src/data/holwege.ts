@@ -1,1 +1,1 @@
-PLACEHOLDER_LOAD_FROM_FILE
+file:///workspace/holwege-pr/src/data/holwege.ts
