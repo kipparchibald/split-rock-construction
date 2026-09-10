@@ -22,13 +22,13 @@ test.describe("portal and field", () => {
     await expect(page.getByText(note).first()).toBeVisible({ timeout: 15_000 });
   });
 
-  test("mobile bottom nav reaches field and portal", async ({ page }, testInfo) => {
+  test("mobile bottom nav reaches field and estimate", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chrome", "Mobile chrome only");
     await page.goto("/app", { waitUntil: "networkidle" });
     await expect(page.getByTestId("mobile-bottom-nav")).toBeVisible();
     await page.getByTestId("mobile-bottom-nav").getByRole("link", { name: "Field" }).click();
     await expect(page).toHaveURL(/\/app\/field/);
-    await page.getByTestId("mobile-bottom-nav").getByRole("link", { name: "Portal" }).click();
-    await expect(page).toHaveURL(/\/app\/portal/);
+    await page.getByTestId("mobile-bottom-nav").getByRole("link", { name: "Estimate" }).click();
+    await expect(page).toHaveURL(/\/app\/estimator/);
   });
 });

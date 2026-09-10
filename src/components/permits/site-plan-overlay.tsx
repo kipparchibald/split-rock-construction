@@ -14,6 +14,7 @@ import {
   resolveLotNumber,
   TETON_HEIGHTS_CENTER,
   TETON_HEIGHTS_LOTS,
+  TETON_HEIGHTS_RECORDED_PLAN,
   TETON_STREET_ROW,
   UTILITY_EASEMENTS,
   DRAINAGE_EASEMENT,
@@ -76,7 +77,6 @@ function pointSvg(pt: PlanPoint, origin: { x: number; y: number }) {
   return { x: m.x - origin.x, y: m.y - origin.y };
 }
 
-/** GeoJSON ring [lng,lat][] → SVG path in view space */
 function geoRingToSvg(ring: number[][], origin: { x: number; y: number }): string {
   if (!ring?.length) return "";
   return (
@@ -133,7 +133,6 @@ export function SitePlanAerialOverlay({
     return () => ac.abort();
   }, []);
 
-  // Lock body scroll in fullscreen
   useEffect(() => {
     if (!fullscreen) return;
     const prev = document.body.style.overflow;
@@ -199,6 +198,12 @@ export function SitePlanAerialOverlay({
 
   const parcelCount = parcels?.features.length ?? 0;
   const mapHeight = fullscreen ? "min(70dvh, 560px)" : undefined;
+  const wellPx = pointSvg(imp.well, view.origin);
+  const wellRingPx = pointSvg(
+    [imp.well[0] + imp.wellSeparationFt, imp.well[1]],
+    view.origin,
+  );
+  const wellRingR = Math.abs(wellRingPx.x - wellPx.x);
 
   const shell = (
     <div
@@ -213,22 +218,23 @@ export function SitePlanAerialOverlay({
     >
       <div className="flex w-full min-w-0 flex-wrap items-start justify-between gap-3 border-b border-border px-3 py-3 sm:px-4">
         <div className="min-w-0">
-          <p className="label-caps">Site plan · aerial + parcels</p>
+          <p className="label-caps">Site plan · GIS + recorded well & septic</p>
           <p className="mt-1 text-[13px] font-medium text-fg">
             Teton Heights · Lot {lot.lotNumber}
             {projectName ? ` · ${projectName}` : ""}
           </p>
           <p className="mt-0.5 text-[11px] text-fg-subtle">
-            {TETON_HEIGHTS_CENTER.streetRef} · {lot.acres} ac
+            Inst. {TETON_HEIGHTS_RECORDED_PLAN.instrument} · {lot.acres} ac
             {parcelStatus === "ready"
-              ? ` · ${parcelCount} parcels (${parcels?.source === "live" ? "live" : "cached"})`
+              ? ` · ${parcelCount} parcels (${parcels?.source === "live" ? "live GIS" : "cached GIS"})`
               : parcelStatus === "loading"
-                ? " · loading parcels…"
-                : " · parcel load failed"}
+                ? " · loading Jefferson County GIS…"
+                : " · GIS parcel load failed"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">County GIS</Badge>
+          <Badge variant="outline">Inst. 492361</Badge>
           <Button
             type="button"
             size="sm"
@@ -263,7 +269,6 @@ export function SitePlanAerialOverlay({
         </div>
       </div>
 
-      {/* Lot picker — horizontal scroll on phone */}
       <div className="flex gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
         <span className="mr-1 shrink-0 self-center text-[10px] uppercase tracking-[0.08em] text-fg-subtle">
           Lot
@@ -319,7 +324,7 @@ export function SitePlanAerialOverlay({
             preserveAspectRatio="xMidYMid slice"
             onClick={onMapClick}
             role="img"
-            aria-label="Site plan map with county parcels"
+            aria-label="Site plan map with Jefferson County GIS parcels and recorded well septic plan"
           >
             {layers.parcels && parcels
               ? parcels.features.map((f) => {
@@ -379,12 +384,8 @@ export function SitePlanAerialOverlay({
                     <g key={l.lotNumber}>
                       <path
                         d={ringToSvg(l.ring, view.origin)}
-                        fill={
-                          active ? "rgba(245,240,230,0.12)" : "rgba(245,240,230,0.03)"
-                        }
-                        stroke={
-                          active ? "rgba(245,240,230,0.95)" : "rgba(245,240,230,0.35)"
-                        }
+                        fill={active ? "rgba(245,240,230,0.12)" : "rgba(245,240,230,0.03)"}
+                        stroke={active ? "rgba(245,240,230,0.95)" : "rgba(245,240,230,0.35)"}
                         strokeWidth={active ? 2 : 1}
                         className="cursor-pointer"
                         onClick={(ev) => {
@@ -395,13 +396,7 @@ export function SitePlanAerialOverlay({
                       {(() => {
                         const c = pointSvg(l.centroid, view.origin);
                         return (
-                          <text
-                            x={c.x}
-                            y={c.y}
-                            textAnchor="middle"
-                            fill="rgba(255,255,255,0.8)"
-                            style={{ fontSize: 11, fontWeight: 500 }}
-                          >
+                          <text x={c.x} y={c.y} textAnchor="middle" fill="rgba(255,255,255,0.8)" style={{ fontSize: 11, fontWeight: 500 }}>
                             {l.lotNumber}
                           </text>
                         );
@@ -412,93 +407,45 @@ export function SitePlanAerialOverlay({
               : null}
 
             {layers.setbacks ? (
-              <path
-                d={ringToSvg(imp.setbacks, view.origin)}
-                fill="none"
-                stroke="rgba(251,146,60,0.85)"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-              />
+              <path d={ringToSvg(imp.setbacks, view.origin)} fill="none" stroke="rgba(251,146,60,0.85)" strokeWidth={1.5} strokeDasharray="6 4" />
             ) : null}
 
             {layers.driveway ? (
-              <path
-                d={ringToSvg(imp.driveway, view.origin)}
-                fill="rgba(196,181,160,0.55)"
-                stroke="rgba(196,181,160,0.9)"
-                strokeWidth={1}
-              />
+              <path d={ringToSvg(imp.driveway, view.origin)} fill="rgba(196,181,160,0.55)" stroke="rgba(196,181,160,0.9)" strokeWidth={1} />
             ) : null}
 
             {layers.building ? (
-              <path
-                d={ringToSvg(imp.building, view.origin)}
-                fill="rgba(248,113,113,0.45)"
-                stroke="rgba(254,202,202,0.95)"
-                strokeWidth={2}
-              />
+              <path d={ringToSvg(imp.building, view.origin)} fill="rgba(248,113,113,0.45)" stroke="rgba(254,202,202,0.95)" strokeWidth={2} />
             ) : null}
 
             {layers.utilities ? (
               <>
-                <path
-                  d={lineToSvg(imp.powerLateral, view.origin)}
-                  fill="none"
-                  stroke="rgba(56,189,248,0.95)"
-                  strokeWidth={2}
-                />
-                <path
-                  d={lineToSvg(imp.gasLateral, view.origin)}
-                  fill="none"
-                  stroke="rgba(251,146,60,0.9)"
-                  strokeWidth={2}
-                  strokeDasharray="3 2"
-                />
+                <path d={lineToSvg(imp.powerLateral, view.origin)} fill="none" stroke="rgba(56,189,248,0.95)" strokeWidth={2} />
+                <path d={lineToSvg(imp.gasLateral, view.origin)} fill="none" stroke="rgba(251,146,60,0.9)" strokeWidth={2} strokeDasharray="3 2" />
               </>
             ) : null}
 
             {layers.septic ? (
               <>
-                <path
-                  d={ringToSvg(imp.drainfield, view.origin)}
-                  fill="rgba(163,230,53,0.28)"
-                  stroke="rgba(163,230,53,0.9)"
-                  strokeWidth={1.5}
-                />
+                <path d={ringToSvg(imp.drainfield, view.origin)} fill="rgba(163,230,53,0.28)" stroke="rgba(163,230,53,0.9)" strokeWidth={1.5} />
+                <path d={ringToSvg(imp.replacementDrainfield, view.origin)} fill="rgba(163,230,53,0.12)" stroke="rgba(163,230,53,0.7)" strokeWidth={1} strokeDasharray="4 3" />
                 {(() => {
                   const p = pointSvg(imp.septicTank, view.origin);
-                  return (
-                    <circle
-                      cx={p.x}
-                      cy={p.y}
-                      r={5}
-                      fill="rgba(163,230,53,0.9)"
-                      stroke="#fff"
-                      strokeWidth={1}
-                    />
-                  );
+                  return <circle cx={p.x} cy={p.y} r={5} fill="rgba(163,230,53,0.9)" stroke="#fff" strokeWidth={1} />;
                 })()}
               </>
             ) : null}
 
-            {layers.well
-              ? (() => {
-                  const p = pointSvg(imp.well, view.origin);
-                  return (
-                    <g>
-                      <circle
-                        cx={p.x}
-                        cy={p.y}
-                        r={7}
-                        fill="none"
-                        stroke="rgba(34,211,238,0.95)"
-                        strokeWidth={2}
-                      />
-                      <circle cx={p.x} cy={p.y} r={2.5} fill="rgba(34,211,238,0.95)" />
-                    </g>
-                  );
-                })()
-              : null}
+            {layers.well ? (
+              <g>
+                <circle cx={wellPx.x} cy={wellPx.y} r={wellRingR} fill="rgba(34,211,238,0.06)" stroke="rgba(34,211,238,0.55)" strokeWidth={1} strokeDasharray="5 4" />
+                <circle cx={wellPx.x} cy={wellPx.y} r={7} fill="none" stroke="rgba(34,211,238,0.95)" strokeWidth={2} />
+                <circle cx={wellPx.x} cy={wellPx.y} r={2.5} fill="rgba(34,211,238,0.95)" />
+                <text x={wellPx.x + 10} y={wellPx.y - 8} fill="rgba(165,243,252,0.95)" style={{ fontSize: 9, fontWeight: 600 }}>
+                  W 100'
+                </text>
+              </g>
+            ) : null}
 
             {layers.contours
               ? imp.spotGrades.map((g, i) => {
@@ -523,7 +470,6 @@ export function SitePlanAerialOverlay({
             {JEFFERSON_GIS.attribution} · {PARCEL_SERVICE.attribution}
           </div>
 
-          {/* Mobile layer drawer toggle over map */}
           <button
             type="button"
             className="absolute right-2 top-2 min-h-10 border border-border bg-bg-elevated/95 px-3 text-[11px] font-medium text-fg lg:hidden"
@@ -534,23 +480,13 @@ export function SitePlanAerialOverlay({
           </button>
         </div>
 
-        <div
-          className={cn(
-            "border-t border-border p-3 lg:border-l lg:border-t-0",
-            !layersOpen && "hidden lg:block",
-          )}
-        >
-          <p className="label-caps mb-2">Layers</p>
+        <div className={cn("border-t border-border p-3 lg:border-l lg:border-t-0", !layersOpen && "hidden lg:block")}>
+          <p className="label-caps mb-2">GIS layers</p>
           <ul className="grid grid-cols-2 gap-1.5 lg:grid-cols-1 lg:space-y-0">
             {PLAN_LAYERS.map((l) => (
               <li key={l.id}>
                 <label className="flex min-h-11 cursor-pointer items-start gap-2 border border-border px-2 py-2 text-[12px] lg:border-0 lg:px-0 lg:py-0">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4"
-                    checked={layers[l.id]}
-                    onChange={() => toggle(l.id)}
-                  />
+                  <input type="checkbox" className="mt-1 h-4 w-4" checked={layers[l.id]} onChange={() => toggle(l.id)} />
                   <span>
                     <span className="font-medium text-fg">{l.label}</span>
                     <span className="hidden text-[10px] text-fg-subtle lg:block">{l.description}</span>
@@ -560,9 +496,24 @@ export function SitePlanAerialOverlay({
             ))}
           </ul>
 
+          {layers.recordedPlan ? (
+            <a
+              href={TETON_HEIGHTS_RECORDED_PLAN.driveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 block border border-border bg-bg p-2"
+              data-testid="recorded-plan-link"
+            >
+              <p className="text-[11px] font-medium text-fg">Recorded well & septic sheet</p>
+              <p className="mt-0.5 text-[10px] text-fg-subtle">
+                Inst. {TETON_HEIGHTS_RECORDED_PLAN.instrument} · {TETON_HEIGHTS_RECORDED_PLAN.date} · open full plan
+              </p>
+            </a>
+          ) : null}
+
           {selectedParcel ? (
             <div className="mt-3 border border-border bg-bg-subtle p-2.5" data-testid="parcel-detail">
-              <p className="label-caps mb-1">Selected parcel</p>
+              <p className="label-caps mb-1">Selected GIS parcel</p>
               <p className="text-[12px] font-medium text-fg">{parcelLabel(selectedParcel)}</p>
               <dl className="mt-1.5 space-y-1 text-[11px] text-fg-muted">
                 <div className="flex justify-between gap-2">
@@ -575,24 +526,16 @@ export function SitePlanAerialOverlay({
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt>Owner</dt>
-                  <dd className="text-right">
-                    {selectedParcel.properties.OWNER?.trim() || "Not published"}
-                  </dd>
+                  <dd className="text-right">{selectedParcel.properties.OWNER?.trim() || "Not published"}</dd>
                 </div>
               </dl>
-              <button
-                type="button"
-                className="mt-2 min-h-10 text-[11px] text-fg-subtle underline-offset-2 hover:underline"
-                onClick={() => setSelectedParcel(null)}
-              >
+              <button type="button" className="mt-2 min-h-10 text-[11px] text-fg-subtle underline-offset-2 hover:underline" onClick={() => setSelectedParcel(null)}>
                 Clear selection
               </button>
             </div>
           ) : (
             <div className="mt-3 space-y-1.5">
-              <p className="text-[10px] leading-relaxed text-fg-subtle">
-                Tap a blue county parcel on the map, or pick a PIN below.
-              </p>
+              <p className="text-[10px] leading-relaxed text-fg-subtle">Tap a blue Jefferson County GIS parcel, or pick a PIN below.</p>
               {parcels && parcels.features.length > 0 ? (
                 <div className="max-h-28 overflow-auto border border-border" data-testid="parcel-list">
                   {parcels.features.slice(0, 24).map((f) => (
@@ -611,16 +554,10 @@ export function SitePlanAerialOverlay({
           )}
 
           <p className="mt-3 text-[10px] leading-relaxed text-fg-subtle">
-            Tax mapping only — not a legal survey. Confirm easements and setbacks on the recorded plat
-            before filing.
+            GIS parcels are tax mapping. Well and septic follow Inst. 492361. Hire a PLS to mark the drainfield before EIPH install.
           </p>
-          <a
-            href={JEFFERSON_GIS.countyPage}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex min-h-10 items-center text-[11px] text-fg-muted underline-offset-2 hover:underline"
-          >
-            County GIS resources ↗
+          <a href={JEFFERSON_GIS.portal} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-10 items-center text-[11px] text-fg-muted underline-offset-2 hover:underline">
+            Jefferson County GIS portal ↗
           </a>
         </div>
       </div>

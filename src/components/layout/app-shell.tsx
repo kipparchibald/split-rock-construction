@@ -27,6 +27,8 @@ import {
   BookOpen,
   ShoppingBag,
   Radio,
+  MapPinned,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -38,34 +40,41 @@ import { ModeCallout } from "@/components/layout/mode-callout";
 type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
-const groups: NavGroup[] = [
-  {
-    label: "Home",
-    items: [
-      { to: "/app", label: "Command center", icon: LayoutDashboard, exact: true },
-      { to: "/app/field", label: "Field board", icon: Radio },
-    ],
-  },
-  {
-    label: "Jobs",
-    items: [
-      { to: "/app/projects", label: "All jobs", icon: Building2 },
-      { to: "/app/plans", label: "Book of Plans", icon: BookOpen },
-      { to: "/app/schedule", label: "Schedule", icon: CalendarRange },
-      { to: "/app/daily-logs", label: "Daily logs", icon: NotebookPen },
-    ],
-  },
+/** Daily operator path — keep this list short. */
+const primaryNav: NavItem[] = [
+  { to: "/app", label: "Today", icon: LayoutDashboard, exact: true },
+  { to: "/app/projects", label: "Jobs", icon: Building2 },
+  { to: "/app/estimator", label: "Estimate", icon: Sparkles },
+  { to: "/app/site-plan", label: "Site plan", icon: MapPinned },
+  { to: "/app/bids", label: "Bids", icon: ClipboardList },
+  { to: "/app/field", label: "Field", icon: Radio },
+];
+
+/** Everything else lives in the menu. */
+const moreGroups: NavGroup[] = [
   {
     label: "Money",
     items: [
       { to: "/app/pricing", label: "Bid & price", icon: Calculator },
-      { to: "/app/bids", label: "Bid board", icon: ClipboardList },
       { to: "/app/draws", label: "Draws", icon: Banknote },
       { to: "/app/budget", label: "Job cost", icon: Wallet },
+      { to: "/app/cost-codes", label: "Cost codes / QB", icon: Layers },
+      { to: "/app/alerts", label: "Cost alerts", icon: Bell },
     ],
   },
   {
-    label: "Clients & Close",
+    label: "Build",
+    items: [
+      { to: "/app/schedule", label: "Schedule", icon: CalendarRange },
+      { to: "/app/daily-logs", label: "Daily logs", icon: NotebookPen },
+      { to: "/app/plans", label: "Book of Plans", icon: BookOpen },
+      { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
+      { to: "/app/design", label: "Design center", icon: Palette },
+      { to: "/app/documents", label: "Documents", icon: FileText },
+    ],
+  },
+  {
+    label: "Clients",
     items: [
       { to: "/app/portal", label: "Owner portal", icon: Eye },
       { to: "/app/clients", label: "Clients", icon: Users },
@@ -73,33 +82,28 @@ const groups: NavGroup[] = [
       { to: "/app/teton-heights", label: "Teton Heights", icon: Landmark },
       { to: "/app/proposals", label: "Proposals", icon: FileText },
       { to: "/app/closing", label: "Closing", icon: Scale },
-      { to: "/app/commercial", label: "Commercial", icon: Factory },
     ],
   },
   {
-    label: "Tools",
+    label: "Ops",
     items: [
-      { to: "/app/documents", label: "Documents", icon: FileText },
-      { to: "/app/permits", label: "Permits / EIPH", icon: Landmark },
-      { to: "/app/design", label: "Design center", icon: Palette },
-      { to: "/app/cost-codes", label: "Cost codes / QB", icon: Layers },
-      { to: "/app/waivers", label: "Lien waivers", icon: FileSignature },
-      { to: "/app/alerts", label: "Cost alerts", icon: Bell },
       { to: "/app/crews", label: "Crews", icon: HardHat },
       { to: "/app/equipment", label: "Equipment", icon: Wrench },
       { to: "/app/safety", label: "Safety", icon: Shield },
       { to: "/app/subs", label: "Sub insurance", icon: FileSignature },
+      { to: "/app/waivers", label: "Lien waivers", icon: FileSignature },
       { to: "/app/finish-partners", label: "Finish partners", icon: ShoppingBag },
+      { to: "/app/commercial", label: "Commercial", icon: Factory },
     ],
   },
 ];
 
-/** Primary field-first destinations on phone bottom bar */
+/** Phone bar — four work tools + More. */
 const bottomNav: NavItem[] = [
-  { to: "/app/field", label: "Field", icon: Radio },
   { to: "/app/projects", label: "Jobs", icon: Building2 },
-  { to: "/app/daily-logs", label: "Logs", icon: NotebookPen },
-  { to: "/app/portal", label: "Portal", icon: Eye },
+  { to: "/app/estimator", label: "Estimate", icon: Sparkles },
+  { to: "/app/site-plan", label: "Site", icon: MapPinned },
+  { to: "/app/field", label: "Field", icon: Radio },
 ];
 
 function isActive(pathname: string, item: NavItem) {
@@ -107,31 +111,64 @@ function isActive(pathname: string, item: NavItem) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
+function NavLinkRow({
+  item,
+  pathname,
+  onNavigate,
+  prominent,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+  prominent?: boolean;
+}) {
+  const active = isActive(pathname, item);
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      className={cn(
+        "flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-[13px] font-medium tracking-[0.01em] transition-colors",
+        prominent && "min-h-12",
+        active ? "bg-primary text-primary-fg" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
+
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   return (
     <div className="flex flex-col gap-4">
-      {groups.map((g) => (
+      <div>
+        <p className="label-caps mb-1.5 px-3">Work</p>
+        <nav className="flex flex-col gap-px">
+          {primaryNav.map((item) => (
+            <NavLinkRow
+              key={item.to}
+              item={item}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              prominent
+            />
+          ))}
+        </nav>
+      </div>
+      {moreGroups.map((g) => (
         <div key={g.label}>
           <p className="label-caps mb-1.5 px-3">{g.label}</p>
           <nav className="flex flex-col gap-px">
-            {g.items.map((item) => {
-              const active = isActive(pathname, item);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={`${g.label}-${item.to}`}
-                  to={item.to}
-                  onClick={onNavigate}
-                  className={cn(
-                    "flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-[13px] font-medium tracking-[0.01em] transition-colors",
-                    active ? "bg-primary text-primary-fg" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+            {g.items.map((item) => (
+              <NavLinkRow
+                key={`${g.label}-${item.to}`}
+                item={item}
+                pathname={pathname}
+                onNavigate={onNavigate}
+              />
+            ))}
           </nav>
         </div>
       ))}
@@ -144,13 +181,10 @@ export function AppShell({
   clientMode = false,
 }: {
   children: React.ReactNode;
-  /** Client portal session — hide operator nav, lock to /app/portal */
   clientMode?: boolean;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
-
-  // "More" highlighted when current route is not one of the four primary tabs
   const onPrimaryTab = bottomNav.some((item) => isActive(pathname, item));
 
   if (clientMode) {
@@ -223,7 +257,7 @@ export function AppShell({
           <p className="text-[11px] leading-relaxed text-fg-subtle">
             Split Rock OS
             <br />
-            <span className="text-fg-muted">Residential & commercial GC</span>
+            <span className="text-fg-muted">Estimate · plat · build</span>
           </p>
         </div>
       </aside>
@@ -257,7 +291,7 @@ export function AppShell({
             </div>
             <div className="ml-auto flex items-center gap-3">
               <span className="hidden text-[11px] uppercase tracking-[0.08em] text-fg-subtle sm:inline">
-                Field system
+                Operator
               </span>
               <div className="flex h-8 w-8 items-center justify-center bg-primary text-[10px] font-medium tracking-[0.06em] text-primary-fg">
                 SR
@@ -271,7 +305,6 @@ export function AppShell({
           {children}
         </main>
 
-        {/* Field-first bottom nav — phones / tablets only */}
         <nav
           className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg-elevated pb-[env(safe-area-inset-bottom)] lg:hidden"
           aria-label="Primary"
