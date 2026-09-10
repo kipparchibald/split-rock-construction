@@ -113,7 +113,6 @@ function PacketPage() {
             <Link
               to="/app/projects/$projectId"
               params={{ projectId: packet.projectId }}
-              search={{ tab: "documents" }}
             >
               Job hub
             </Link>
