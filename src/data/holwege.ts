@@ -559,8 +559,8 @@ export function ensureHolwegeLiveSeed(appStore: HolwegeStoreApi): HolwegeLiveSee
 
   try {
     const next = appStore.getState();
-    // Full store slice at runtime (caller passes useAppStore); cast for OpsSnapshot pick
-    saveOpsSnapshot(pickOpsSlice(next as Parameters<typeof pickOpsSlice>[0]));
+    // Full store at runtime (caller passes useAppStore); HolwegeStoreSlice is a typed subset.
+    saveOpsSnapshot(pickOpsSlice(next as unknown as Parameters<typeof pickOpsSlice>[0]));
   } catch {
     /* localStorage may be unavailable in SSR */
   }
