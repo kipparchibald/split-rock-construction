@@ -13,6 +13,7 @@ import {
 } from "./seed";
 import { liveEmpty } from "./live-empty";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
+import { applyApprovedCoToDraws } from "@/lib/field-money";
 import type {
   ActivityItem, Bid, BidStatus, BudgetLine, BuildPackage, ChangeOrder, Client, CloseoutItemStatus, CloseoutPackage,
   CommercialMeta, Crew, CrewMember, DailyLog, DocumentItem, DualRolePolicy, Equipment,
@@ -413,20 +414,35 @@ function createAppStore() {
                     : p,
                 )
               : s.projects;
+        // SRC-5: approved COs move draws via additive ops draw line (does not rewrite Holwege base draws)
+        let draws = s.draws;
+        if (status === "approved" && co.status !== "approved") {
+          draws = applyApprovedCoToDraws(s.draws, co, { approve: true });
+        } else if (
+          (status === "rejected" || status === "draft" || status === "pending_owner") &&
+          co.status === "approved"
+        ) {
+          draws = applyApprovedCoToDraws(s.draws, co, { approve: false });
+        }
         const who =
           status === "approved"
             ? "owner approved"
             : status === "rejected"
               ? "owner declined"
               : status.replace(/_/g, " ");
+        const drawNote =
+          status === "approved" && co.status !== "approved"
+            ? " · draw schedule updated"
+            : "";
         return {
           changeOrders: s.changeOrders.map((c) => (c.id === id ? { ...c, status } : c)),
           documents,
           projects,
+          draws,
           activity: pushActivity(s.activity, {
             id: uid("a"),
             at: new Date().toISOString(),
-            text: `Change order ${co.number} ${who} · ${co.title}`,
+            text: `Change order ${co.number} ${who} · ${co.title}${drawNote}`,
             kind: "project",
           }),
         };

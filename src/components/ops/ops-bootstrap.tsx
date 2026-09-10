@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAppStore } from "@/data/store";
 import { ensureHolwegeLiveSeed } from "@/data/holwege";
+import { ensureHolwegeCrewSeed } from "@/lib/field-money";
 import { pickOpsSlice, saveOpsSnapshot } from "@/lib/ops-persist";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 
@@ -23,6 +24,13 @@ export function OpsBootstrap() {
   useEffect(() => {
     if (isDemoDataEnabled) return;
     ensureHolwegeLiveSeed(useAppStore);
+    const crew = ensureHolwegeCrewSeed({
+      members: useAppStore.getState().members,
+      crews: useAppStore.getState().crews,
+    });
+    if (crew.seeded) {
+      useAppStore.setState({ members: crew.members, crews: crew.crews });
+    }
     const unsub = useAppStore.subscribe(scheduleOpsSave);
     return () => {
       unsub();

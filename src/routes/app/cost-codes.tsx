@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, FileJson, Layers, Package, Table2 } from "lucide-react";
+import { Download, FileJson, Layers, Package, Table2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,13 @@ import {
   filenameForExport,
 } from "@/lib/qb-export";
 import { cn } from "@/lib/utils";
+import {
+  applyLaborBurnToBudgetLines,
+  laborBurnCsv,
+  laborBurnForProject,
+  parseLaborBurnCsv,
+} from "@/lib/field-money";
+import { HOLWEGE_PROJECT_ID } from "@/data/holwege";
 
 export const Route = createFileRoute("/app/cost-codes")({ component: CostCodesPage });
 
@@ -37,6 +44,8 @@ function CostCodesPage() {
   const selections = useAppStore((s) => s.selections);
   const subcontracts = useAppStore((s) => s.subcontracts);
   const payApplications = useAppStore((s) => s.payApplications);
+  const dailyLogs = useAppStore((s) => s.dailyLogs);
+  const members = useAppStore((s) => s.members);
 
   const [scope, setScope] = useState<"all" | "residential" | "commercial">("all");
   const [group, setGroup] = useState<"all" | CostCodeGroup>("all");
@@ -61,6 +70,40 @@ function CostCodesPage() {
       }),
     [projects, budgetLines, draws, changeOrders, selections, subcontracts, payApplications],
   );
+
+  const laborRows = useMemo(() => {
+    // Holwege first, then other jobs with logs
+    const ids = [
+      HOLWEGE_PROJECT_ID,
+      ...projects.map((p) => p.id).filter((id) => id !== HOLWEGE_PROJECT_ID),
+    ];
+    return ids
+      .map((id) => laborBurnForProject(id, dailyLogs, members))
+      .filter((r) => r.hours > 0 || r.projectId === HOLWEGE_PROJECT_ID);
+  }, [projects, dailyLogs, members]);
+
+  function exportLaborBurn() {
+    downloadTextFile(
+      filenameForExport("labor-burn"),
+      laborBurnCsv(
+        laborRows,
+        projects.map((p) => ({ id: p.id, name: p.name })),
+      ),
+      "text/csv;charset=utf-8",
+    );
+  }
+
+  async function importLaborBurn(file: File | null) {
+    if (!file) return;
+    const text = await file.text();
+    const { rows, errors } = parseLaborBurnCsv(text);
+    if (errors.length) {
+      console.warn("Labor CSV import issues", errors);
+    }
+    if (!rows.length) return;
+    const next = applyLaborBurnToBudgetLines(useAppStore.getState().budgetLines, rows);
+    useAppStore.setState({ budgetLines: next });
+  }
 
   function exportClasses() {
     downloadTextFile(filenameForExport("classes"), exportQbClassesCsv(), "text/csv;charset=utf-8");
@@ -132,8 +175,26 @@ function CostCodesPage() {
           <Download className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
           Job cost lines (classed)
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={exportLaborBurn} data-testid="export-labor-burn">
+          <Download className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+          Labor burn CSV
+        </Button>
+        <label className="inline-flex cursor-pointer items-center gap-1.5 border border-border bg-bg-elevated px-2.5 py-1.5 text-[11px] font-medium text-fg-muted hover:text-fg">
+          <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Import labor CSV
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            data-testid="import-labor-burn"
+            onChange={(e) => {
+              void importLaborBurn(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+        </label>
         <span className="text-[11px] text-fg-subtle">
-          {activeCostCodes().length} active codes · {pnls.length} jobs in line export
+          {activeCostCodes().length} active codes · {pnls.length} jobs · Holwege labor {laborRows.find((r) => r.projectId === HOLWEGE_PROJECT_ID)?.hours ?? 0}h
         </span>
       </div>
 
