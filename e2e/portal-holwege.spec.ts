@@ -26,10 +26,13 @@ test.describe("Holwege owner portal polish", () => {
 
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/draw base/i);
-    expect(body).not.toMatch(/\$659,?330/);
+    // Remaining $659,330 is legitimate unpaid schedule total — only ban draw-base wording
+    expect(body).not.toMatch(/draw\s+base\s*\$?\s*659/i);
     expect(body).not.toMatch(/P\s*&\s*O|profit\s*&?\s*overhead/i);
-    expect(body).not.toMatch(/contingency credit/i);
+    expect(body).not.toMatch(/contingency/i);
     expect(body).not.toMatch(/do not invent/i);
+    expect(body).not.toMatch(/retainage/i);
+    expect(body).not.toMatch(/reserve\)/i);
     // Ops-only client.notes land language must not surface
     expect(body).not.toMatch(/Alliance 1100920/i);
     expect(body).not.toMatch(/do not send credentials/i);
