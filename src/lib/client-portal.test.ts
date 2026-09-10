@@ -128,4 +128,12 @@ describe("scrubDrawTriggerForOwner", () => {
   it("leaves simple milestone text intact", () => {
     expect(scrubDrawTriggerForOwner("Foundation complete")).toBe("Foundation complete");
   });
+
+  it("scrubs unused contingency credit from draw names", () => {
+    const scrubbed = scrubDrawTriggerForOwner(
+      "CO + punch + waivers + §45-525(3) + unused contingency credit",
+    );
+    expect(scrubbed).toMatch(/CO \+ punch \+ waivers/i);
+    expect(scrubbed).not.toMatch(/contingency/i);
+  });
 });
