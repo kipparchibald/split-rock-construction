@@ -1,0 +1,406 @@
+/**
+ * R3F mesh material driven by Design Center catalog options.
+ * Prefers scanned Poly Haven PBR maps; falls back to procedural albedo.
+ */
+import { useEffect, useMemo, useState } from "react";
+import type { DesignCategory, DesignOption } from "@/data/types";
+import {
+  getMaterialProfile,
+  getTextureCanvas,
+  optionColor,
+  isFlatPanelCabinet,
+  resolveTextureKind,
+  type TextureKind,
+} from "@/lib/design-materials";
+import { resolveScannedPbr, type ScannedPbr } from "@/lib/design-pbr";
+import { vendorHex } from "@/lib/design-vendor";
+import * as THREE from "three";
+
+function roughnessCanvasFromAlbedo(src: HTMLCanvasElement, kind: TextureKind): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const ctx = out.getContext("2d");
+  const inCtx = src.getContext("2d");
+  if (!ctx || !inCtx) return src;
+  const img = inCtx.getImageData(0, 0, src.width, src.height);
+  const data = img.data;
+  const glossy = kind.startsWith("metal") || kind.startsWith("quartz") || kind === "appliance-stainless";
+  const tile = kind.includes("tile");
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = (data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11) / 255;
+    let v: number;
+    if (glossy) v = 28 + lum * 85;
+    else if (tile) v = 70 + lum * 90;
+    else v = 110 + lum * 110;
+    data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
+}
+
+function bumpCanvasFromAlbedo(src: HTMLCanvasElement): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const ctx = out.getContext("2d");
+  const inCtx = src.getContext("2d");
+  if (!ctx || !inCtx) return src;
+  const img = inCtx.getImageData(0, 0, src.width, src.height);
+  const data = img.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+    data[i] = data[i + 1] = data[i + 2] = lum;
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
+}
+
+function configureMap(map: THREE.Texture, colorSpace: THREE.ColorSpace) {
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.anisotropy = 8;
+  map.colorSpace = colorSpace;
+  map.needsUpdate = true;
+  return map;
+}
+
+function makeMap(canvas: HTMLCanvasElement, colorSpace: THREE.ColorSpace) {
+  return configureMap(new THREE.CanvasTexture(canvas), colorSpace);
+}
+
+function loadTexture(url: string): Promise<THREE.Texture> {
+  return new Promise((resolve, reject) => {
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(url, resolve, undefined, reject);
+  });
+}
+
+function useScannedMaps(spec: ScannedPbr | null) {
+  const [maps, setMaps] = useState<{
+    map: THREE.Texture;
+    roughnessMap: THREE.Texture | null;
+    normalMap: THREE.Texture | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!spec) {
+      setMaps(null);
+      return;
+    }
+    let cancelled = false;
+    Promise.all([
+      loadTexture(spec.diff),
+      loadTexture(spec.rough).catch(() => null),
+      loadTexture(spec.normal).catch(() => null),
+    ])
+      .then(([diff, rough, normal]) => {
+        if (cancelled) {
+          diff.dispose();
+          rough?.dispose();
+          normal?.dispose();
+          return;
+        }
+        configureMap(diff, THREE.SRGBColorSpace);
+        if (rough) configureMap(rough, THREE.NoColorSpace);
+        if (normal) configureMap(normal, THREE.NoColorSpace);
+        setMaps({ map: diff, roughnessMap: rough, normalMap: normal });
+      })
+      .catch(() => {
+        if (!cancelled) setMaps(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [spec?.id, spec?.diff]);
+
+  return maps;
+}
+
+export function useFinishMaps(
+  option: DesignOption | undefined,
+  category: DesignCategory,
+  fallbackHex: string,
+) {
+  const hex = vendorHex(option?.id, optionColor(option, fallbackHex)) ?? optionColor(option, fallbackHex);
+  const profile = useMemo(() => getMaterialProfile(option, category), [option, category]);
+  const scanned = useMemo(() => resolveScannedPbr(option, category), [option, category]);
+  const scannedMaps = useScannedMaps(scanned);
+
+  const procedural = useMemo(() => {
+    const canvas = getTextureCanvas(profile.kind, hex, 512);
+    const map = canvas ? makeMap(canvas, THREE.SRGBColorSpace) : null;
+    const roughnessMap =
+      canvas && profile.kind !== "flat-color"
+        ? makeMap(roughnessCanvasFromAlbedo(canvas, profile.kind), THREE.NoColorSpace)
+        : null;
+    const bumpMap =
+      canvas && profile.kind !== "flat-color" && !profile.kind.startsWith("metal")
+        ? makeMap(bumpCanvasFromAlbedo(canvas), THREE.NoColorSpace)
+        : null;
+    return { map, roughnessMap, bumpMap };
+  }, [profile.kind, hex]);
+
+  if (scannedMaps) {
+    return {
+      map: scannedMaps.map,
+      roughnessMap: scannedMaps.roughnessMap,
+      bumpMap: null as THREE.Texture | null,
+      normalMap: scannedMaps.normalMap,
+      profile,
+      hex,
+      scanned: true,
+      tint: Boolean(scanned?.tint),
+    };
+  }
+
+  return {
+    ...procedural,
+    normalMap: null as THREE.Texture | null,
+    profile,
+    hex,
+    scanned: false,
+    tint: false,
+  };
+}
+
+function isPhysical(kind: TextureKind) {
+  return (
+    kind.startsWith("metal") ||
+    kind.startsWith("quartz") ||
+    kind.startsWith("cabinet") ||
+    kind === "slab" ||
+    kind === "appliance-stainless" ||
+    kind.includes("tile")
+  );
+}
+
+export function FinishMaterial({
+  option,
+  category,
+  fallbackHex = "#cccccc",
+  repeat = [1, 1] as [number, number],
+  emissive,
+  emissiveIntensity,
+  transparent,
+  opacity,
+}: {
+  option: DesignOption | undefined;
+  category: DesignCategory;
+  fallbackHex?: string;
+  repeat?: [number, number];
+  emissive?: string;
+  emissiveIntensity?: number;
+  transparent?: boolean;
+  opacity?: number;
+}) {
+  const { map, roughnessMap, bumpMap, normalMap, profile, hex, scanned, tint } = useFinishMaps(
+    option,
+    category,
+    fallbackHex,
+  );
+
+  if (map) map.repeat.set(repeat[0], repeat[1]);
+  if (roughnessMap) roughnessMap.repeat.set(repeat[0], repeat[1]);
+  if (bumpMap) bumpMap.repeat.set(repeat[0], repeat[1]);
+  if (normalMap) normalMap.repeat.set(repeat[0], repeat[1]);
+
+  const color = scanned && !tint ? "#ffffff" : hex;
+
+  const shared = {
+    color,
+    map: map ?? undefined,
+    roughnessMap: roughnessMap ?? undefined,
+    bumpMap: bumpMap ?? undefined,
+    bumpScale: bumpMap ? (profile.kind.includes("leather") || profile.kind === "stone" ? 0.08 : 0.035) : 0,
+    normalMap: normalMap ?? undefined,
+    normalScale: normalMap ? new THREE.Vector2(0.85, 0.85) : undefined,
+    roughness: profile.roughness,
+    metalness: profile.metalness,
+    emissive: emissive ?? (profile.emissiveIntensity ? hex : undefined),
+    emissiveIntensity: emissiveIntensity ?? profile.emissiveIntensity ?? 0,
+    transparent,
+    opacity,
+    envMapIntensity: isPhysical(profile.kind) ? 1.35 : scanned ? 0.95 : 0.75,
+  };
+
+  if (isPhysical(profile.kind)) {
+    const clearcoat = profile.kind.startsWith("quartz") || profile.kind.includes("tile")
+      ? 0.62
+      : profile.kind.startsWith("cabinet")
+        ? 0.38
+        : 0.28;
+    return (
+      <meshPhysicalMaterial
+        {...shared}
+        clearcoat={clearcoat}
+        clearcoatRoughness={profile.kind.includes("leather") || profile.kind.includes("matte") ? 0.55 : 0.14}
+        reflectivity={0.62}
+      />
+    );
+  }
+
+  return <meshStandardMaterial {...shared} />;
+}
+
+export function ShakerCabinet({
+  position,
+  size,
+  option,
+  fallbackHex = "#F7F7F5",
+  variant = "base",
+}: {
+  position: [number, number, number];
+  size: [number, number, number];
+  option: DesignOption | undefined;
+  fallbackHex?: string;
+  variant?: "base" | "upper" | "tall";
+}) {
+  const [w, h, d] = size;
+  const kind = variant === "upper" || (variant !== "tall" && h <= 0.86 && d <= 0.45) ? "upper" : variant;
+  const flat = isFlatPanelCabinet(option);
+  const toe = kind === "base" ? 0.1 : 0;
+  const doorH = h - toe;
+  const reveal = 0.006;
+  const stile = Math.min(0.068, Math.max(0.055, w * 0.08));
+  const doorT = 0.02;
+  const panelSink = flat ? 0.002 : 0.01;
+  const targetDoor = kind === "upper" ? 0.42 : 0.36;
+  const doorCount = Math.max(1, Math.round(w / targetDoor));
+  const doorW = (w - reveal * (doorCount + 1)) / doorCount;
+  const faceZ = d / 2 + 0.001;
+  const pullDark =
+    (option?.id ?? "").includes("navy") ||
+    (option?.id ?? "").includes("walnut") ||
+    (option?.id ?? "").includes("black");
+  const pullHex = pullDark ? "#2A2A2A" : "#A8A9AD";
+
+  const doors = Array.from({ length: doorCount }, (_, i) => {
+    const x = -w / 2 + reveal + doorW / 2 + i * (doorW + reveal);
+    const drawer = kind === "base" && doorH > 0.7 && i === 0;
+    return { x, drawer };
+  });
+
+  return (
+    <group position={position}>
+      <mesh castShadow receiveShadow position={[0, 0, 0]}>
+        <boxGeometry args={[w, h, d]} />
+        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[2, 2]} />
+      </mesh>
+      {toe > 0 ? (
+        <mesh position={[0, -h / 2 + toe / 2, d / 2 - 0.02]} castShadow>
+          <boxGeometry args={[w - 0.04, toe, 0.08]} />
+          <meshStandardMaterial color="#1c1c1c" roughness={0.7} />
+        </mesh>
+      ) : null}
+      {kind === "upper" ? (
+        <mesh position={[0, h / 2 + 0.018, 0.02]} castShadow>
+          <boxGeometry args={[w + 0.02, 0.036, d + 0.04]} />
+          <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} />
+        </mesh>
+      ) : null}
+      {doors.map((door, i) => {
+        const y0 = -h / 2 + toe;
+        if (door.drawer) {
+          const dh = 0.2;
+          const lowerH = doorH - dh - reveal;
+          return (
+            <group key={`d-${i}`}>
+              <ShakerDoor
+                position={[door.x, y0 + dh / 2 + reveal * 0.5, faceZ]}
+                size={[doorW, dh, doorT]}
+                stile={stile * 0.85}
+                panelSink={panelSink}
+                flat={flat}
+                option={option}
+                fallbackHex={fallbackHex}
+                pull="horizontal"
+                pullHex={pullHex}
+              />
+              <ShakerDoor
+                position={[door.x, y0 + dh + reveal + lowerH / 2, faceZ]}
+                size={[doorW, lowerH, doorT]}
+                stile={stile}
+                panelSink={panelSink}
+                flat={flat}
+                option={option}
+                fallbackHex={fallbackHex}
+                pull="vertical"
+                pullHex={pullHex}
+              />
+            </group>
+          );
+        }
+        return (
+          <ShakerDoor
+            key={`d-${i}`}
+            position={[door.x, y0 + doorH / 2, faceZ]}
+            size={[doorW, doorH - reveal, doorT]}
+            stile={stile}
+            panelSink={panelSink}
+            flat={flat}
+            option={option}
+            fallbackHex={fallbackHex}
+            pull="vertical"
+            pullHex={pullHex}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+function ShakerDoor({
+  position,
+  size,
+  stile,
+  panelSink,
+  flat,
+  option,
+  fallbackHex,
+  pull,
+  pullHex,
+}: {
+  position: [number, number, number];
+  size: [number, number, number];
+  stile: number;
+  panelSink: number;
+  flat: boolean;
+  option: DesignOption | undefined;
+  fallbackHex: string;
+  pull: "vertical" | "horizontal";
+  pullHex: string;
+}) {
+  const [w, h, t] = size;
+  const innerW = Math.max(0.04, w - stile * 2);
+  const innerH = Math.max(0.04, h - stile * 2);
+  const pullW = pull === "horizontal" ? Math.min(0.14, w * 0.45) : 0.012;
+  const pullH = pull === "horizontal" ? 0.012 : Math.min(0.13, h * 0.22);
+  const pullX = pull === "horizontal" ? 0 : w * 0.32;
+  const pullY = pull === "horizontal" ? 0 : h * 0.12;
+
+  return (
+    <group position={position}>
+      <mesh castShadow>
+        <boxGeometry args={[w, h, t]} />
+        <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[1.2, 1.2]} />
+      </mesh>
+      {!flat ? (
+        <mesh position={[0, 0, t / 2 - panelSink]} castShadow>
+          <boxGeometry args={[innerW, innerH, t * 0.45]} />
+          <FinishMaterial option={option} category="cabinets" fallbackHex={fallbackHex} repeat={[1, 1]} />
+        </mesh>
+      ) : null}
+      <mesh position={[pullX, pullY, t / 2 + 0.008]} castShadow>
+        <boxGeometry args={[pullW, pullH, 0.012]} />
+        <meshStandardMaterial color={pullHex} roughness={0.35} metalness={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
+export function textureKindLabel(option: DesignOption | undefined, category: DesignCategory): string {
+  return resolveTextureKind(option, category);
+}

@@ -188,7 +188,7 @@ export function AppShell({
           </Button>
         </header>
         <div className="lg:pl-56">
-          <main className="px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-8">
+          <main className="min-w-0 max-w-full overflow-x-clip px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-8">
             {children}
           </main>
         </div>
@@ -266,7 +266,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:pb-6">
+        <main className="min-w-0 max-w-full overflow-x-clip px-4 py-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:pb-6">
           <ModeCallout className="mb-4" />
           {children}
         </main>

@@ -64,7 +64,7 @@ export function PlanSheetViewer({
     return (
       <div
         className={cn(
-          "flex aspect-[16/10] items-center justify-center gap-2 bg-bg-subtle text-[12px] text-fg-muted",
+          "flex aspect-[4/3] sm:aspect-[16/10] items-center justify-center gap-2 bg-bg-subtle text-[12px] text-fg-muted",
           className,
         )}
       >
@@ -78,7 +78,7 @@ export function PlanSheetViewer({
     return (
       <div
         className={cn(
-          "flex aspect-[16/10] flex-col items-center justify-center gap-2 bg-bg-subtle px-6 text-center",
+          "flex aspect-[4/3] sm:aspect-[16/10] flex-col items-center justify-center gap-2 bg-bg-subtle px-6 text-center",
           className,
         )}
       >
@@ -96,7 +96,7 @@ export function PlanSheetViewer({
     return (
       <div
         className={cn(
-          "flex aspect-[16/10] items-center justify-center bg-bg-subtle text-[12px] text-fg-muted",
+          "flex aspect-[4/3] sm:aspect-[16/10] items-center justify-center bg-bg-subtle text-[12px] text-fg-muted",
           className,
         )}
       >
@@ -122,14 +122,14 @@ export function PlanSheetViewer({
         <iframe
           title={file.name}
           src={url}
-          className="min-h-[20rem] w-full flex-1 bg-white aspect-[16/10]"
+          className="min-h-[14rem] w-full flex-1 bg-white aspect-[4/3] sm:min-h-[20rem] sm:aspect-[16/10]"
         />
       ) : file.kind === "image" ? (
-        <div className="flex aspect-[16/10] items-center justify-center overflow-auto bg-[#111]">
+        <div className="flex aspect-[4/3] sm:aspect-[16/10] items-center justify-center overflow-auto bg-[#111]">
           <img src={url} alt={file.name} className="max-h-full max-w-full object-contain" />
         </div>
       ) : (
-        <div className="flex aspect-[16/10] flex-col items-center justify-center gap-2 px-4 text-center text-[12px] text-white/70">
+        <div className="flex aspect-[4/3] sm:aspect-[16/10] flex-col items-center justify-center gap-2 px-4 text-center text-[12px] text-white/70">
           <p>This file type is stored but not previewable in-browser.</p>
           <a href={url} download={file.name} className="underline text-white">
             Download {file.name}
