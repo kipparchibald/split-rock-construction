@@ -141,6 +141,9 @@ export function scrubDrawTriggerForOwner(trigger: string): string {
   t = t.replace(/\bdraw\s+base\b/gi, "");
 
   // Contingency credit / invent / retainage ops asides
+  t = t.replace(/\s*\+\s*unused\s+contingency\s+credit\b/gi, "");
+  t = t.replace(/\bunused\s+contingency\s+credit\b/gi, "");
+  t = t.replace(/\bcontingency\s+credit\b/gi, "");
   t = t.replace(/[.;:—–-]?\s*credit\s+unused\s+owner\s+contingency[^.]*\.?/gi, "");
   t = t.replace(/[.;:—–-]?\s*Amount\s+at\s+least[^.]*\.?/gi, "");
   t = t.replace(/[.;:—–-]?\s*do\s+not\s+invent[^.]*\.?/gi, "");
