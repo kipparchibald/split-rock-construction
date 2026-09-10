@@ -123,3 +123,51 @@ export function authenticateClientPortal(
   };
   return { ok: true, client, session };
 }
+
+/**
+ * Scrub operator draw-trigger / draw-name language for owner portal Money list.
+ * Strips draw-base dollars, contingency-credit ops notes, invent/retainage jargon.
+ * Does not mutate seed data — display-only mapping.
+ */
+export function scrubDrawTriggerForOwner(trigger: string): string {
+  let t = trigger.trim();
+  if (!t) return "Construction milestone";
+
+  const hasOps =
+    /draw\s+base/i.test(t) ||
+    /contingency/i.test(t) ||
+    /do\s+not\s+invent/i.test(t) ||
+    /retainage/i.test(t);
+
+  // Heavy ops copy: keep the leading milestone clause only (before . or ;)
+  if (hasOps) {
+    t = (t.split(/[.;]/)[0] ?? t).trim();
+  }
+
+  // Drop "(10% of draw base $X)" style tails
+  t = t.replace(/\s*\(\s*\d+%\s+of\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?\s*\)/gi, "");
+  t = t.replace(/\bof\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?/gi, "");
+  t = t.replace(/\bdraw\s+base\s*\$[\d,]+(?:\.\d+)?/gi, "");
+  t = t.replace(/\bdraw\s+base\b/gi, "");
+
+  t = t.replace(/\s*\+\s*unused\s+contingency\s+credit\b/gi, "");
+  t = t.replace(/\bunused\s+contingency\s+credit\b/gi, "");
+  t = t.replace(/\bcontingency\s+credit\b/gi, "");
+  t = t.replace(/\bcontingency\b/gi, "");
+  t = t.replace(/\bretainage-style\b/gi, "");
+  t = t.replace(/\bretainage\b/gi, "");
+  t = t.replace(/\(\$[\d,]+(?:\.\d+)?\s+reserve\)/gi, "");
+  t = t.replace(/\bon\s+this\s+draw\b/gi, "");
+
+  // If a broken percent paren remains, drop from that "(" onward
+  t = t.replace(/\s*\(\s*\d+%\s*$/g, "");
+  t = t.replace(/\s*\(\s*\d+%[^)]*$/g, "");
+
+  t = t.replace(/\s{2,}/g, " ");
+  t = t.replace(/\s+([.,;:])/g, "$1"); // keep spaces around +
+  t = t.replace(/[.;,+\s]+$/g, "");
+  t = t.replace(/^[.;,+\s]+/g, "");
+  t = t.trim();
+
+  return t || "Construction milestone";
+}

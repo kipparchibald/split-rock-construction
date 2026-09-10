@@ -21,7 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppStore } from "@/data/store";
 import type { ChangeOrder } from "@/data/types";
-import { projectsForClient } from "@/lib/client-portal";
+import { projectsForClient, scrubDrawTriggerForOwner } from "@/lib/client-portal";
 import { COMPANY } from "@/lib/company";
 import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
@@ -831,18 +831,20 @@ function PortalPage() {
           </CardContent>
         </Card>
 
-        <Card id="money">
+        <Card id="money" data-testid="portal-money">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Money</CardTitle>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/app/projects/$projectId"
-                params={{ projectId: project.id }}
-                search={{ tab: "draws" }}
-              >
-                Full schedule
-              </Link>
-            </Button>
+            {!isClientUser ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  to="/app/projects/$projectId"
+                  params={{ projectId: project.id }}
+                  search={{ tab: "draws" }}
+                >
+                  Full schedule
+                </Link>
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -904,8 +906,8 @@ function PortalPage() {
                     className="flex items-center justify-between gap-2 border border-border px-3 py-2.5 text-[12px]"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium text-fg">{d.name}</p>
-                      <p className="text-fg-subtle">{d.trigger}</p>
+                      <p className="font-medium text-fg">{scrubDrawTriggerForOwner(d.name)}</p>
+                      <p className="text-fg-subtle">{scrubDrawTriggerForOwner(d.trigger)}</p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                       <span className="tabular-nums font-medium">{formatCurrency(d.amount)}</span>
@@ -918,18 +920,38 @@ function PortalPage() {
           </CardContent>
         </Card>
 
+        {logs[0] ? (
+          <Card className="lg:col-span-2" data-testid="portal-builder-notes">
+            <CardHeader>
+              <CardTitle>Builder notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-[12px] text-fg-subtle">
+                {formatDate(logs[0].date)}
+                {logs[0].author ? ` · ${logs[0].author}` : ""}
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-fg-muted">{logs[0].workDone}</p>
+              {logs[0].blockers ? (
+                <p className="mt-2 text-[11px] text-warning">Note: {logs[0].blockers}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card id="field" className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Latest from the field</CardTitle>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/app/projects/$projectId"
-                params={{ projectId: project.id }}
-                search={{ tab: "logs" }}
-              >
-                All logs
-              </Link>
-            </Button>
+            {!isClientUser ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  to="/app/projects/$projectId"
+                  params={{ projectId: project.id }}
+                  search={{ tab: "logs" }}
+                >
+                  All logs
+                </Link>
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent>
             {logs.length === 0 ? (
