@@ -71,15 +71,15 @@ function EstimatorPage() {
     const price = calcPrice(result.costs, result.draft.assumptions, result.draft.sqft);
     const lotLabel = result.lot ? `Lot ${result.lot.lotNumber}` : "unspecified lot";
     addBid({
-      title: `AI draft — ${result.draft.sqft} sf ${result.draft.parsed.kind} · ${lotLabel}`,
+      title: `NOT A BID — AI draft — ${result.draft.sqft} sf ${result.draft.parsed.kind} · ${lotLabel}`,
       clientId: bidClientId || clients[0]?.id || "c2",
       type: result.draft.parsed.kind === "commercial" ? "commercial" : "residential",
       status: "draft",
       amount: result.contractPrice,
-      notes: result.gisNotes.join(" | "),
+      notes: [`NOT A BID — AI draft only. Review before presenting.`, ...result.gisNotes].join(" | "),
       lineItems: estimateToBidLineItems(result.costs, price),
     });
-    toast.success("Draft sent to Bid board — review before presenting.");
+    toast.success("Draft sent to Bid board — not a bid. Review before presenting.");
   }
 
   return (
@@ -257,6 +257,9 @@ function EstimatorPage() {
                   >
                     Confidence {Math.round(result.draft.confidence * 100)}%
                   </Badge>
+                  <Badge variant="outline" className="font-normal text-amber-700">
+                    Not a bid
+                  </Badge>
                 </div>
 
                 <div className="border border-border bg-bg p-3">
@@ -310,7 +313,7 @@ function EstimatorPage() {
                   </div>
                   <Button type="button" variant="outline" onClick={sendToBidBoard}>
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    Send to Bid board
+                    Send draft (not a bid)
                   </Button>
                 </div>
               </div>
