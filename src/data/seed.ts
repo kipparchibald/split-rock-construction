@@ -110,6 +110,8 @@ export const clients: Client[] = [
 ];
 
 export const members: CrewMember[] = [
+  // SRC-5: Holwege site crew (ops). Rate ASSUME until payroll wired.
+  { id: "m-holwege-kyle", name: "Kyle Christensen", role: "Field Supervisor", trade: "General", phone: "", status: "active", rate: 55, certifications: ["OSHA 30"], projectId: "p-holwege" },
   { id: "m1", name: "Tyler Brooks", role: "Superintendent", trade: "General", phone: "(208) 555-4011", status: "active", rate: 58, certifications: ["OSHA 30", "First Aid"], projectId: "p1" },
   { id: "m2", name: "Sam Ortega", role: "Lead Carpenter", trade: "Framing", phone: "(208) 555-4012", status: "active", rate: 42, certifications: ["OSHA 10"], projectId: "p1" },
   { id: "m3", name: "Riley Chen", role: "Foreman", trade: "Concrete", phone: "(208) 555-4013", status: "active", rate: 44, certifications: ["OSHA 30", "ACI Flatwork"], projectId: "p2" },
@@ -121,6 +123,7 @@ export const members: CrewMember[] = [
 ];
 
 export const crews: Crew[] = [
+  { id: "cr-holwege", name: "Holwege Site", leadId: "m-holwege-kyle", trade: "General", memberIds: ["m-holwege-kyle"], projectId: "p-holwege" },
   { id: "cr1", name: "Framing Alpha", leadId: "m2", trade: "Framing", memberIds: ["m2", "m7"], projectId: "p1" },
   { id: "cr2", name: "Foundation Crew", leadId: "m3", trade: "Concrete", memberIds: ["m3"], projectId: "p2" },
   { id: "cr3", name: "MEP Squad", leadId: "m4", trade: "MEP", memberIds: ["m4", "m5"], projectId: "p1" },
