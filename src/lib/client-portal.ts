@@ -125,37 +125,49 @@ export function authenticateClientPortal(
 }
 
 /**
- * Scrub operator draw-trigger language for owner portal Money list.
- * Removes draw-base dollars, contingency-credit ops notes, and invent/retainage jargon.
+ * Scrub operator draw-trigger / draw-name language for owner portal Money list.
+ * Strips draw-base dollars, contingency-credit ops notes, invent/retainage jargon.
  * Does not mutate seed data — display-only mapping.
  */
 export function scrubDrawTriggerForOwner(trigger: string): string {
   let t = trigger.trim();
   if (!t) return "Construction milestone";
 
+  const hasOps =
+    /draw\s+base/i.test(t) ||
+    /contingency/i.test(t) ||
+    /do\s+not\s+invent/i.test(t) ||
+    /retainage/i.test(t) ||
+    /\(\s*\d+%\s+of\s+draw/i.test(t);
+
+  // Heavy ops copy: keep the leading milestone clause only (before . or ;)
+  if (hasOps) {
+    const head = (t.split(/[.;]/)[0] ?? t).trim();
+    t = head;
+  }
+
   // Parenthetical % of draw base (with or without $amount)
   t = t.replace(/\s*\(\s*\d+%\s+of\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?\s*\)/gi, "");
-  // Inline "of draw base $X" / "of draw base"
   t = t.replace(/\bof\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?/gi, "");
   t = t.replace(/\bdraw\s+base\s*\$[\d,]+(?:\.\d+)?/gi, "");
   t = t.replace(/\bdraw\s+base\b/gi, "");
 
-  // Contingency credit / invent / retainage ops asides
   t = t.replace(/\s*\+\s*unused\s+contingency\s+credit\b/gi, "");
   t = t.replace(/\bunused\s+contingency\s+credit\b/gi, "");
   t = t.replace(/\bcontingency\s+credit\b/gi, "");
-  t = t.replace(/[.;:—–-]?\s*credit\s+unused\s+owner\s+contingency[^.]*\.?/gi, "");
-  t = t.replace(/[.;:—–-]?\s*Amount\s+at\s+least[^.]*\.?/gi, "");
-  t = t.replace(/[.;:—–-]?\s*do\s+not\s+invent[^.]*\.?/gi, "");
-  t = t.replace(/\bretainage-style\s+/gi, "");
-  t = t.replace(/\bcloseout\s+of\b/gi, "closeout");
+  t = t.replace(/\bcontingency\b/gi, "");
+  t = t.replace(/\bretainage-style\b/gi, "");
+  t = t.replace(/\bretainage\b/gi, "");
   t = t.replace(/\(\$[\d,]+(?:\.\d+)?\s+reserve\)/gi, "");
+  t = t.replace(/\$[\d,]+(?:\.\d+)?/g, ""); // drop leftover dollar crumbs in ops lines
+  t = t.replace(/\bon\s+this\s+draw\b/gi, "");
+  t = t.replace(/\bcloseout\s+of\b/gi, "closeout");
 
-  // Collapse whitespace / dangling punctuation
   t = t.replace(/\s{2,}/g, " ");
-  t = t.replace(/\s+([.,;:])/g, "$1");
-  t = t.replace(/[.;,\s]+$/g, "");
-  t = t.replace(/^[.;,\s]+/g, "");
+  t = t.replace(/\s+([.,;:+])/g, "$1");
+  t = t.replace(/[.;,+\s]+$/g, "");
+  t = t.replace(/^[.;,+\s]+/g, "");
+  t = t.replace(/\s*\+\s*$/g, "");
   t = t.trim();
 
   return t || "Construction milestone";
