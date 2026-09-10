@@ -164,7 +164,7 @@ export function scrubDrawTriggerForOwner(trigger: string): string {
   t = t.replace(/\s*\(\s*\d+%[^)]*$/g, "");
 
   t = t.replace(/\s{2,}/g, " ");
-  t = t.replace(/\s+([.,;:+])/g, "$1");
+  t = t.replace(/\s+([.,;:])/g, "$1"); // keep spaces around +
   t = t.replace(/[.;,+\s]+$/g, "");
   t = t.replace(/^[.;,+\s]+/g, "");
   t = t.trim();
