@@ -11,6 +11,8 @@ import {
   defaultImprovements,
   getLot,
   JEFFERSON_GIS,
+  parseLot,
+  resolveLotNumber,
   sitePlanNarrative,
   TETON_HEIGHTS_CENTER,
   TETON_HEIGHTS_LOTS,
@@ -28,19 +30,21 @@ export const Route = createFileRoute("/app/site-plan")({
   component: SitePlanPage,
 });
 
-function parseLot(raw?: string): number {
-  const n = Number(raw);
-  return Number.isFinite(n) && n >= 1 && n <= 12 ? n : 7;
-}
-
 function SitePlanPage() {
   const search = Route.useSearch();
   const projects = useAppStore((s) => s.projects);
   const tetonLots = useAppStore((s) => s.tetonLots);
 
   const job = projects.find((p) => p.id === search.project);
-  const lotNumber = parseLot(search.lot);
-  const lot = getLot(lotNumber) ?? TETON_HEIGHTS_LOTS[6]!;
+  const lotNumber =
+    parseLot(search.lot) ??
+    resolveLotNumber({
+      projectId: job?.id ?? search.project,
+      address: job?.address,
+      name: job?.name,
+    }) ??
+    7;
+  const lot = getLot(lotNumber) ?? TETON_HEIGHTS_LOTS.find((l) => l.lotNumber === 7)!;
   const imp = useMemo(() => defaultImprovements(lot), [lot]);
 
   const inventory = tetonLots.find((l) => Number(l.lot) === lotNumber);

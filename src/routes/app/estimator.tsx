@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/data/store";
-import { TETON_HEIGHTS_LOTS } from "@/data/teton-heights-gis";
+import { parseLot, TETON_HEIGHTS_LOTS } from "@/data/teton-heights-gis";
 import { draftGisEstimate, GIS_ESTIMATOR_EXAMPLES, type GisEstimate } from "@/lib/gis-estimator";
 import { loadClosedJobs } from "@/lib/estimate-history";
 import { calcPrice } from "@/lib/pricing";
@@ -34,9 +34,7 @@ export const Route = createFileRoute("/app/estimator")({
 });
 
 function parseLotParam(raw?: string): number | null {
-  if (!raw) return null;
-  const n = Number(raw);
-  return Number.isFinite(n) && n >= 1 && n <= 12 ? n : null;
+  return parseLot(raw);
 }
 
 function EstimatorPage() {

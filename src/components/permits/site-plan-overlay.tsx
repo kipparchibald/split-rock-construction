@@ -100,10 +100,19 @@ export function SitePlanAerialOverlay({
   lotNumber: forcedLot,
   className = "",
 }: Props) {
+  const holwegeDefault =
+    projectId === "p-holwege" || /holwege/i.test(`${address ?? ""} ${projectName ?? ""}`)
+      ? 16
+      : 7;
   const resolved =
-    forcedLot ?? resolveLotNumber({ projectId, address, name: projectName }) ?? 7;
+    forcedLot ??
+    resolveLotNumber({ projectId, address, name: projectName }) ??
+    holwegeDefault;
 
   const [selectedLot, setSelectedLot] = useState(resolved);
+  useEffect(() => {
+    setSelectedLot(resolved);
+  }, [resolved]);
   const [layers, setLayers] = useState<Record<PlanLayerId, boolean>>(() =>
     Object.fromEntries(PLAN_LAYERS.map((l) => [l.id, l.defaultOn])) as Record<
       PlanLayerId,
@@ -116,7 +125,10 @@ export function SitePlanAerialOverlay({
   const [fullscreen, setFullscreen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
 
-  const lot = getLot(selectedLot) ?? TETON_HEIGHTS_LOTS[6]!;
+  const lot =
+    getLot(selectedLot) ??
+    getLot(holwegeDefault) ??
+    TETON_HEIGHTS_LOTS.find((l) => l.lotNumber === holwegeDefault)!;
   const imp = useMemo(() => defaultImprovements(lot), [lot]);
 
   useEffect(() => {

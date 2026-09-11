@@ -111,4 +111,26 @@ describe("draftGisEstimate", () => {
     expect(d.lot).toBeNull();
     expect(d.lotNumber).toBeNull();
   });
+
+  it("accepts schematic Lot 16 (Holwege) and still ignores unknown lots", () => {
+    const lot16 = draftGisEstimate({
+      brief: "2602 sf ADA one-level, Holwege Lot 16 Block 8",
+      lotNumber: 16,
+      includeLand: false,
+      includeSiteAllowances: false,
+      closedJobs: [],
+    });
+    expect(lot16.lot?.lotNumber).toBe(16);
+    expect(lot16.lot?.projectId).toBe("p-holwege");
+    expect(lot16.narrative).toMatch(/LOT 16/i);
+    expect(lot16.platConstraints.length).toBeGreaterThan(0);
+
+    const bad = draftGisEstimate({
+      brief: "1600 sf ranch",
+      lotNumber: 99,
+      closedJobs: [],
+    });
+    expect(bad.lot).toBeNull();
+    expect(bad.lotNumber).toBeNull();
+  });
 });
