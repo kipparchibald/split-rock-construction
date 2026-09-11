@@ -1,1 +1,1 @@
-PLACEHOLDER_WILL_FAIL_IF_TOO_BIG
+LOAD_FROM_FILE:/home/box/.cursor/projects/workspace/agent-tools/mcp_restore_teton.json
