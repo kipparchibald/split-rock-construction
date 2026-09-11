@@ -1,1 +1,1 @@
-@file:///workspace/holwege-gis-lot16/teton-heights-gis.ts
+PLACEHOLDER_WILL_FAIL_IF_TOO_BIG
