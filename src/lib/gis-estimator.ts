@@ -70,7 +70,8 @@ export type GisEstimate = {
 function clampLot(n: number | null | undefined): number | null {
   if (n == null || !Number.isFinite(n)) return null;
   const i = Math.round(n);
-  return i >= 1 && i <= 12 ? i : null;
+  // Catalog includes schematic Lot 16 (Holwege); reject unknown numbers.
+  return getLot(i) ? i : null;
 }
 
 function siteWorkFactor(acres: number): number {
