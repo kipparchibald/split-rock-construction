@@ -113,10 +113,38 @@ const baseURL = explicitBaseURL ?? {
   fallback: "http://localhost:8080",
 };
 
+/**
+ * When BETTER_AUTH_URL is apex-only, browsers on www still send
+ * Origin: https://www.… — without the sibling, Better Auth returns FORBIDDEN
+ * "Invalid origin". `__Host-` session cookies are host-only, so vercel.json
+ * also redirects www → apex; trust both so auth POSTs work before/without that
+ * redirect.
+ */
+function withWwwSiblingOrigin(origin: string): string[] {
+  try {
+    const u = new URL(origin);
+    const host = u.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "[::1]" ||
+      host.startsWith("*.")
+    ) {
+      return [origin];
+    }
+    const siblingHost = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
+    if (!siblingHost || siblingHost === host) return [origin];
+    const sibling = `${u.protocol}//${siblingHost}${u.port ? `:${u.port}` : ""}`;
+    return sibling === origin ? [origin] : [origin, sibling];
+  } catch {
+    return [origin];
+  }
+}
+
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
 const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
+  ? [...withWwwSiblingOrigin(explicitBaseURL), ...LOCAL_DEV_ORIGINS]
   : [
       // Host wildcards (matched against Origin's host)
       ...previewAllowedHosts,
