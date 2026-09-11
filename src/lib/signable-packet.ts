@@ -1,11 +1,17 @@
 /**
- * SRC-6 signable packet — construction agreement + Idaho 45-525 + dual-capacity.
- * Uses seeded Holwege stubs under contracts/Holwege/ as the source to replace in UI.
+ * Signable packet — construction agreement + Idaho 45-525 + dual-capacity.
+ * Holwege bodies are authoritative repo SoT under contracts/Holwege/ (dual-capacity = agreement §13).
  * Does not mutate Holwege budget / draw-base constants or Portal owner UI.
  */
 
 import { COMPANY, LEGAL_DRAFT_DISCLAIMER } from "@/lib/company";
 import { HOLWEGE_PROJECT_ID } from "@/data/holwege";
+import {
+  CONSTRUCTION_AGREEMENT_BODY,
+  DUAL_CAPACITY_BODY,
+  IDAHO_45_525_COMPLETION_BODY,
+  IDAHO_45_525_INITIAL_BODY,
+} from "@/lib/holwege-packet-bodies";
 
 export const PACKET_COUNSEL_BANNER = LEGAL_DRAFT_DISCLAIMER;
 
@@ -23,7 +29,10 @@ export interface SignablePacketDoc {
   id: string;
   kind: PacketDocKind;
   title: string;
-  stubPath: string;
+  /** Path under contracts/Holwege/ (ops SoT mirror). */
+  sourcePath: string;
+  /** Full markdown body shown on /app/packet. */
+  body: string;
   documentId: string;
   requiredForStart: boolean;
   status: PacketDocStatus;
@@ -39,6 +48,10 @@ export interface SignablePacket {
   contractorLicense: string;
   brokerageNote: string;
   counselBanner: string;
+  /** CONFIRMED construction contract price (land excluded). */
+  contractPrice: number;
+  /** CONFIRMED draw base for Draws 1–5. */
+  drawBase: number;
   docs: SignablePacketDoc[];
 }
 
@@ -82,52 +95,58 @@ export function holwegeSignablePacket(): SignablePacket {
     contractor: COMPANY.legalName,
     contractorLicense: COMPANY.idahoContractorRegistration,
     brokerageNote:
-      "Lot sold / closed via Archibald-Bagley Real Estate (Alliance 1100920 · deed 501245). Brokerage is not a party to the construction contract. Dual-capacity must be acknowledged.",
+      "Lot sold / closed via Archibald-Bagley Real Estate (Alliance 1100920 · deed 501245 · land $98,000 paid). Brokerage is not a party to the construction contract. Dual-capacity must be acknowledged. Contract Price $689,299.65 (land excluded). Draw base $659,330.10.",
     counselBanner: PACKET_COUNSEL_BANNER,
+    contractPrice: 689299.65,
+    drawBase: 659330.1,
     docs: [
       {
         id: "pkt-doc-agreement",
         kind: "construction_agreement",
         title: "Construction Agreement",
-        stubPath: "contracts/Holwege/03_Construction_Agreement.md",
+        sourcePath: "contracts/Holwege/03_Construction_Agreement.md",
+        body: CONSTRUCTION_AGREEMENT_BODY,
         documentId: "doc-holwege-contract",
         requiredForStart: true,
-        status: "stub",
+        status: "ready_for_sign",
         summary:
-          "Residential new-construction agreement — Split Rock Construction LLC and Owners only. Stub to replace with counsel-reviewed signed PDF.",
+          "Residential new-construction agreement — Split Rock Construction LLC and Owners only. Contract Price $689,299.65; land excluded.",
       },
       {
         id: "pkt-doc-45525-initial",
         kind: "idaho_45_525_initial",
         title: "Idaho § 45-525 Initial Disclosure",
-        stubPath: "contracts/Holwege/01_Initial_Disclosure_45-525.md",
+        sourcePath: "contracts/Holwege/01_Initial_Disclosure_45-525.md",
+        body: IDAHO_45_525_INITIAL_BODY,
         documentId: "doc-holwege-45525-initial",
         requiredForStart: true,
-        status: "stub",
+        status: "ready_for_sign",
         summary:
-          "Idaho Code § 45-525(2) initial residential GC disclosure. Stub to replace with signed disclosure.",
+          "Idaho Code § 45-525(2) initial residential GC disclosure (lien waivers, insurance, extended title, surety).",
       },
       {
         id: "pkt-doc-dual",
         kind: "dual_capacity",
         title: "Dual-capacity disclosure (builder + licensee)",
-        stubPath: "contracts/Holwege/08_Dual_Capacity_Disclosure.md",
+        sourcePath: "contracts/Holwege/03_Construction_Agreement.md#13-dual-capacity",
+        body: DUAL_CAPACITY_BODY,
         documentId: "doc-holwege-dual-capacity",
         requiredForStart: true,
-        status: "stub",
+        status: "ready_for_sign",
         summary:
-          "Archibald-Bagley lot representation finished; construction is Split Rock only. Owners initial dual role.",
+          "Agreement §13 dual-capacity — Archibald-Bagley lot closed; construction is Split Rock only. Owners initial.",
       },
       {
         id: "pkt-doc-45525-completion",
         kind: "idaho_45_525_completion",
         title: "Idaho § 45-525 Completion Disclosure (subs)",
-        stubPath: "contracts/Holwege/02_Completion_Disclosure_Subcontractors_45-525.md",
+        sourcePath: "contracts/Holwege/02_Completion_Disclosure_Subcontractors_45-525.md",
+        body: IDAHO_45_525_COMPLETION_BODY,
         documentId: "doc-holwege-45525-completion",
         requiredForStart: false,
-        status: "stub",
+        status: "ready_for_sign",
         summary:
-          "Idaho Code § 45-525(3) completion subcontractor disclosure — due at closeout / Draw 6, not at start.",
+          "Idaho Code § 45-525(3) completion subcontractor disclosure — fill at closeout / Draw 6, not at start.",
       },
     ],
   };

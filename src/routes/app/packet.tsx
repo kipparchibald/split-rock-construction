@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, FileSignature, Paperclip, Scale } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, FileSignature, Paperclip, Scale } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,10 @@ function statusVariant(status: PacketDocStatus) {
   return "secondary" as const;
 }
 
+function formatUsd(n: number) {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
 function PacketPage() {
   const projects = useAppStore((s) => s.projects);
   const attachDocumentFile = useAppStore((s) => s.attachDocumentFile);
@@ -37,6 +41,9 @@ function PacketPage() {
   const [packet, setPacket] = useState<SignablePacket>(() =>
     mergePersistedStatuses(holwegeSignablePacket()),
   );
+  const [openBodies, setOpenBodies] = useState<Record<string, boolean>>({
+    "pkt-doc-agreement": true,
+  });
   const channel = useMemo(() => resolveSignChannel(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingDocId = useRef<string | null>(null);
@@ -103,11 +110,15 @@ function PacketPage() {
     }
   }
 
+  function toggleBody(id: string) {
+    setOpenBodies((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
   return (
     <div>
       <PageHeader
         title="Signable packet"
-        description="SRC-6 — construction agreement, Idaho § 45-525, and dual-capacity for Holwege. Stubs from contracts/Holwege/."
+        description="Holwege construction agreement, Idaho § 45-525, and dual-capacity — real SoT docs ready for counsel / signature."
         actions={
           <Button variant="outline" size="sm" asChild>
             <Link
@@ -136,6 +147,10 @@ function PacketPage() {
               {project?.name ?? packet.projectId} · {packet.owners.join(" & ")} ·{" "}
               {packet.contractor} · license {packet.contractorLicense}
             </p>
+            <p className="mt-1 text-[12px] text-fg-muted">
+              Contract {formatUsd(packet.contractPrice)} · Draw base {formatUsd(packet.drawBase)} ·
+              land excluded
+            </p>
           </div>
           <Badge variant={ready ? "success" : "warning"}>
             {ready ? "Required docs satisfied" : "Signatures pending"}
@@ -151,7 +166,7 @@ function PacketPage() {
             Sign channel:{" "}
             {channel === "docusign"
               ? "DocuSign keys detected — send via DocuSign when wired, or attach returned PDF."
-              : "DocuSign keys missing — use PDF upload fallback (this browser only until cloud storage is wired)."}
+              : "DocuSign keys missing — use PDF upload fallback (this browser only until cloud storage is wired). No owner email/send from this screen."}
           </p>
         </CardContent>
       </Card>
@@ -165,60 +180,80 @@ function PacketPage() {
       />
 
       <div className="space-y-2">
-        {packet.docs.map((d) => (
-          <div
-            key={d.id}
-            className="flex flex-col gap-2 border border-border bg-bg-elevated p-4 sm:flex-row sm:items-start sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium">{d.title}</p>
-              <p className="mt-0.5 text-[12px] text-fg-muted">{d.summary}</p>
-              <p className="mt-1 text-[11px] text-fg-subtle">
-                Stub: <code className="text-[10px]">{d.stubPath}</code>
-                {d.requiredForStart ? " · required to start" : " · closeout"}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={statusVariant(d.status)}>{d.status.replace(/_/g, " ")}</Badge>
-              {d.status === "stub" ? (
-                <Button size="sm" variant="outline" onClick={() => markReady(d.id)}>
-                  Ready to sign
-                </Button>
+        {packet.docs.map((d) => {
+          const open = Boolean(openBodies[d.id]);
+          return (
+            <div key={d.id} className="border border-border bg-bg-elevated p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium">{d.title}</p>
+                  <p className="mt-0.5 text-[12px] text-fg-muted">{d.summary}</p>
+                  <p className="mt-1 text-[11px] text-fg-subtle">
+                    Source: <code className="text-[10px]">{d.sourcePath}</code>
+                    {d.requiredForStart ? " · required to start" : " · closeout"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={statusVariant(d.status)}>{d.status.replace(/_/g, " ")}</Badge>
+                  {d.status === "stub" ? (
+                    <Button size="sm" variant="outline" onClick={() => markReady(d.id)}>
+                      Ready to sign
+                    </Button>
+                  ) : null}
+                  {d.status === "stub" || d.status === "ready_for_sign" ? (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => markSigned(d.id, d.kind)}>
+                        Record signed
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={uploadingId === d.id}
+                        onClick={() => startUpload(d.id)}
+                      >
+                        <Paperclip className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        {channel === "docusign" ? "Attach DocuSign PDF" : "Upload PDF"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={uploadingId === d.id}
+                      onClick={() => startUpload(d.id)}
+                    >
+                      <Paperclip className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Replace PDF
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-fg-muted hover:text-fg"
+                onClick={() => toggleBody(d.id)}
+              >
+                {open ? (
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={1.75} />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                )}
+                {open ? "Hide document" : "Show document"}
+              </button>
+              {open ? (
+                <pre className="mt-2 max-h-[28rem] overflow-auto whitespace-pre-wrap rounded border border-border bg-bg p-3 text-[11px] leading-relaxed text-fg">
+                  {d.body}
+                </pre>
               ) : null}
-              {d.status === "stub" || d.status === "ready_for_sign" ? (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => markSigned(d.id, d.kind)}>
-                    Record signed
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={uploadingId === d.id}
-                    onClick={() => startUpload(d.id)}
-                  >
-                    <Paperclip className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    {channel === "docusign" ? "Attach DocuSign PDF" : "Upload PDF"}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={uploadingId === d.id}
-                  onClick={() => startUpload(d.id)}
-                >
-                  <Paperclip className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Replace PDF
-                </Button>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <p className="mt-4 text-[11px] text-fg-subtle">
-        Fence: Holwege budget / draw base and Portal owner UI are untouched. Money figures stay in{" "}
-        <code className="text-[10px]">contracts/Holwege/</code> + Holwege SOR seed.
+        Fence: Holwege budget / draw base constants and Portal owner UI are untouched. Money figures
+        stay in <code className="text-[10px]">contracts/Holwege/</code> + Holwege SOR seed. No owner
+        email/send from this page.
       </p>
     </div>
   );

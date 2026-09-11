@@ -18,3 +18,7 @@ Archibald-Bagley Real Estate and its broker are **not parties** to this construc
 - [ ] Title told: do not collect the lot again; do not advance contingency on Draws 1–5
 
 *Draft. Parties are Split Rock Construction LLC and the Owners only.*
+
+## Packet UI
+
+Ops `/app/packet` shows agreement + §45-525(2) + agreement **§13 dual-capacity** as ready-for-sign (package still draft). Dollars locked: contract $689,299.65 · draw base $659,330.10 · land $98k out.
