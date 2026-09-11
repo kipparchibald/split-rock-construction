@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { authenticateClientPortal } from "@/lib/client-portal";
 import {
+  HOLWEGE_CLIENT_ID,
   HOLWEGE_CONTRACT,
   HOLWEGE_DRAW_BASE,
   HOLWEGE_LAND_PAID,
   HOLWEGE_LAND_NOTE,
   HOLWEGE_PORTAL_TOKEN,
+  HOLWEGE_PROJECT_ID,
+  clientsForPortalAuth,
+  ensureHolwegeLiveSeed,
   holwegeClient,
   holwegeDraws,
   holwegePackage,
   holwegeProject,
+  withHolwegePortalInvite,
+  type HolwegeStoreSlice,
 } from "./holwege";
 
 describe("Holwege SOR seed (SRC-2)", () => {
@@ -51,5 +58,123 @@ describe("Holwege SOR seed (SRC-2)", () => {
   it("package budget lines sum to construction contract", () => {
     const sum = holwegePackage.budgetLines.reduce((s, b) => s + b.budgeted, 0);
     expect(Math.abs(sum - HOLWEGE_CONTRACT)).toBeLessThanOrEqual(0.02);
+  });
+});
+
+
+describe("Holwege live portal auth helpers", () => {
+  it("withHolwegePortalInvite restores HOLW2026 when CRM omitted portal fields", () => {
+    const bare = {
+      ...holwegeClient,
+      portalToken: undefined,
+      portalStatus: "none" as const,
+    };
+    const fixed = withHolwegePortalInvite(bare);
+    expect(fixed.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
+    expect(fixed.portalStatus).toBe("invited");
+    expect(fixed.email).toBe("holwegefam@comcast.net");
+  });
+
+  it("does not revive revoked portal", () => {
+    const revoked = {
+      ...holwegeClient,
+      portalStatus: "revoked" as const,
+      portalToken: undefined,
+    };
+    expect(withHolwegePortalInvite(revoked).portalStatus).toBe("revoked");
+  });
+
+  it("clientsForPortalAuth injects Holwege when missing from live CRM list", () => {
+    const list = clientsForPortalAuth([]);
+    expect(list.some((c) => c.id === HOLWEGE_CLIENT_ID)).toBe(true);
+    const auth = authenticateClientPortal(list, "holwegefam@comcast.net", "HOLW2026");
+    expect(auth.ok).toBe(true);
+    if (auth.ok) expect(auth.session.clientId).toBe(HOLWEGE_CLIENT_ID);
+  });
+
+  it("clientsForPortalAuth repairs Holwege without portalToken", () => {
+    const list = clientsForPortalAuth([
+      {
+        ...holwegeClient,
+        portalToken: undefined,
+        portalStatus: "none",
+      },
+    ]);
+    const auth = authenticateClientPortal(list, "holwegefam@comcast.net", "HOLW2026");
+    expect(auth.ok).toBe(true);
+  });
+});
+
+describe("ensureHolwegeLiveSeed (live)", () => {
+  function makeStore(partial: Partial<HolwegeStoreSlice> = {}) {
+    let state: HolwegeStoreSlice = {
+      projects: [],
+      clients: [],
+      draws: [],
+      documents: [],
+      budgetLines: [],
+      closeoutPackages: [],
+      realtyDeals: [],
+      activity: [],
+      dailyLogs: [],
+      bids: [],
+      ...partial,
+    };
+    return {
+      getState: () => state,
+      setState: (p: Partial<HolwegeStoreSlice>) => {
+        state = { ...state, ...p };
+      },
+    };
+  }
+
+  it("merges Holwege package when live store is empty", () => {
+    const store = makeStore();
+    const result = ensureHolwegeLiveSeed(store, { demo: false });
+    expect(result.seeded).toBe(true);
+    const s = store.getState();
+    expect(s.clients.some((c) => c.id === HOLWEGE_CLIENT_ID)).toBe(true);
+    expect(s.projects.some((p) => p.id === HOLWEGE_PROJECT_ID)).toBe(true);
+    expect(s.clients.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBe(
+      HOLWEGE_PORTAL_TOKEN,
+    );
+    // Fence: contract dollars unchanged
+    expect(s.projects.find((p) => p.id === HOLWEGE_PROJECT_ID)?.budget).toBe(HOLWEGE_CONTRACT);
+  });
+
+  it("repairs portal fields when CRM client exists without invite", () => {
+    const store = makeStore({
+      clients: [
+        {
+          ...holwegeClient,
+          portalToken: undefined,
+          portalStatus: "none",
+        },
+      ],
+      projects: [holwegeProject],
+      draws: holwegePackage.draws,
+      realtyDeals: [holwegePackage.realtyDeal],
+      documents: holwegePackage.documents,
+      budgetLines: holwegePackage.budgetLines,
+      closeoutPackages: [holwegePackage.closeout],
+      activity: holwegePackage.activity,
+      dailyLogs: holwegePackage.dailyLogs,
+      bids: [holwegePackage.bid],
+    });
+    const result = ensureHolwegeLiveSeed(store, { demo: false });
+    expect(result.seeded).toBe(true);
+    expect(result.reason).toMatch(/portal invite/i);
+    const client = store.getState().clients.find((c) => c.id === HOLWEGE_CLIENT_ID);
+    expect(client?.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
+    expect(client?.portalStatus).toBe("invited");
+    // No duplicate projects
+    expect(store.getState().projects.filter((p) => p.id === HOLWEGE_PROJECT_ID)).toHaveLength(1);
+  });
+
+  it("is a no-op in demo mode", () => {
+    const store = makeStore();
+    const result = ensureHolwegeLiveSeed(store, { demo: true });
+    expect(result.seeded).toBe(false);
+    expect(store.getState().clients).toHaveLength(0);
   });
 });
