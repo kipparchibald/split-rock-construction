@@ -3,6 +3,8 @@ import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/
 import { CrmBootstrap } from "@/components/crm/crm-bootstrap";
 import { OpsBootstrap } from "@/components/ops/ops-bootstrap";
 import { AppShell } from "@/components/layout/app-shell";
+import { ensureHolwegeLiveSeed } from "@/data/holwege";
+import { useAppStore } from "@/data/store";
 import { authEnabled } from "@/lib/auth/client";
 import { RedirectToSignIn } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -33,6 +35,12 @@ function AppLayout() {
     if (pathname === "/app/portal" || pathname.startsWith("/app/portal/")) return;
     void navigate({ to: "/app/portal", replace: true });
   }, [isClientUser, pathname, navigate]);
+
+  // Client sessions skip CrmBootstrap/OpsBootstrap — still need Holwege SOR for portal.
+  useEffect(() => {
+    if (isDemoDataEnabled) return;
+    ensureHolwegeLiveSeed(useAppStore);
+  }, []);
 
   if (requireOperatorAuth && !isClientUser) {
     if (isPending) {
