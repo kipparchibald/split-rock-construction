@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { authenticateClientPortal } from "@/lib/client-portal";
 import {
-  HOLWEGE_CLIENT_ID,
   HOLWEGE_CONTRACT,
   HOLWEGE_DRAW_BASE,
   HOLWEGE_LAND_PAID,
   HOLWEGE_LAND_NOTE,
   HOLWEGE_PORTAL_TOKEN,
   HOLWEGE_PROJECT_ID,
-  clientsForPortalAuth,
-  ensureHolwegeLiveSeed,
   holwegeClient,
   holwegeDraws,
   holwegePackage,
   holwegeProject,
-  withHolwegePortalInvite,
   type HolwegeStoreSlice,
 } from "./holwege";
+import {
+  HOLWEGE_CLIENT_ID,
+  clientsForPortalAuth,
+  ensureHolwegeForPortal,
+  ensureHolwegePortalFields,
+  withHolwegePortalInvite,
+} from "./holwege-portal";
 
 describe("Holwege SOR seed (SRC-2)", () => {
   it("sets construction budget to verified contract total", () => {
@@ -61,7 +64,6 @@ describe("Holwege SOR seed (SRC-2)", () => {
   });
 });
 
-
 describe("Holwege live portal auth helpers", () => {
   it("withHolwegePortalInvite restores HOLW2026 when CRM omitted portal fields", () => {
     const bare = {
@@ -105,7 +107,7 @@ describe("Holwege live portal auth helpers", () => {
   });
 });
 
-describe("ensureHolwegeLiveSeed (live)", () => {
+describe("ensureHolwegeForPortal (live)", () => {
   function makeStore(partial: Partial<HolwegeStoreSlice> = {}) {
     let state: HolwegeStoreSlice = {
       projects: [],
@@ -130,15 +132,12 @@ describe("ensureHolwegeLiveSeed (live)", () => {
 
   it("merges Holwege package when live store is empty", () => {
     const store = makeStore();
-    const result = ensureHolwegeLiveSeed(store, { demo: false });
+    const result = ensureHolwegeForPortal(store, { demo: false });
     expect(result.seeded).toBe(true);
     const s = store.getState();
     expect(s.clients.some((c) => c.id === HOLWEGE_CLIENT_ID)).toBe(true);
     expect(s.projects.some((p) => p.id === HOLWEGE_PROJECT_ID)).toBe(true);
-    expect(s.clients.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBe(
-      HOLWEGE_PORTAL_TOKEN,
-    );
-    // Fence: contract dollars unchanged
+    expect(s.clients.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
     expect(s.projects.find((p) => p.id === HOLWEGE_PROJECT_ID)?.budget).toBe(HOLWEGE_CONTRACT);
   });
 
@@ -161,20 +160,30 @@ describe("ensureHolwegeLiveSeed (live)", () => {
       dailyLogs: holwegePackage.dailyLogs,
       bids: [holwegePackage.bid],
     });
-    const result = ensureHolwegeLiveSeed(store, { demo: false });
+    const result = ensureHolwegePortalFields(store, { demo: false });
     expect(result.seeded).toBe(true);
     expect(result.reason).toMatch(/portal invite/i);
     const client = store.getState().clients.find((c) => c.id === HOLWEGE_CLIENT_ID);
     expect(client?.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
     expect(client?.portalStatus).toBe("invited");
-    // No duplicate projects
     expect(store.getState().projects.filter((p) => p.id === HOLWEGE_PROJECT_ID)).toHaveLength(1);
   });
 
-  it("is a no-op in demo mode", () => {
-    const store = makeStore();
-    const result = ensureHolwegeLiveSeed(store, { demo: true });
+  it("ensureHolwegeForPortal is idempotent when Holwege fully present", () => {
+    const store = makeStore({
+      clients: [holwegeClient],
+      projects: [holwegeProject],
+      draws: holwegePackage.draws,
+      realtyDeals: [holwegePackage.realtyDeal],
+      documents: holwegePackage.documents,
+      budgetLines: holwegePackage.budgetLines,
+      closeoutPackages: [holwegePackage.closeout],
+      activity: holwegePackage.activity,
+      dailyLogs: holwegePackage.dailyLogs,
+      bids: [holwegePackage.bid],
+    });
+    const result = ensureHolwegeForPortal(store, { demo: false });
     expect(result.seeded).toBe(false);
-    expect(store.getState().clients).toHaveLength(0);
+    expect(store.getState().projects.filter((p) => p.id === HOLWEGE_PROJECT_ID)).toHaveLength(1);
   });
 });
