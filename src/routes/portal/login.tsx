@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { clientsForPortalAuth, ensureHolwegeForPortal } from "@/data/holwege-portal";
 import { useAppStore } from "@/data/store";
 import type { Client } from "@/data/types";
 import {
@@ -61,10 +62,20 @@ function PortalLoginPage() {
     }));
   }, [clients]);
 
-  // Auth list: store clients, or inject demo fallbacks so authenticate can match.
+  // Live mode: ensure Holwege SOR (+ portal invite HOLW2026) before auth lookup.
+  // /portal/login is outside /app, so CrmBootstrap/OpsBootstrap do not run here.
+  useEffect(() => {
+    if (isDemoDataEnabled) return;
+    ensureHolwegeForPortal(useAppStore);
+  }, []);
+
+  // Auth list: store clients after Holwege live seed; demo fallbacks when CRM empty.
+  // Live: always merge Holwege portal invite so CRM hydrate without portalToken still works.
   const authClients: Client[] = useMemo(() => {
+    if (!isDemoDataEnabled) {
+      return clientsForPortalAuth(clients);
+    }
     if (clients.length > 0) return clients;
-    if (!isDemoDataEnabled) return clients;
     return DEMO_PORTAL_CLIENTS.map(
       (c): Client => ({
         id: c.id,
@@ -104,6 +115,11 @@ function PortalLoginPage() {
     try {
       // Drop any previous portal session so token rotation always rebinds cleanly.
       clearPortalSession();
+
+      // Live: merge Holwege into store before auth so markClientPortalLogin finds c-holwege.
+      if (!isDemoDataEnabled) {
+        ensureHolwegeForPortal(useAppStore);
+      }
 
       const result = authenticateClientPortal(authClients, emailIn, codeIn);
       if (!result.ok) {

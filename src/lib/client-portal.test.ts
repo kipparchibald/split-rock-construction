@@ -137,3 +137,25 @@ describe("scrubDrawTriggerForOwner", () => {
     expect(scrubbed).not.toMatch(/contingency/i);
   });
 });
+
+describe("Holwege live portal credentials", () => {
+  it("authenticates holwegefam@comcast.net + HOLW2026", () => {
+    const holwege: Client = {
+      id: "c-holwege",
+      name: "Lauren & Cindy Holwege",
+      email: "holwegefam@comcast.net",
+      phone: "",
+      type: "homeowner",
+      address: "Lot 16",
+      notes: "",
+      portalToken: "HOLW2026",
+      portalStatus: "invited",
+    };
+    const ok = authenticateClientPortal([holwege], "holwegefam@comcast.net", "holw2026");
+    expect(ok.ok).toBe(true);
+    if (ok.ok) {
+      expect(ok.session.clientId).toBe("c-holwege");
+      expect(ok.session.token).toBe("HOLW2026");
+    }
+  });
+});

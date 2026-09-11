@@ -64,6 +64,8 @@ export const liveEmpty = {
   closeoutPackages: [] as CloseoutPackage[],
   realtyDeals: [] as RealtyDeal[],
   dualRolePolicy: liveDualRolePolicy,
+  // Intentionally empty here — store.ts live init uses seed inventory for /estimate.
+  // Do not hydrate CRM from these; public lot/package selectors source seed catalog.
   tetonLots: [] as SubdivisionLot[],
   tetonPackages: [] as BuildPackage[],
   tetonFinance: [] as LotFinanceOption[],

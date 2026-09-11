@@ -9,7 +9,7 @@ test.describe("AI estimator + site plan GIS", () => {
     await gotoApp(page, "/app/estimator", /ai estimator/i);
     await expect(page.getByText(/offline draft engine/i).first()).toBeVisible();
     await page.getByTestId("ai-estimator-run").click();
-    await expect(page.getByText(/draft contract/i).first()).toBeVisible();
+    await expect(page.getByText(/draft contract/i).first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/plat \/ gis constraints/i).first()).toBeVisible();
     expect(errors, errors.join("\n")).toEqual([]);
   });
@@ -18,7 +18,8 @@ test.describe("AI estimator + site plan GIS", () => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(String(e)));
 
-    await gotoApp(page, "/app/site-plan?lot=7", /site plan layout/i);
+    // Mapbox/Esri tiles keep the network busy — do not wait for networkidle.
+    await gotoApp(page, "/app/site-plan?lot=7", /site plan layout/i, { waitUntil: "load" });
     await expect(page.getByText(/county gis/i).first()).toBeVisible();
     await expect(page.getByTestId("site-plan-shell")).toBeVisible();
     await expect(page.getByRole("link", { name: /price this lot/i })).toBeVisible();

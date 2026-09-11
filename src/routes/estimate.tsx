@@ -8,6 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  tetonBuildPackages as seedPackages,
+  tetonCommunityPricing as seedCommunity,
+  tetonHeightsLots as seedLots,
+} from "@/data/seed";
 import { useAppStore } from "@/data/store";
 import { packageTotal } from "@/lib/lot-pricing";
 import { formatCurrency } from "@/lib/utils";
@@ -16,7 +21,14 @@ import type { BudgetBand, TimelineBand } from "@/data/types";
 export const Route = createFileRoute("/estimate")({ component: EstimatePage });
 
 function EstimatePage() {
-  const { tetonLots, tetonPackages, tetonCommunity, addProspect } = useAppStore();
+  const storeLots = useAppStore((s) => s.tetonLots);
+  const storePackages = useAppStore((s) => s.tetonPackages);
+  const storeCommunity = useAppStore((s) => s.tetonCommunity);
+  const addProspect = useAppStore((s) => s.addProspect);
+  // Live CRM may start empty for jobs, but /estimate needs public marketing inventory.
+  const tetonLots = storeLots.length > 0 ? storeLots : seedLots;
+  const tetonPackages = storePackages.length > 0 ? storePackages : seedPackages;
+  const tetonCommunity = storeLots.length > 0 ? storeCommunity : seedCommunity;
   const available = tetonLots.filter((l) => l.status === "available" || l.status === "model");
   const [lotId, setLotId] = useState(available.find((l) => l.status === "available")?.id ?? available[0]?.id ?? "");
   const [pkgId, setPkgId] = useState(tetonPackages[1]?.id ?? tetonPackages[0]?.id ?? "");

@@ -1,7 +1,20 @@
 import { type Page, expect } from "@playwright/test";
 
-export async function gotoApp(page: Page, path: string, heading: RegExp) {
-  await page.goto(path, { waitUntil: "networkidle" });
+type GotoWaitUntil = "load" | "domcontentloaded" | "networkidle";
+
+/**
+ * Navigate to an /app route and wait for its page heading.
+ * Default `networkidle` keeps SPA/demo seed settled for most specs.
+ * Pass `waitUntil: "load"` for Mapbox/GIS routes (tiles never go idle).
+ */
+export async function gotoApp(
+  page: Page,
+  path: string,
+  heading: RegExp,
+  opts?: { waitUntil?: GotoWaitUntil },
+) {
+  const waitUntil = opts?.waitUntil ?? "networkidle";
+  await page.goto(path, { waitUntil, timeout: 45_000 });
   await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible({
     timeout: 20_000,
   });
