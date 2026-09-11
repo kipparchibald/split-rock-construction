@@ -145,6 +145,10 @@ const SECURITY_HEADERS = {
 // Keep `nitro` gated to `build` (the Vercel deploy target): enabled in dev it
 // opens a second dev-server port, which breaks the single-port preview.
 export default defineConfig(({ command }) => ({
+  // Absolute asset URLs so Vite preload deps resolve as /assets/* from any
+  // deep route (/app/budget, /app/cost-codes, /app/projects/...). Relative
+  // "assets/..." mapDeps can resolve under /app/assets/* (SPA HTML 404).
+  base: "/",
   server: {
     host: "0.0.0.0",
     port: 8080,

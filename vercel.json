@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/app/assets/:path*",
+      "destination": "/assets/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

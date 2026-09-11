@@ -1,5 +1,11 @@
-/* Split Rock — light offline shell (app shell + static assets only). */
-const CACHE = "split-rock-shell-v1";
+/* Split Rock — light offline shell (app shell + static assets only).
+ *
+ * v2: hashed /assets/* are network-first so a new deploy's index/chunk graph
+ * cannot be paired with a stale SW cache entry (manifests as
+ * "Failed to fetch dynamically imported module" on /app/budget, /app/cost-codes,
+ * and project ?tab=budget which share the job-cost lazy graph).
+ */
+const CACHE = "split-rock-shell-v2";
 const PRECACHE = [
   "/",
   "/app",
@@ -64,11 +70,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache first
-  if (
-    url.pathname.startsWith("/assets/") ||
-    /\.(js|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)
-  ) {
+  // Hashed Vite build output — network first, cache only as offline fallback.
+  // Cache-first here races deploys (immutable filenames change every build).
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            void caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(async () => {
+          const cached = await caches.match(req);
+          return cached || Response.error();
+        }),
+    );
+    return;
+  }
+
+  // Images / fonts / other static: cache first
+  if (/\.(png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>
