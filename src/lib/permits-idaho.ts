@@ -25,13 +25,13 @@ function todayIso(d = new Date()) {
 
 export function buildResidentialPermitChecklist(projectName: string): PermitChecklistItem[] {
   return [
-    { key: "jc_building_permit", label: "Jefferson County building permit application", authority: "jefferson_county", status: "drafting", formCode: "JC-BP", notes: "Rigby / Jefferson County — residential new construction", draftText: draftJcBuildingPermit(projectName) },
+    { key: "jc_building_permit", label: "Jefferson County building permit application", authority: "jefferson_county", status: "drafting", formCode: "JC-BP", notes: "Rigby / Jefferson County residential new construction", draftText: draftJcBuildingPermit(projectName) },
     { key: "jc_site_plan", label: "Site plan / plot plan", authority: "jefferson_county", status: "not_started", formCode: "JC-SP", draftText: draftJcSitePlan(projectName) },
     { key: "jc_energy", label: "Energy code compliance (prescriptive or performance)", authority: "jefferson_county", status: "not_started", formCode: "JC-IECC", draftText: draftJcEnergy(projectName) },
     { key: "eiph_septic", label: "EIPH septic / wastewater permit", authority: "eiph", status: "not_started", formCode: "EIPH-WW", notes: "Eastern Idaho Public Health District 7", draftText: draftEiphSeptic(projectName) },
-    { key: "eiph_well", label: "IDWR well log + EIPH setbacks (private well)", authority: "idwr", status: "not_started", formCode: "IDWR-WELL", draftText: draftEiphWell(projectName) },
-    { key: "utility_power", label: "Utility — electrical service application", authority: "utility", status: "not_started", draftText: draftUtility(projectName, "electrical") },
-    { key: "utility_gas", label: "Utility — gas service", authority: "utility", status: "not_started", draftText: draftUtility(projectName, "gas") },
+    { key: "eiph_well", label: "IDWR well log + EIPH setbacks (private well)", authority: "state", status: "not_started", formCode: "IDWR-WELL", draftText: draftEiphWell(projectName) },
+    { key: "utility_power", label: "Utility electrical service application", authority: "utility", status: "not_started", draftText: draftUtility(projectName, "electrical") },
+    { key: "utility_gas", label: "Utility gas service", authority: "utility", status: "not_started", draftText: draftUtility(projectName, "gas") },
   ];
 }
 
