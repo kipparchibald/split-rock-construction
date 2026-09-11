@@ -32,12 +32,12 @@ describe("Holwege signable packet (SoT bodies)", () => {
     expect(packetReadyToStart(pkt)).toBe(false);
   });
 
-  it("wires source paths and non-empty bodies; required docs are ready_for_sign", () => {
+  it("wires main SoT paths and non-empty bodies; required docs are ready_for_sign", () => {
     const docs = holwegeSignablePacket().docs;
     const paths = docs.map((d) => d.sourcePath);
     expect(paths).toContain("contracts/Holwege/03_Construction_Agreement.md");
     expect(paths).toContain("contracts/Holwege/01_Initial_Disclosure_45-525.md");
-    expect(paths).toContain("contracts/Holwege/08_Dual_Capacity_Disclosure.md");
+    expect(paths).toContain("contracts/Holwege/03_Construction_Agreement.md#13-dual-capacity");
     expect(paths).toContain(
       "contracts/Holwege/02_Completion_Disclosure_Subcontractors_45-525.md",
     );

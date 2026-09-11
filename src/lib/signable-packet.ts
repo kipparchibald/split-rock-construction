@@ -1,6 +1,6 @@
 /**
  * Signable packet — construction agreement + Idaho 45-525 + dual-capacity.
- * Holwege bodies are real SoT (Drive draft package), mirrored under contracts/Holwege/.
+ * Holwege bodies are authoritative repo SoT under contracts/Holwege/ (dual-capacity = agreement §13).
  * Does not mutate Holwege budget / draw-base constants or Portal owner UI.
  */
 
@@ -128,13 +128,13 @@ export function holwegeSignablePacket(): SignablePacket {
         id: "pkt-doc-dual",
         kind: "dual_capacity",
         title: "Dual-capacity disclosure (builder + licensee)",
-        sourcePath: "contracts/Holwege/08_Dual_Capacity_Disclosure.md",
+        sourcePath: "contracts/Holwege/03_Construction_Agreement.md#13-dual-capacity",
         body: DUAL_CAPACITY_BODY,
         documentId: "doc-holwege-dual-capacity",
         requiredForStart: true,
         status: "ready_for_sign",
         summary:
-          "Archibald-Bagley lot representation finished; construction is Split Rock only. Owners initial dual role.",
+          "Agreement §13 dual-capacity — Archibald-Bagley lot closed; construction is Split Rock only. Owners initial.",
       },
       {
         id: "pkt-doc-45525-completion",
