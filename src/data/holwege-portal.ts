@@ -2,61 +2,49 @@
  * Live portal auth helpers for Holwege SOR.
  *
  * /portal/login sits outside /app, so CrmBootstrap/OpsBootstrap do not run there.
- * These helpers ensure holwegefam@comcast.net + HOLW2026 remain authenticatable
- * in live mode (VITE_SPLIT_ROCK_DEMO=false) even when CRM hydrate omitted portal fields.
+ * Live Holwege invite codes live in server env (HOLWEGE_PORTAL_INVITE) — never ship
+ * a long-lived token in the client bundle. These helpers still ensure the Holwege
+ * client/project rows exist for portal resolution after cookie session auth.
  *
- * Fence: does not invent credentials; keeps HOLW2026; never revives revoked portals;
- * does not change HOLWEGE_CONTRACT / DRAW_BASE / land dollars.
+ * Fence: never invent credentials; never revive revoked portals;
+ * does not change HOLWEGE_CONTRACT / DRAW_BASE / land dollars; do not auto-email owners.
  */
 import type { Client } from "./types";
 import {
   HOLWEGE_CLIENT_ID,
-  HOLWEGE_PORTAL_TOKEN,
   ensureHolwegeLiveSeed,
   holwegeClient,
   holwegePackage,
   type HolwegeLiveSeedResult,
   type HolwegeStoreApi,
 } from "./holwege";
+import { repairHolwegeMoneySlice } from "@/lib/holwege-pricing";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 
-/** Ensure Holwege client carries portal invite fields for live portal auth. */
 export function withHolwegePortalInvite(client: Client): Client {
   if (client.portalStatus === "revoked") return client;
-  if (client.portalToken && client.portalStatus && client.portalStatus !== "none") {
-    return client;
-  }
   return {
     ...client,
     email: client.email || holwegeClient.email,
-    portalToken: client.portalToken || HOLWEGE_PORTAL_TOKEN,
+    portalToken: undefined,
     portalStatus: client.portalStatus === "active" ? "active" : "invited",
     portalInvitedAt: client.portalInvitedAt ?? holwegeClient.portalInvitedAt,
   };
 }
 
-/**
- * Merge Holwege into a client list for portal authentication (live mode).
- * Prefer store/CRM row when present; always ensure portalToken HOLW2026 unless revoked.
- */
 export function clientsForPortalAuth(clients: Client[]): Client[] {
   const idx = clients.findIndex(
     (c) =>
       c.id === HOLWEGE_CLIENT_ID ||
       c.email.trim().toLowerCase() === holwegeClient.email.toLowerCase(),
   );
-  if (idx < 0) return [holwegeClient, ...clients];
+  if (idx < 0) return [withHolwegePortalInvite(holwegeClient), ...clients];
   const next = clients.slice();
   next[idx] = withHolwegePortalInvite(next[idx]!);
   return next;
 }
 
-/**
- * Patch store Holwege client portal fields when CRM hydrated without invite token.
- * No-op if Holwege client missing (call ensureHolwegeLiveSeed first for full package).
- */
 export type HolwegePortalOptions = {
-  /** Override demo flag for unit tests (default: runtime isDemoDataEnabled). */
   demo?: boolean;
 };
 
@@ -78,21 +66,49 @@ export function ensureHolwegePortalFields(
     return { seeded: false, reason: "Holwege portal revoked" };
   }
   const fixed = withHolwegePortalInvite(existing);
-  if (
-    fixed.portalToken === existing.portalToken &&
-    fixed.portalStatus === existing.portalStatus
-  ) {
+  const clientChanged =
+    fixed.portalToken !== existing.portalToken ||
+    fixed.portalStatus !== existing.portalStatus ||
+    Boolean(existing.portalToken);
+  const budgetDrift = s.projects.some(
+    (proj) =>
+      (proj.id === holwegePackage.project.id || /holwege/i.test(proj.name)) &&
+      proj.budget !== holwegePackage.project.budget,
+  );
+  const bidDrift = s.bids.some(
+    (b) =>
+      (b.id === holwegePackage.bid.id ||
+        b.projectId === holwegePackage.project.id ||
+        /holwege/i.test(b.title)) &&
+      b.amount !== holwegePackage.bid.amount,
+  );
+
+  if (!clientChanged && !budgetDrift && !bidDrift) {
     return { seeded: false, reason: "Holwege portal fields already present" };
   }
+  const money =
+    budgetDrift || bidDrift
+      ? repairHolwegeMoneySlice({
+          projects: s.projects,
+          bids: s.bids,
+          draws: s.draws,
+          budgetLines: s.budgetLines,
+        })
+      : null;
   appStore.setState({
     clients: s.clients.map((c, i) => (i === idx ? fixed : c)),
+    ...(money
+      ? {
+          projects: money.projects,
+          bids: money.bids,
+          draws: money.draws ?? s.draws,
+          budgetLines: money.budgetLines ?? s.budgetLines,
+        }
+      : {}),
   });
-  return { seeded: true, reason: "Holwege portal invite fields repaired" };
+  return { seeded: true, reason: "Holwege portal fields / pricing repaired" };
 }
 
-/**
- * Live portal/app bootstrap: merge SOR package if missing, then repair portal invite.
- */
 export function ensureHolwegeForPortal(
   appStore: HolwegeStoreApi,
   options?: HolwegePortalOptions,
@@ -101,10 +117,7 @@ export function ensureHolwegeForPortal(
   if (demo) {
     return { seeded: false, reason: "demo mode — Holwege already in seed arrays" };
   }
-  // Prefer built-in live seed (no-ops when runtime demo=true even if options.demo=false).
   let seeded = ensureHolwegeLiveSeed(appStore);
-  // Unit tests pass { demo: false } while vitest still has isDemoDataEnabled=true —
-  // merge the package directly so portal auth coverage does not depend on Vite env.
   if (!seeded.seeded && options?.demo === false) {
     const s = appStore.getState();
     const hasProject = s.projects.some((p) => p.id === holwegePackage.project.id);
@@ -156,4 +169,4 @@ export function ensureHolwegeForPortal(
       : repaired;
 }
 
-export { HOLWEGE_CLIENT_ID, HOLWEGE_PORTAL_TOKEN, holwegeClient };
+export { HOLWEGE_CLIENT_ID, holwegeClient };
