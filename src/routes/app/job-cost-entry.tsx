@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-start";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppStore } from "@/data/store";
 import { addJobCostEntry } from "@/lib/job-cost-entries";
+import { getHolwegeCostSummary, type JobCostLineSummary } from "@/lib/job-cost-live";
 import { formatCurrency } from "@/lib/utils";
 import { holwegeBudgetLines } from "@/data/holwege";
 
@@ -17,11 +17,9 @@ export const Route = createFileRoute("/app/job-cost-entry")({
 
 function JobCostEntryPage() {
   const router = useRouter();
-  const budgetLines = useAppStore((s) => s.budgetLines);
-  const lines = budgetLines.filter((l) => l.projectId === "p-holwege");
-  const source = lines.length > 0 ? lines : holwegeBudgetLines;
-
-  const [lineId, setLineId] = useState(source[0]?.id ?? "");
+  const [lines, setLines] = useState<JobCostLineSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lineId, setLineId] = useState("");
   const [amount, setAmount] = useState("");
   const [vendor, setVendor] = useState("");
   const [description, setDescription] = useState("");
@@ -32,7 +30,46 @@ function JobCostEntryPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const selected = source.find((l) => l.id === lineId);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const summary = await getHolwegeCostSummary();
+        if (!cancelled) {
+          setLines(summary.lines);
+          if (summary.lines[0]) {
+            setLineId(summary.lines[0].lineId);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          // Fall back to static Holwege lines so the form still works offline.
+          setLines(
+            holwegeBudgetLines.map((l) => ({
+              lineId: l.id,
+              lineLabel: l.category,
+              lineType: "estimate",
+              budgeted: l.budgeted,
+              actual: l.actual,
+              variance: l.budgeted - l.actual,
+              variancePct:
+                l.budgeted > 0 ? ((l.budgeted - l.actual) / l.budgeted) * 100 : null,
+              sortOrder: 0,
+            })),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selected = lines.find((l) => l.lineId === lineId);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +96,9 @@ function JobCostEntryPage() {
       setVendor("");
       setDescription("");
       setReceiptUrl("");
+      // Refresh the live summary so the dropdown reflects the new actual.
+      const summary = await getHolwegeCostSummary();
+      setLines(summary.lines);
       router.invalidate();
     } catch (err) {
       setMessage(
@@ -83,10 +123,11 @@ function JobCostEntryPage() {
             id="line"
             value={lineId}
             onChange={(e) => setLineId(e.target.value)}
+            disabled={loading || lines.length === 0}
           >
-            {source.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.category} — budget {formatCurrency(l.budgeted)}
+            {lines.map((l) => (
+              <option key={l.lineId} value={l.lineId}>
+                {l.lineLabel} — budget {formatCurrency(l.budgeted)}
               </option>
             ))}
           </Select>
@@ -94,6 +135,9 @@ function JobCostEntryPage() {
             <p className="text-[11px] text-fg-subtle">
               Current actual: {formatCurrency(selected.actual)} of{" "}
               {formatCurrency(selected.budgeted)}
+              {selected.variancePct != null
+                ? ` (${selected.variancePct >= 0 ? "+" : ""}${selected.variancePct.toFixed(1)}%)`
+                : ""}
             </p>
           ) : null}
         </div>
@@ -155,7 +199,7 @@ function JobCostEntryPage() {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" disabled={saving || !lineId || !amount}>
+          <Button type="submit" disabled={saving || !lineId || !amount || loading}>
             {saving ? "Saving…" : "Save entry"}
           </Button>
           {message ? (
