@@ -153,7 +153,7 @@ function PortalCostReport() {
               If actual cost of work lands below the estimate, the difference is
               split: you receive half as a credit against the next draw or final
               payment, and Split Rock retains half as compensation for
-              procurement and value engineering. Kyle's supervision line and the
+              procurement and value engineering. Kyle&apos;s supervision line and the
               contingency are excluded from the split.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
