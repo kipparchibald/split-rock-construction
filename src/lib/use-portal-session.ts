@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/data/store";
 import type { Client } from "@/data/types";
 import {
@@ -8,6 +8,7 @@ import {
   type PortalSession,
   writePortalSession,
 } from "@/lib/client-portal";
+import { DEMO_PORTAL_CLIENTS } from "@/lib/demo-credentials";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 
 type LiveSessionResponse = {
@@ -20,6 +21,26 @@ type LiveSessionResponse = {
     authMode: "live";
   } | null;
 };
+
+/** Demo overlay: attach DEMO_PORTAL tokens so tokenless SOR Holwege still resolves. */
+function clientsForDemoResolve(clients: Client[]): Client[] {
+  return clients.map((c) => {
+    const demo = DEMO_PORTAL_CLIENTS.find(
+      (d) => d.id === c.id || d.email.toLowerCase() === c.email.trim().toLowerCase(),
+    );
+    if (!demo) return c;
+    return {
+      ...c,
+      portalToken: c.portalToken || demo.portalToken,
+      portalStatus:
+        c.portalStatus === "revoked"
+          ? "revoked"
+          : c.portalStatus === "active"
+            ? "active"
+            : "invited",
+    };
+  });
+}
 
 /** Live portal session bound to a single client (isolated from other clients). */
 export function usePortalSession(): {
@@ -80,7 +101,11 @@ export function usePortalSession(): {
     };
   }, [refreshDemo, refreshLive]);
 
-  const client = resolvePortalClient(clients, session);
+  const resolveClients = useMemo(
+    () => (isDemoDataEnabled ? clientsForDemoResolve(clients) : clients),
+    [clients],
+  );
+  const client = resolvePortalClient(resolveClients, session);
 
   useEffect(() => {
     if (isDemoDataEnabled && session && !client) {
