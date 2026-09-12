@@ -7,7 +7,7 @@ import {
   HOLWEGE_DRAW_BASE,
   HOLWEGE_OWNER_CONTINGENCY,
 } from "@/data/holwege";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrencyExact } from "@/lib/utils";
 import {
   getHolwegeCostSummary,
   type JobCostProjectSummary,
@@ -68,9 +68,9 @@ function PortalCostReport() {
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[
-          { k: "Contract price", v: formatCurrency(HOLWEGE_CONTRACT) },
-          { k: "Draw base (1–5)", v: formatCurrency(HOLWEGE_DRAW_BASE) },
-          { k: "Owner contingency", v: formatCurrency(HOLWEGE_OWNER_CONTINGENCY) },
+          { k: "Contract price", v: formatCurrencyExact(HOLWEGE_CONTRACT) },
+          { k: "Draw base (1–5)", v: formatCurrencyExact(HOLWEGE_DRAW_BASE) },
+          { k: "Owner contingency", v: formatCurrencyExact(HOLWEGE_OWNER_CONTINGENCY) },
         ].map((s) => (
           <div key={s.k} className="border border-border bg-bg-elevated p-3">
             <p className="label-caps text-fg-subtle">{s.k}</p>
@@ -114,16 +114,16 @@ function PortalCostReport() {
                     <tr key={l.lineId} className={v < 0 ? "bg-danger/5" : undefined}>
                       <td className="px-3 py-2">{l.lineLabel}</td>
                       <td className="px-3 py-2 text-right tabular-nums">
-                        {formatCurrency(l.budgeted)}
+                        {formatCurrencyExact(l.budgeted)}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">
-                        {formatCurrency(l.actual)}
+                        {formatCurrencyExact(l.actual)}
                       </td>
                       <td
                         className={`px-3 py-2 text-right tabular-nums ${v < 0 ? "text-danger" : "text-success"}`}
                       >
                         {v >= 0 ? "+" : ""}
-                        {formatCurrency(v)}
+                        {formatCurrencyExact(v)}
                       </td>
                     </tr>
                   );
@@ -131,16 +131,16 @@ function PortalCostReport() {
                 <tr className="border-t-2 border-border bg-bg-subtle/40 font-medium">
                   <td className="px-3 py-2">Total</td>
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCurrency(totalBudgeted)}
+                    {formatCurrencyExact(totalBudgeted)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCurrency(totalActual)}
+                    {formatCurrencyExact(totalActual)}
                   </td>
                   <td
                     className={`px-3 py-2 text-right tabular-nums ${variance < 0 ? "text-danger" : "text-success"}`}
                   >
                     {variance >= 0 ? "+" : ""}
-                    {formatCurrency(variance)}
+                    {formatCurrencyExact(variance)}
                   </td>
                 </tr>
               </tbody>
@@ -158,9 +158,9 @@ function PortalCostReport() {
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {[
-                { k: "Total underage", v: formatCurrency(savings) },
-                { k: "Your credit (50%)", v: formatCurrency(ownerCredit) },
-                { k: "Contractor share (50%)", v: formatCurrency(contractorShare) },
+                { k: "Total underage", v: formatCurrencyExact(savings) },
+                { k: "Your credit (50%)", v: formatCurrencyExact(ownerCredit) },
+                { k: "Contractor share (50%)", v: formatCurrencyExact(contractorShare) },
               ].map((s) => (
                 <div key={s.k} className="border border-border bg-bg p-3">
                   <p className="label-caps text-fg-subtle">{s.k}</p>

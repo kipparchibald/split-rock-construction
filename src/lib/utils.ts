@@ -23,6 +23,19 @@ export function formatCurrency(n: number) {
   return currencyFmt.format(n);
 }
 
+/** USD with exact cents — Holwege contract/draw SoT (no round-to-dollar). */
+const currencyExactFmt = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function formatCurrencyExact(n: number) {
+  if (!Number.isFinite(n)) return currencyExactFmt.format(0);
+  return currencyExactFmt.format(n);
+}
+
 export function formatDate(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
