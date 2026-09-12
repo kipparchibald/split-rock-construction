@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-start";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +92,7 @@ function PortalCostReport() {
                 {variance >= 0 ? "Under budget" : "Over budget"}
               </Badge>
               {summary?.source === "demo" ? (
-                <Badge variant="neutral">demo</Badge>
+                <Badge variant="secondary">demo</Badge>
               ) : null}
             </div>
           </div>

@@ -58,6 +58,26 @@ const demoSummary: JobCostProjectSummary = {
   source: "demo",
 };
 
+type ProjectSummaryRow = {
+  total_budgeted: string | number;
+  total_actual: string | number;
+  total_variance: string | number;
+  contractor_savings_share: string | number;
+  owner_savings_credit: string | number;
+  variance_pct: string | number | null;
+};
+
+type LineSummaryRow = {
+  line_id: string;
+  line_label: string;
+  line_type: string;
+  budgeted: string | number;
+  actual: string | number;
+  variance: string | number;
+  variance_pct: string | number | null;
+  sort_order: string | number;
+};
+
 /**
  * Live read of the job_cost_project_summary view, scoped to the signed-in
  * operator. Falls back to the Holwege demo numbers when server persistence
@@ -73,16 +93,8 @@ export const getJobCostProjectSummary = createServerFn({ method: "GET" })
 
     const sql = await getSql();
 
-    const projectRows = await sql<
-      {
-        total_budgeted: string | number;
-        total_actual: string | number;
-        total_variance: string | number;
-        contractor_savings_share: string | number;
-        owner_savings_credit: string | number;
-        variance_pct: string | number | null;
-      }[]
-    >`
+    // getSql() returns Promise<Row[]> when given Row — do NOT wrap as Row[].
+    const projectRows = await sql<ProjectSummaryRow>`
       select
         total_budgeted,
         total_actual,
@@ -95,18 +107,7 @@ export const getJobCostProjectSummary = createServerFn({ method: "GET" })
       limit 1
     `;
 
-    const lineRows = await sql<
-      {
-        line_id: string;
-        line_label: string;
-        line_type: string;
-        budgeted: string | number;
-        actual: string | number;
-        variance: string | number;
-        variance_pct: string | number | null;
-        sort_order: string | number;
-      }[]
-    >`
+    const lineRows = await sql<LineSummaryRow>`
       select
         line_id,
         line_label,
