@@ -4,7 +4,17 @@ test.describe("Holwege owner portal polish", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test("login shows field note + Draw 1 Ready without ops language", async ({ page }) => {
+    // Drop any leftover portal session from earlier E2E (otherwise login auto-redirects as c1).
+    await page.goto("/portal/login", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      try {
+        window.localStorage.removeItem("split-rock-portal-session-v1");
+      } catch {
+        /* ignore */
+      }
+    });
     await page.goto("/portal/login", { waitUntil: "networkidle" });
+
     await page.getByTestId("portal-login-email").fill("holwegefam@comcast.net");
     await page.getByTestId("portal-login-code").fill("HOLW2026");
     await page.getByTestId("portal-login-submit").click();
