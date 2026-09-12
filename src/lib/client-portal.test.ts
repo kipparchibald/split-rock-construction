@@ -9,6 +9,7 @@ import {
   scrubDrawTriggerForOwner,
 } from "./client-portal";
 import type { Client, Project } from "@/data/types";
+import { DEMO_HOLWEGE_PORTAL } from "@/lib/demo-credentials";
 
 const clients: Client[] = [
   {
@@ -59,6 +60,7 @@ describe("client portal isolation", () => {
     if (ok.ok) {
       expect(ok.session.clientId).toBe("c1");
       expect(ok.session.token).toBe("HART2026");
+      expect(ok.session.authMode).toBe("demo");
     }
 
     const wrong = authenticateClientPortal(clients, "elena.hart@email.com", "BENN2026");
@@ -90,11 +92,33 @@ describe("client portal isolation", () => {
       name: "Hart",
       email: "elena.hart@email.com",
       signedInAt: new Date().toISOString(),
+      authMode: "demo" as const,
     };
     expect(resolvePortalClient(clients, session)).toBeNull();
     expect(
       resolvePortalClient(clients, { ...session, token: "HART2026" })?.id,
     ).toBe("c1");
+  });
+
+  it("resolves live cookie sessions by clientId without portalToken match", () => {
+    const holwege: Client = {
+      id: "c-holwege",
+      name: "Lauren & Cindy Holwege",
+      email: "holwegefam@comcast.net",
+      phone: "",
+      type: "homeowner",
+      address: "Lot 16",
+      notes: "",
+      portalStatus: "invited",
+    };
+    const live = {
+      clientId: "c-holwege",
+      name: holwege.name,
+      email: holwege.email,
+      signedInAt: new Date().toISOString(),
+      authMode: "live" as const,
+    };
+    expect(resolvePortalClient([holwege], live)?.id).toBe("c-holwege");
   });
 
   it("normalizes emails and tokens", () => {
@@ -138,17 +162,17 @@ describe("scrubDrawTriggerForOwner", () => {
   });
 });
 
-describe("Holwege live portal credentials", () => {
-  it("authenticates holwegefam@comcast.net + HOLW2026", () => {
+describe("Holwege demo portal credentials", () => {
+  it("authenticates demo Holwege via DEMO_HOLWEGE_PORTAL only", () => {
     const holwege: Client = {
-      id: "c-holwege",
-      name: "Lauren & Cindy Holwege",
-      email: "holwegefam@comcast.net",
+      id: DEMO_HOLWEGE_PORTAL.id,
+      name: DEMO_HOLWEGE_PORTAL.name,
+      email: DEMO_HOLWEGE_PORTAL.email,
       phone: "",
       type: "homeowner",
       address: "Lot 16",
       notes: "",
-      portalToken: "HOLW2026",
+      portalToken: DEMO_HOLWEGE_PORTAL.portalToken,
       portalStatus: "invited",
     };
     const ok = authenticateClientPortal([holwege], "holwegefam@comcast.net", "holw2026");
@@ -156,6 +180,7 @@ describe("Holwege live portal credentials", () => {
     if (ok.ok) {
       expect(ok.session.clientId).toBe("c-holwege");
       expect(ok.session.token).toBe("HOLW2026");
+      expect(ok.session.authMode).toBe("demo");
     }
   });
 });
