@@ -2,7 +2,9 @@
  * Client (owner) portal access — separate from operator Better Auth.
  *
  * Isolation rules:
- * - A portal session is bound to exactly one clientId + portalToken.
+ * - A portal session is bound to exactly one clientId.
+ * - Demo sessions also bind portalToken (localStorage).
+ * - Live sessions use HttpOnly cookie (no invite/token in localStorage).
  * - Project lists and mutations in the portal must filter by that clientId.
  * - Tokens rotate on revoke/re-invite so old links stop working.
  */
@@ -12,11 +14,16 @@ export const PORTAL_SESSION_KEY = "split-rock-portal-session-v1";
 
 export type PortalSession = {
   clientId: string;
-  /** Must match Client.portalToken at login and on each read */
-  token: string;
+  /**
+   * Demo localStorage sessions: must match Client.portalToken.
+   * Live cookie sessions: omit — server HttpOnly cookie is the source of truth.
+   */
+  token?: string;
   name: string;
   email: string;
   signedInAt: string;
+  /** demo = localStorage; live = server cookie (no plaintext token stored). */
+  authMode?: "demo" | "live";
 };
 
 export function generatePortalToken(): string {
@@ -48,7 +55,9 @@ export function readPortalSession(): PortalSession | null {
     const raw = window.localStorage.getItem(PORTAL_SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PortalSession;
-    if (!parsed?.clientId || !parsed?.token) return null;
+    if (!parsed?.clientId) return null;
+    if (parsed.authMode === "live") return null;
+    if (!parsed.token) return null;
     return parsed;
   } catch {
     return null;
@@ -56,6 +65,11 @@ export function readPortalSession(): PortalSession | null {
 }
 
 export function writePortalSession(session: PortalSession): void {
+  if (session.authMode === "live") {
+    window.localStorage.removeItem(PORTAL_SESSION_KEY);
+    window.dispatchEvent(new Event("src-portal-session"));
+    return;
+  }
   window.localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify(session));
   window.dispatchEvent(new Event("src-portal-session"));
 }
@@ -65,7 +79,6 @@ export function clearPortalSession(): void {
   window.dispatchEvent(new Event("src-portal-session"));
 }
 
-/** Validate session still matches live client record (token not rotated/revoked). */
 export function resolvePortalClient(
   clients: Client[],
   session: PortalSession | null,
@@ -74,6 +87,12 @@ export function resolvePortalClient(
   const client = clients.find((c) => c.id === session.clientId);
   if (!client) return null;
   if (client.portalStatus === "revoked") return null;
+
+  if (session.authMode === "live" || !session.token) {
+    if (client.portalStatus === "none") return null;
+    return client;
+  }
+
   if (!client.portalToken) return null;
   if (normalizeToken(client.portalToken) !== normalizeToken(session.token)) return null;
   return client;
@@ -120,15 +139,11 @@ export function authenticateClientPortal(
     name: client.name,
     email: client.email,
     signedInAt: new Date().toISOString(),
+    authMode: "demo",
   };
   return { ok: true, client, session };
 }
 
-/**
- * Scrub operator draw-trigger / draw-name language for owner portal Money list.
- * Strips draw-base dollars, contingency-credit ops notes, invent/retainage jargon.
- * Does not mutate seed data — display-only mapping.
- */
 export function scrubDrawTriggerForOwner(trigger: string): string {
   let t = trigger.trim();
   if (!t) return "Construction milestone";
@@ -139,12 +154,10 @@ export function scrubDrawTriggerForOwner(trigger: string): string {
     /do\s+not\s+invent/i.test(t) ||
     /retainage/i.test(t);
 
-  // Heavy ops copy: keep the leading milestone clause only (before . or ;)
   if (hasOps) {
     t = (t.split(/[.;]/)[0] ?? t).trim();
   }
 
-  // Drop "(10% of draw base $X)" style tails
   t = t.replace(/\s*\(\s*\d+%\s+of\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?\s*\)/gi, "");
   t = t.replace(/\bof\s+draw\s+base(?:\s*\$[\d,]+(?:\.\d+)?)?/gi, "");
   t = t.replace(/\bdraw\s+base\s*\$[\d,]+(?:\.\d+)?/gi, "");
@@ -159,12 +172,11 @@ export function scrubDrawTriggerForOwner(trigger: string): string {
   t = t.replace(/\(\$[\d,]+(?:\.\d+)?\s+reserve\)/gi, "");
   t = t.replace(/\bon\s+this\s+draw\b/gi, "");
 
-  // If a broken percent paren remains, drop from that "(" onward
   t = t.replace(/\s*\(\s*\d+%\s*$/g, "");
   t = t.replace(/\s*\(\s*\d+%[^)]*$/g, "");
 
   t = t.replace(/\s{2,}/g, " ");
-  t = t.replace(/\s+([.,;:])/g, "$1"); // keep spaces around +
+  t = t.replace(/\s+([.,;:])/g, "$1");
   t = t.replace(/[.;,+\s]+$/g, "");
   t = t.replace(/^[.;,+\s]+/g, "");
   t = t.trim();
