@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.splitrockconst.com"
+        }
+      ],
+      "destination": "https://splitrockconst.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/app/assets/:path*",
