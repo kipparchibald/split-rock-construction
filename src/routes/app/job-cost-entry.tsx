@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-start";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { addJobCostEntry } from "@/lib/job-cost-entries";
 import { getHolwegeCostSummary, type JobCostLineSummary } from "@/lib/job-cost-live";
@@ -44,7 +43,6 @@ function JobCostEntryPage() {
         }
       } catch {
         if (!cancelled) {
-          // Fall back to static Holwege lines so the form still works offline.
           setLines(
             holwegeBudgetLines.map((l) => ({
               lineId: l.id,
@@ -96,7 +94,6 @@ function JobCostEntryPage() {
       setVendor("");
       setDescription("");
       setReceiptUrl("");
-      // Refresh the live summary so the dropdown reflects the new actual.
       const summary = await getHolwegeCostSummary();
       setLines(summary.lines);
       router.invalidate();
@@ -119,10 +116,11 @@ function JobCostEntryPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="line">Budget line</Label>
-          <Select
+          <select
             id="line"
+            className="flex h-9 w-full rounded-[var(--radius-sm)] border border-border bg-bg-elevated px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
             value={lineId}
-            onChange={(e) => setLineId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
             disabled={loading || lines.length === 0}
           >
             {lines.map((l) => (
@@ -130,7 +128,7 @@ function JobCostEntryPage() {
                 {l.lineLabel} — budget {formatCurrency(l.budgeted)}
               </option>
             ))}
-          </Select>
+          </select>
           {selected ? (
             <p className="text-[11px] text-fg-subtle">
               Current actual: {formatCurrency(selected.actual)} of{" "}
