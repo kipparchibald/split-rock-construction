@@ -92,7 +92,7 @@ function PortalCostReport() {
                 {variance >= 0 ? "Under budget" : "Over budget"}
               </Badge>
               {summary?.source === "demo" ? (
-                <Badge variant="neutral">demo</Badge>
+                <Badge variant="secondary">demo</Badge>
               ) : null}
             </div>
           </div>
