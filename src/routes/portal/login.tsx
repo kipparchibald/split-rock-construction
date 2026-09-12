@@ -29,6 +29,8 @@ export const Route = createFileRoute("/portal/login")({
   component: PortalLoginPage,
 });
 
+type DemoPortalRow = { id: string; name: string; email: string; portalToken: string };
+
 function PortalLoginPage() {
   const { client: preClientId, code: preCode } = Route.useSearch();
   const navigate = useNavigate();
@@ -40,9 +42,9 @@ function PortalLoginPage() {
   const [busy, setBusy] = useState(false);
 
   const demoClients = useMemo(() => {
-    if (!isDemoDataEnabled) return [] as Array<{ id: string; name: string; email: string; portalToken: string }>;
+    if (!isDemoDataEnabled) return [] as DemoPortalRow[];
 
-    const byId = new Map(
+    const byId = new Map<string, DemoPortalRow>(
       DEMO_PORTAL_CLIENTS.map((c) => [
         c.id,
         { id: c.id, name: c.name, email: c.email, portalToken: c.portalToken },
