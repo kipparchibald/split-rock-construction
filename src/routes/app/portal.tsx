@@ -26,7 +26,7 @@ import { COMPANY } from "@/lib/company";
 import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
 import { usePortalSession } from "@/lib/use-portal-session";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatCurrencyExact, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/portal")({
@@ -469,7 +469,7 @@ function PortalPage() {
         />
         <Snapshot
           label="Contract"
-          value={formatCurrency(project.budget)}
+          value={formatCurrencyExact(project.budget)}
           hint={approvedCoTotal ? `+${formatCurrency(approvedCoTotal)} COs` : "Incl. approved COs"}
           tone="default"
         />
@@ -851,7 +851,7 @@ function PortalPage() {
               <div className="border border-border p-3">
                 <p className="label-caps">Contract</p>
                 <p className="mt-1 text-[16px] font-medium tabular-nums">
-                  {formatCurrency(project.budget)}
+                  {formatCurrencyExact(project.budget)}
                 </p>
                 {approvedCoTotal > 0 ? (
                   <p className="mt-1 text-[10px] text-fg-subtle">
