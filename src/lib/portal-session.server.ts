@@ -35,20 +35,32 @@ function fromB64url(s: string): Buffer {
   return Buffer.from(b64, "base64");
 }
 
-/** Dynamic key so Vite cannot bake empty process.env.NAME at first build. */
-function envTrim(key: string): string | null {
-  const s = typeof process !== "undefined" ? process.env[key]?.trim() : undefined;
-  return s ? s : null;
-}
-
+/**
+ * Static process.env.NAME access so Vinxi/Vite/Vercel include Preview secrets
+ * in the server function bundle (dynamic process.env[key] can omit them).
+ */
 function sessionSecret(): string | null {
-  const s = envTrim("PORTAL_SESSION_SECRET");
+  const s =
+    typeof process !== "undefined" ? process.env.PORTAL_SESSION_SECRET?.trim() : undefined;
   return s && s.length >= 16 ? s : null;
 }
 
 function inviteCode(): string | null {
-  const s = envTrim("HOLWEGE_PORTAL_INVITE");
+  const s =
+    typeof process !== "undefined" ? process.env.HOLWEGE_PORTAL_INVITE?.trim() : undefined;
   return s ? normalizeToken(s) : null;
+}
+
+function envFlag(name: "NODE_ENV" | "VERCEL" | "BETTER_AUTH_URL"): string | null {
+  const s =
+    typeof process !== "undefined"
+      ? name === "NODE_ENV"
+        ? process.env.NODE_ENV?.trim()
+        : name === "VERCEL"
+          ? process.env.VERCEL?.trim()
+          : process.env.BETTER_AUTH_URL?.trim()
+      : undefined;
+  return s ? s : null;
 }
 
 /** Constant-time compare for invite / secrets. */
@@ -116,9 +128,9 @@ export function readPortalSessionFromRequest(request: Request): LivePortalSessio
 
 export function portalCookieOptions(maxAgeSec: number): string {
   const secure =
-    envTrim("NODE_ENV") === "production" ||
-    envTrim("VERCEL") === "1" ||
-    (envTrim("BETTER_AUTH_URL") ?? "").startsWith("https://");
+    envFlag("NODE_ENV") === "production" ||
+    envFlag("VERCEL") === "1" ||
+    (envFlag("BETTER_AUTH_URL") ?? "").startsWith("https://");
   const parts = [
     `${PORTAL_COOKIE_NAME}=`,
     "Path=/",

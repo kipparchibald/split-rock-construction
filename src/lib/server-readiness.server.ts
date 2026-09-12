@@ -19,14 +19,19 @@ export type ServerReadiness = {
 
 export function getServerReadiness(): ServerReadiness {
   const demoRaw = process.env.VITE_SPLIT_ROCK_DEMO?.trim();
+  // Static NAME access for portal secrets so Preview injects them into the server bundle.
+  const portalInviteRaw =
+    typeof process !== "undefined" ? process.env.HOLWEGE_PORTAL_INVITE?.trim() : undefined;
+  const portalSecretRaw =
+    typeof process !== "undefined" ? process.env.PORTAL_SESSION_SECRET?.trim() : undefined;
   return {
     database: envSet("DATABASE_URL"),
     authSecret: envSet("BETTER_AUTH_SECRET"),
     authUrl: envSet("BETTER_AUTH_URL"),
     ingestSecret: envSet("CRM_INGEST_SECRET"),
     ingestUserId: envSet("CRM_INGEST_USER_ID"),
-    portalInvite: envSet("HOLWEGE_PORTAL_INVITE"),
-    portalSessionSecret: envSet("PORTAL_SESSION_SECRET"),
+    portalInvite: Boolean(portalInviteRaw),
+    portalSessionSecret: Boolean(portalSecretRaw && portalSecretRaw.length >= 16),
     demoFlagExplicit: demoRaw !== undefined && demoRaw !== "",
     demoFlagValue: demoRaw ?? null,
   };

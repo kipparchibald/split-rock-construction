@@ -3,6 +3,7 @@ import {
   getServerReadiness,
   isAuthEnvReady,
   isIngestEnvReady,
+  isPortalAuthEnvReady,
 } from "./server-readiness.server";
 
 describe("server readiness (env booleans)", () => {
@@ -16,6 +17,8 @@ describe("server readiness (env booleans)", () => {
       "CRM_INGEST_SECRET",
       "CRM_INGEST_USER_ID",
       "VITE_SPLIT_ROCK_DEMO",
+      "HOLWEGE_PORTAL_INVITE",
+      "PORTAL_SESSION_SECRET",
     ]) {
       prev[key] = process.env[key];
       delete process.env[key];
@@ -34,8 +37,11 @@ describe("server readiness (env booleans)", () => {
     expect(r.database).toBe(false);
     expect(r.authSecret).toBe(false);
     expect(r.ingestSecret).toBe(false);
+    expect(r.portalInvite).toBe(false);
+    expect(r.portalSessionSecret).toBe(false);
     expect(isAuthEnvReady(r)).toBe(false);
     expect(isIngestEnvReady(r)).toBe(false);
+    expect(isPortalAuthEnvReady(r)).toBe(false);
   });
 
   it("auth ready requires database + auth vars", () => {
@@ -53,6 +59,17 @@ describe("server readiness (env booleans)", () => {
     const r = getServerReadiness();
     expect(isIngestEnvReady(r)).toBe(true);
     expect(isAuthEnvReady(r)).toBe(false);
+  });
+
+  it("portalAuthReady requires invite + session secret ≥16", () => {
+    process.env.HOLWEGE_PORTAL_INVITE = "TESTINV1";
+    process.env.PORTAL_SESSION_SECRET = "short";
+    expect(isPortalAuthEnvReady(getServerReadiness())).toBe(false);
+    process.env.PORTAL_SESSION_SECRET = "unit-test-portal-session-secret";
+    const r = getServerReadiness();
+    expect(r.portalInvite).toBe(true);
+    expect(r.portalSessionSecret).toBe(true);
+    expect(isPortalAuthEnvReady(r)).toBe(true);
   });
 
   it("tracks explicit demo flag without exposing other secrets", () => {
