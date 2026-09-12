@@ -19,8 +19,20 @@ export const DEMO_OPERATORS = {
 
 export type DemoOperatorKey = keyof typeof DEMO_OPERATORS;
 
+/**
+ * Demo-only Holwege portal access code.
+ * Gated by isDemoDataEnabled — never used as the live invite (that is HOLWEGE_PORTAL_INVITE env).
+ */
+export const DEMO_HOLWEGE_PORTAL = {
+  id: "c-holwege",
+  name: "Lauren & Cindy Holwege",
+  email: "holwegefam@comcast.net",
+  portalToken: "HOLW2026",
+} as const;
+
 /** Demo portal clients (must match seed.ts portal tokens). */
 export const DEMO_PORTAL_CLIENTS = [
+  DEMO_HOLWEGE_PORTAL,
   {
     id: "c1",
     name: "James & Elena Hart",

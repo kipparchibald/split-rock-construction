@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/data/store";
 import type { Client } from "@/data/types";
 import {
@@ -8,6 +8,39 @@ import {
   type PortalSession,
   writePortalSession,
 } from "@/lib/client-portal";
+import { DEMO_PORTAL_CLIENTS } from "@/lib/demo-credentials";
+import { isDemoDataEnabled } from "@/lib/runtime-config";
+
+type LiveSessionResponse = {
+  ok: boolean;
+  session: {
+    clientId: string;
+    name: string;
+    email: string;
+    signedInAt: string;
+    authMode: "live";
+  } | null;
+};
+
+/** Demo overlay: attach DEMO_PORTAL tokens so tokenless SOR Holwege still resolves. */
+function clientsForDemoResolve(clients: Client[]): Client[] {
+  return clients.map((c) => {
+    const demo = DEMO_PORTAL_CLIENTS.find(
+      (d) => d.id === c.id || d.email.toLowerCase() === c.email.trim().toLowerCase(),
+    );
+    if (!demo) return c;
+    return {
+      ...c,
+      portalToken: c.portalToken || demo.portalToken,
+      portalStatus:
+        c.portalStatus === "revoked"
+          ? "revoked"
+          : c.portalStatus === "active"
+            ? "active"
+            : "invited",
+    };
+  });
+}
 
 /** Live portal session bound to a single client (isolated from other clients). */
 export function usePortalSession(): {
@@ -18,29 +51,64 @@ export function usePortalSession(): {
   setSession: (s: PortalSession) => void;
 } {
   const clients = useAppStore((s) => s.clients);
-  // Always null on first render so SSR HTML matches the client before hydration.
-  // Portal sessions live in localStorage — read after mount to avoid mismatches.
   const [session, setSessionState] = useState<PortalSession | null>(null);
 
-  const refresh = useCallback(() => {
+  const refreshDemo = useCallback(() => {
     setSessionState(readPortalSession());
   }, []);
 
+  const refreshLive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/portal/session", { credentials: "same-origin" });
+      if (!res.ok) {
+        setSessionState(null);
+        return;
+      }
+      const data = (await res.json()) as LiveSessionResponse;
+      if (!data.session) {
+        setSessionState(null);
+        return;
+      }
+      setSessionState({
+        clientId: data.session.clientId,
+        name: data.session.name,
+        email: data.session.email,
+        signedInAt: data.session.signedInAt,
+        authMode: "live",
+      });
+    } catch {
+      setSessionState(null);
+    }
+  }, []);
+
   useEffect(() => {
-    refresh();
-    window.addEventListener("storage", refresh);
-    window.addEventListener("src-portal-session", refresh);
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("src-portal-session", refresh);
+    if (isDemoDataEnabled) {
+      refreshDemo();
+      window.addEventListener("storage", refreshDemo);
+      window.addEventListener("src-portal-session", refreshDemo);
+      return () => {
+        window.removeEventListener("storage", refreshDemo);
+        window.removeEventListener("src-portal-session", refreshDemo);
+      };
+    }
+    void refreshLive();
+    const onLive = () => {
+      void refreshLive();
     };
-  }, [refresh]);
+    window.addEventListener("src-portal-session", onLive);
+    return () => {
+      window.removeEventListener("src-portal-session", onLive);
+    };
+  }, [refreshDemo, refreshLive]);
 
-  const client = resolvePortalClient(clients, session);
+  const resolveClients = useMemo(
+    () => (isDemoDataEnabled ? clientsForDemoResolve(clients) : clients),
+    [clients],
+  );
+  const client = resolvePortalClient(resolveClients, session);
 
-  // Drop stale session if client was revoked / token rotated
   useEffect(() => {
-    if (session && !client) {
+    if (isDemoDataEnabled && session && !client) {
       clearPortalSession();
       setSessionState(null);
     }
@@ -53,8 +121,17 @@ export function usePortalSession(): {
     signOut: () => {
       clearPortalSession();
       setSessionState(null);
+      if (!isDemoDataEnabled) {
+        void fetch("/api/portal/sign-out", { method: "POST", credentials: "same-origin" });
+      }
     },
     setSession: (s) => {
+      if (s.authMode === "live") {
+        clearPortalSession();
+        setSessionState(s);
+        window.dispatchEvent(new Event("src-portal-session"));
+        return;
+      }
       writePortalSession(s);
       setSessionState(s);
     },

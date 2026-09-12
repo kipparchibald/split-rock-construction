@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { authenticateClientPortal } from "@/lib/client-portal";
+import { DEMO_HOLWEGE_PORTAL } from "@/lib/demo-credentials";
 import {
   HOLWEGE_CONTRACT,
   HOLWEGE_DRAW_BASE,
   HOLWEGE_LAND_PAID,
   HOLWEGE_LAND_NOTE,
-  HOLWEGE_PORTAL_TOKEN,
   HOLWEGE_PROJECT_ID,
   holwegeClient,
   holwegeDraws,
@@ -42,7 +42,6 @@ describe("Holwege SOR seed (SRC-2)", () => {
     expect(draws15.map((d) => d.amount)).toEqual([
       65_933.01, 65_933.01, 131_866.02, 131_866.02, 230_765.54,
     ]);
-    // Draws 1–5 are 95% of draw base; Draw 6 is the 5% retainage-style closeout line
     const sum15 = draws15.reduce((s, d) => s + d.amount, 0);
     expect(Math.abs(sum15 - HOLWEGE_DRAW_BASE * 0.95)).toBeLessThanOrEqual(0.02);
     const sumAll = holwegeDraws.reduce((s, d) => s + d.amount, 0);
@@ -50,11 +49,10 @@ describe("Holwege SOR seed (SRC-2)", () => {
     expect(holwegeDraws[5]?.amount).toBe(32_966.5);
   });
 
-  it("wires owner portal invite for Holwege client", () => {
+  it("does not ship a live Holwege invite token in the SOR client", () => {
     expect(holwegeClient.email).toBe("holwegefam@comcast.net");
-    expect(holwegeClient.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
-    expect(holwegeClient.portalToken).toBeTruthy();
-    expect(holwegeClient.portalStatus).toBe("invited");
+    expect(holwegeClient.portalToken).toBeUndefined();
+    expect(holwegeClient.portalStatus).toBe("none");
     expect(holwegeProject.clientId).toBe(holwegeClient.id);
   });
 
@@ -65,14 +63,14 @@ describe("Holwege SOR seed (SRC-2)", () => {
 });
 
 describe("Holwege live portal auth helpers", () => {
-  it("withHolwegePortalInvite restores HOLW2026 when CRM omitted portal fields", () => {
+  it("withHolwegePortalInvite strips client-side token and sets invited", () => {
     const bare = {
       ...holwegeClient,
-      portalToken: undefined,
+      portalToken: "STALETOK",
       portalStatus: "none" as const,
     };
     const fixed = withHolwegePortalInvite(bare);
-    expect(fixed.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
+    expect(fixed.portalToken).toBeUndefined();
     expect(fixed.portalStatus).toBe("invited");
     expect(fixed.email).toBe("holwegefam@comcast.net");
   });
@@ -86,24 +84,28 @@ describe("Holwege live portal auth helpers", () => {
     expect(withHolwegePortalInvite(revoked).portalStatus).toBe("revoked");
   });
 
-  it("clientsForPortalAuth injects Holwege when missing from live CRM list", () => {
+  it("clientsForPortalAuth injects Holwege when missing from live CRM list (no client token)", () => {
     const list = clientsForPortalAuth([]);
     expect(list.some((c) => c.id === HOLWEGE_CLIENT_ID)).toBe(true);
+    expect(list.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBeUndefined();
+    // Live Holwege auth is server-side — client-portal localStorage auth must fail without a token.
     const auth = authenticateClientPortal(list, "holwegefam@comcast.net", "HOLW2026");
-    expect(auth.ok).toBe(true);
-    if (auth.ok) expect(auth.session.clientId).toBe(HOLWEGE_CLIENT_ID);
+    expect(auth.ok).toBe(false);
   });
 
-  it("clientsForPortalAuth repairs Holwege without portalToken", () => {
-    const list = clientsForPortalAuth([
-      {
-        ...holwegeClient,
-        portalToken: undefined,
-        portalStatus: "none",
-      },
-    ]);
-    const auth = authenticateClientPortal(list, "holwegefam@comcast.net", "HOLW2026");
+  it("demo Holwege credentials remain available for demo-only UI", () => {
+    expect(DEMO_HOLWEGE_PORTAL.portalToken).toBe("HOLW2026");
+    const demoClient = {
+      ...holwegeClient,
+      portalToken: DEMO_HOLWEGE_PORTAL.portalToken,
+      portalStatus: "invited" as const,
+    };
+    const auth = authenticateClientPortal([demoClient], "holwegefam@comcast.net", "HOLW2026");
     expect(auth.ok).toBe(true);
+    if (auth.ok) {
+      expect(auth.session.clientId).toBe(HOLWEGE_CLIENT_ID);
+      expect(auth.session.authMode).toBe("demo");
+    }
   });
 });
 
@@ -130,23 +132,23 @@ describe("ensureHolwegeForPortal (live)", () => {
     };
   }
 
-  it("merges Holwege package when live store is empty", () => {
+  it("merges Holwege package when live store is empty without client invite token", () => {
     const store = makeStore();
     const result = ensureHolwegeForPortal(store, { demo: false });
     expect(result.seeded).toBe(true);
     const s = store.getState();
     expect(s.clients.some((c) => c.id === HOLWEGE_CLIENT_ID)).toBe(true);
     expect(s.projects.some((p) => p.id === HOLWEGE_PROJECT_ID)).toBe(true);
-    expect(s.clients.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
+    expect(s.clients.find((c) => c.id === HOLWEGE_CLIENT_ID)?.portalToken).toBeUndefined();
     expect(s.projects.find((p) => p.id === HOLWEGE_PROJECT_ID)?.budget).toBe(HOLWEGE_CONTRACT);
   });
 
-  it("repairs portal fields when CRM client exists without invite", () => {
+  it("repairs portal fields when CRM client exists without invite status", () => {
     const store = makeStore({
       clients: [
         {
           ...holwegeClient,
-          portalToken: undefined,
+          portalToken: "STALE",
           portalStatus: "none",
         },
       ],
@@ -162,16 +164,15 @@ describe("ensureHolwegeForPortal (live)", () => {
     });
     const result = ensureHolwegePortalFields(store, { demo: false });
     expect(result.seeded).toBe(true);
-    expect(result.reason).toMatch(/portal invite/i);
     const client = store.getState().clients.find((c) => c.id === HOLWEGE_CLIENT_ID);
-    expect(client?.portalToken).toBe(HOLWEGE_PORTAL_TOKEN);
+    expect(client?.portalToken).toBeUndefined();
     expect(client?.portalStatus).toBe("invited");
     expect(store.getState().projects.filter((p) => p.id === HOLWEGE_PROJECT_ID)).toHaveLength(1);
   });
 
   it("ensureHolwegeForPortal is idempotent when Holwege fully present", () => {
     const store = makeStore({
-      clients: [holwegeClient],
+      clients: [{ ...holwegeClient, portalStatus: "invited", portalToken: undefined }],
       projects: [holwegeProject],
       draws: holwegePackage.draws,
       realtyDeals: [holwegePackage.realtyDeal],
@@ -185,5 +186,27 @@ describe("ensureHolwegeForPortal (live)", () => {
     const result = ensureHolwegeForPortal(store, { demo: false });
     expect(result.seeded).toBe(false);
     expect(store.getState().projects.filter((p) => p.id === HOLWEGE_PROJECT_ID)).toHaveLength(1);
+  });
+
+  it("repairs drifted Holwege budget (~727k draft) back to contract", () => {
+    const store = makeStore({
+      clients: [{ ...holwegeClient, portalStatus: "invited", portalToken: undefined }],
+      projects: [{ ...holwegeProject, budget: 727_057 }],
+      draws: holwegePackage.draws,
+      realtyDeals: [holwegePackage.realtyDeal],
+      documents: holwegePackage.documents,
+      budgetLines: holwegePackage.budgetLines,
+      closeoutPackages: [holwegePackage.closeout],
+      activity: holwegePackage.activity,
+      dailyLogs: holwegePackage.dailyLogs,
+      bids: [{ ...holwegePackage.bid, amount: 727_057 }],
+    });
+    const result = ensureHolwegeForPortal(store, { demo: false });
+    expect(result.seeded).toBe(true);
+    expect(result.reason).toMatch(/pricing repaired/i);
+    expect(store.getState().projects.find((p) => p.id === HOLWEGE_PROJECT_ID)?.budget).toBe(
+      HOLWEGE_CONTRACT,
+    );
+    expect(store.getState().bids.find((b) => b.id === "b-holwege")?.amount).toBe(HOLWEGE_CONTRACT);
   });
 });

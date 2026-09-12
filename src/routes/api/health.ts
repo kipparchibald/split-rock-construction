@@ -3,6 +3,7 @@ import {
   getServerReadiness,
   isAuthEnvReady,
   isIngestEnvReady,
+  isPortalAuthEnvReady,
 } from "@/lib/server-readiness.server";
 import { isCrmServerPersistenceEnabled } from "@/lib/crm/capabilities.server";
 
@@ -18,15 +19,18 @@ export const Route = createFileRoute("/api/health")({
         const serverPersistence = isCrmServerPersistenceEnabled();
         const authReady = isAuthEnvReady(readiness);
         const ingestReady = isIngestEnvReady(readiness);
+        const portalAuthReady = isPortalAuthEnvReady(readiness);
 
         return Response.json({
           ok: true,
           service: "split-rock-construction",
+          portalAuthReady,
           readiness: {
             ...readiness,
             serverPersistence,
             authReady,
             ingestReady,
+            portalAuthReady,
           },
           notes: {
             ingest:
@@ -37,6 +41,10 @@ export const Route = createFileRoute("/api/health")({
               authReady
                 ? "Operator sign-in can persist sessions"
                 : "Set BETTER_AUTH_SECRET, BETTER_AUTH_URL, and DATABASE_URL for live auth",
+            portalAuth:
+              portalAuthReady
+                ? "POST /api/portal/sign-in can issue HttpOnly Holwege sessions"
+                : "Set Preview HOLWEGE_PORTAL_INVITE + PORTAL_SESSION_SECRET (≥16) then redeploy",
           },
         });
       },

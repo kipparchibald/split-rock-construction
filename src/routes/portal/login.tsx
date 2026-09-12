@@ -12,6 +12,7 @@ import {
   clearPortalSession,
   normalizeToken,
   readPortalSession,
+  type PortalSession,
   writePortalSession,
 } from "@/lib/client-portal";
 import { COMPANY } from "@/lib/company";
@@ -28,6 +29,8 @@ export const Route = createFileRoute("/portal/login")({
   component: PortalLoginPage,
 });
 
+type DemoPortalRow = { id: string; name: string; email: string; portalToken: string };
+
 function PortalLoginPage() {
   const { client: preClientId, code: preCode } = Route.useSearch();
   const navigate = useNavigate();
@@ -38,45 +41,38 @@ function PortalLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Demo buttons: prefer live store clients; fall back to hardcoded seed tokens
-  // so demo mode still works if the CRM was cleared.
   const demoClients = useMemo(() => {
-    if (!isDemoDataEnabled) return [] as Array<{ id: string; name: string; email: string; portalToken: string }>;
+    if (!isDemoDataEnabled) return [] as DemoPortalRow[];
 
-    const fromStore = clients
-      .filter((c) => c.portalToken && (c.portalStatus === "active" || c.portalStatus === "invited"))
-      .map((c) => ({
+    const byId = new Map<string, DemoPortalRow>(
+      DEMO_PORTAL_CLIENTS.map((c) => [
+        c.id,
+        { id: c.id, name: c.name, email: c.email, portalToken: c.portalToken },
+      ]),
+    );
+    for (const c of clients) {
+      if (!c.portalToken) continue;
+      if (c.portalStatus !== "active" && c.portalStatus !== "invited") continue;
+      byId.set(c.id, {
         id: c.id,
         name: c.name,
         email: c.email,
-        portalToken: c.portalToken!,
-      }));
-
-    if (fromStore.length > 0) return fromStore;
-
-    return DEMO_PORTAL_CLIENTS.map((c) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      portalToken: c.portalToken,
-    }));
+        portalToken: c.portalToken,
+      });
+    }
+    return Array.from(byId.values());
   }, [clients]);
 
-  // Live mode: ensure Holwege SOR (+ portal invite HOLW2026) before auth lookup.
-  // /portal/login is outside /app, so CrmBootstrap/OpsBootstrap do not run here.
   useEffect(() => {
     if (isDemoDataEnabled) return;
     ensureHolwegeForPortal(useAppStore);
   }, []);
 
-  // Auth list: store clients after Holwege live seed; demo fallbacks when CRM empty.
-  // Live: always merge Holwege portal invite so CRM hydrate without portalToken still works.
   const authClients: Client[] = useMemo(() => {
     if (!isDemoDataEnabled) {
       return clientsForPortalAuth(clients);
     }
-    if (clients.length > 0) return clients;
-    return DEMO_PORTAL_CLIENTS.map(
+    const fallback = DEMO_PORTAL_CLIENTS.map(
       (c): Client => ({
         id: c.id,
         name: c.name,
@@ -89,9 +85,25 @@ function PortalLoginPage() {
         portalStatus: "active",
       }),
     );
+    if (clients.length === 0) return fallback;
+    return clients.map((c) => {
+      const demo = DEMO_PORTAL_CLIENTS.find(
+        (d) => d.id === c.id || d.email.toLowerCase() === c.email.trim().toLowerCase(),
+      );
+      if (!demo) return c;
+      return {
+        ...c,
+        portalToken: c.portalToken || demo.portalToken,
+        portalStatus:
+          c.portalStatus === "revoked"
+            ? "revoked"
+            : c.portalStatus === "active"
+              ? "active"
+              : "invited",
+      };
+    });
   }, [clients]);
 
-  // Prefill email from invite deep link
   useEffect(() => {
     if (preClientId) {
       const c =
@@ -101,40 +113,98 @@ function PortalLoginPage() {
     }
   }, [preClientId, authClients]);
 
-  // Already signed in as client → portal
   useEffect(() => {
-    const existing = readPortalSession();
-    if (existing) {
-      void navigate({ to: "/app/portal" });
+    if (isDemoDataEnabled) {
+      const existing = readPortalSession();
+      if (existing) void navigate({ to: "/app/portal" });
+      return;
     }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/portal/session", { credentials: "same-origin" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { session?: { clientId?: string } | null };
+        if (data.session?.clientId && !cancelled) {
+          void navigate({ to: "/app/portal" });
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
-  function completeLogin(emailIn: string, codeIn: string) {
+  async function completeLoginLive(emailIn: string, codeIn: string) {
+    clearPortalSession();
+    ensureHolwegeForPortal(useAppStore);
+    const res = await fetch("/api/portal/sign-in", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailIn, code: codeIn }),
+    });
+    const data = (await res.json()) as {
+      ok?: boolean;
+      error?: string;
+      session?: {
+        clientId: string;
+        name: string;
+        email: string;
+        signedInAt: string;
+        authMode: "live";
+      };
+    };
+    if (!res.ok || !data.ok || !data.session) {
+      setError(data.error ?? "Portal sign-in failed");
+      return;
+    }
+    const session: PortalSession = {
+      clientId: data.session.clientId,
+      name: data.session.name,
+      email: data.session.email,
+      signedInAt: data.session.signedInAt,
+      authMode: "live",
+    };
+    clearPortalSession();
+    window.dispatchEvent(new Event("src-portal-session"));
+    try {
+      markClientPortalLogin(session.clientId);
+    } catch {
+      /* store may not have this client yet */
+    }
+    toast.success(`Welcome, ${session.name.split("&")[0]?.trim()}`);
+    void navigate({ to: "/app/portal" });
+  }
+
+  function completeLoginDemo(emailIn: string, codeIn: string) {
+    clearPortalSession();
+    const result = authenticateClientPortal(authClients, emailIn, codeIn);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    writePortalSession(result.session);
+    try {
+      markClientPortalLogin(result.client.id);
+    } catch {
+      /* demo fallback */
+    }
+    toast.success(`Welcome, ${result.client.name.split("&")[0]?.trim()}`);
+    void navigate({ to: "/app/portal" });
+  }
+
+  async function completeLogin(emailIn: string, codeIn: string) {
     setBusy(true);
     setError(null);
     try {
-      // Drop any previous portal session so token rotation always rebinds cleanly.
-      clearPortalSession();
-
-      // Live: merge Holwege into store before auth so markClientPortalLogin finds c-holwege.
-      if (!isDemoDataEnabled) {
-        ensureHolwegeForPortal(useAppStore);
+      if (isDemoDataEnabled) {
+        completeLoginDemo(emailIn, codeIn);
+      } else {
+        await completeLoginLive(emailIn, codeIn);
       }
-
-      const result = authenticateClientPortal(authClients, emailIn, codeIn);
-      if (!result.ok) {
-        setError(result.error);
-        setBusy(false);
-        return;
-      }
-      writePortalSession(result.session);
-      try {
-        markClientPortalLogin(result.client.id);
-      } catch {
-        /* store may not have this client if using demo fallback */
-      }
-      toast.success(`Welcome, ${result.client.name.split("&")[0]?.trim()}`);
-      void navigate({ to: "/app/portal" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Portal sign-in failed");
     } finally {
@@ -144,7 +214,7 @@ function PortalLoginPage() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    completeLogin(email, code);
+    void completeLogin(email, code);
   }
 
   return (
@@ -163,7 +233,7 @@ function PortalLoginPage() {
         <h1 className="mt-2 text-2xl font-medium tracking-[-0.02em]">Sign in to your build</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">
           Use the email on your contract and the access code Split Rock sent you. You only see{" "}
-          <strong className="text-fg">your</strong> jobs — never another homeowner's information.
+          <strong className="text-fg">your</strong> jobs — never another homeowner&apos;s information.
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4 border border-border bg-bg-elevated p-5">
@@ -219,7 +289,7 @@ function PortalLoginPage() {
                     className="w-full min-h-10 justify-start"
                     data-testid={`portal-demo-${c.id}`}
                     disabled={busy}
-                    onClick={() => completeLogin(c.email, c.portalToken)}
+                    onClick={() => void completeLogin(c.email, c.portalToken)}
                   >
                     <span className="truncate">{c.name}</span>
                     <span className="ml-auto font-mono text-[10px] text-fg-subtle">{c.portalToken}</span>
