@@ -35,13 +35,19 @@ function fromB64url(s: string): Buffer {
   return Buffer.from(b64, "base64");
 }
 
+/** Dynamic key so Vite cannot bake empty process.env.NAME at first build. */
+function envTrim(key: string): string | null {
+  const s = typeof process !== "undefined" ? process.env[key]?.trim() : undefined;
+  return s ? s : null;
+}
+
 function sessionSecret(): string | null {
-  const s = process.env.PORTAL_SESSION_SECRET?.trim();
+  const s = envTrim("PORTAL_SESSION_SECRET");
   return s && s.length >= 16 ? s : null;
 }
 
 function inviteCode(): string | null {
-  const s = process.env.HOLWEGE_PORTAL_INVITE?.trim();
+  const s = envTrim("HOLWEGE_PORTAL_INVITE");
   return s ? normalizeToken(s) : null;
 }
 
@@ -110,9 +116,9 @@ export function readPortalSessionFromRequest(request: Request): LivePortalSessio
 
 export function portalCookieOptions(maxAgeSec: number): string {
   const secure =
-    process.env.NODE_ENV === "production" ||
-    process.env.VERCEL === "1" ||
-    (process.env.BETTER_AUTH_URL ?? "").startsWith("https://");
+    envTrim("NODE_ENV") === "production" ||
+    envTrim("VERCEL") === "1" ||
+    (envTrim("BETTER_AUTH_URL") ?? "").startsWith("https://");
   const parts = [
     `${PORTAL_COOKIE_NAME}=`,
     "Path=/",
