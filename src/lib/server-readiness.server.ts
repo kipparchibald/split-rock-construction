@@ -11,6 +11,8 @@ export type ServerReadiness = {
   authUrl: boolean;
   ingestSecret: boolean;
   ingestUserId: boolean;
+  portalInvite: boolean;
+  portalSessionSecret: boolean;
   demoFlagExplicit: boolean;
   demoFlagValue: string | null;
 };
@@ -23,6 +25,8 @@ export function getServerReadiness(): ServerReadiness {
     authUrl: envSet("BETTER_AUTH_URL"),
     ingestSecret: envSet("CRM_INGEST_SECRET"),
     ingestUserId: envSet("CRM_INGEST_USER_ID"),
+    portalInvite: envSet("HOLWEGE_PORTAL_INVITE"),
+    portalSessionSecret: envSet("PORTAL_SESSION_SECRET"),
     demoFlagExplicit: demoRaw !== undefined && demoRaw !== "",
     demoFlagValue: demoRaw ?? null,
   };
@@ -36,4 +40,9 @@ export function isAuthEnvReady(readiness: ServerReadiness = getServerReadiness()
 /** True when external lead ingest can persist (secret + Postgres). */
 export function isIngestEnvReady(readiness: ServerReadiness = getServerReadiness()): boolean {
   return readiness.ingestSecret && readiness.database;
+}
+
+/** True when live Holwege portal cookie sessions can be issued. */
+export function isPortalAuthEnvReady(readiness: ServerReadiness = getServerReadiness()): boolean {
+  return readiness.portalInvite && readiness.portalSessionSecret;
 }
