@@ -1,18 +1,29 @@
 # GENERAL CONTRACTOR RESIDENTIAL PROPERTY DISCLOSURE
 (Idaho Code § 45-525(2) — Initial Disclosure)
 
-**Split Rock Construction LLC**, Idaho contractor license 6481622 ("General Contractor") provides to **Lauren Holwege and Cindy Holwege** this disclosure under Idaho Code § 45-525.
+This disclosure is given **before** Owner enters the construction contract.
 
-1. Right, at the homeowner's reasonable expense, to require lien waivers from subcontractors;
-2. Right to proof of GL (including completed operations) and workers' compensation;
-3. Right to purchase extended title covering certain unfiled liens;
-4. Right, at the homeowner's expense, to require a surety bond up to project value.
+**Split Rock Construction LLC**, Idaho contractor registration **6481622** ("General Contractor") provides to **Lauren Holwege and Cindy Holwege** ("Owner") this disclosure under Idaho Code § 45-525(2).
+
+Property: Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho (Deed Instrument No. 501245).
+
+Owner is informed of the following:
+
+(a) Owner has the right, at Owner's reasonable expense, to require the General Contractor to obtain lien waivers from any subcontractors providing services or materials to the General Contractor;
+
+(b) Owner has the right to receive from the General Contractor proof that the General Contractor has a general liability insurance policy including completed operations in effect, and proof that the General Contractor has worker's compensation insurance for employees as required by Idaho law;
+
+(c) Owner is informed of the opportunity to purchase an extended policy of title insurance covering certain unfiled or unrecorded liens; and
+
+(d) Owner has the right, at Owner's expense, to require a surety bond in an amount up to the value of the construction project.
+
+Owner acknowledges receipt of this disclosure.
 
 DATED this ____ day of ____________, 2026.
 
 Signed: ___________________________ (Lauren Holwege)
 Signed: ___________________________ (Cindy Holwege)
 
-Split Rock Construction LLC — Kipp Archibald, Member — 527 Rigby Town Square, Rigby, ID 83442 — (208) 200-0605 — Kipp@splitrockconst.com — license 6481622
+General Contractor: Split Rock Construction LLC — Kipp Archibald, Member — 527 Rigby Town Square, Rigby, ID 83442 — (208) 200-0605 — Kipp@splitrockconst.com — registration 6481622
 
-Property: Lot 16, Block 8, Teton Heights Division 6 (closed 8/24/2026, Alliance 1100920). This disclosure is for the construction contract, not a resale of the lot.
+Contractor retains a signed copy. This disclosure is for the construction contract only.

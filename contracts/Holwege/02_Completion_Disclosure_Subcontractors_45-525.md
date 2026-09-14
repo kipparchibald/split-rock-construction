@@ -1,17 +1,17 @@
 # CONTRACTOR RESIDENTIAL PROPERTY DISCLOSURE OF SUBCONTRACTORS, MATERIALMEN AND RENTAL EQUIPMENT SUPPLIERS
 (Idaho Code § 45-525(3) — Disclosure Upon Completion)
 
-**GENERAL CONTRACTOR NAME:** Splitrock Construction
+**GENERAL CONTRACTOR:** Split Rock Construction LLC, registration 6481622
 
-**PROPERTY ADDRESS OR LEGAL:** Lot 16, Block 8, Teton Heights Division 6, TBD E 146 N, Rigby, ID 83442 (NNA Bareground)
+**PROPERTY:** Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho
 
-**HOMEOWNER/PURCHASER NAMES:** Lauren Holwege and Cindy Holwege
+**HOMEOWNER NAMES:** Lauren Holwege and Cindy Holwege
 
 **DATE:** _______________
 
-This written disclosure statement is provided by Splitrock Construction (General Contractor) to Lauren Holwege and Cindy Holwege (owners) pursuant to Idaho Code § 45-525(3).
+This written disclosure is provided by Split Rock Construction LLC to Lauren Holwege and Cindy Holwege pursuant to Idaho Code § 45-525(3), within a reasonable time prior to final payment (Draw 6).
 
-The following subcontractors, materialmen, and/or rental equipment suppliers have a direct contractual relationship with the General Contractor and have supplied labor, materials, or rental equipment of a value in excess of $500 in connection with the work performed at the above-referenced residential construction project.
+The following subcontractors, materialmen, and/or rental equipment suppliers have a direct contractual relationship with the General Contractor and have supplied labor, materials, or rental equipment of a value in excess of $500 on this job.
 
 | # | BUSINESS NAME | BUSINESS ADDRESS | TELEPHONE |
 |---|---------------|-----------------|-----------|
@@ -25,21 +25,13 @@ The following subcontractors, materialmen, and/or rental equipment suppliers hav
 | 8 | | | |
 | 9 | | | |
 | 10 | | | |
-| 11 | | | |
-| 12 | | | |
-| 13 | | | |
-| 14 | | | |
-| 15 | | | |
 
-All subcontractors, materialmen and rental equipment providers listed above are authorized to disclose balances owed to the prospective real property purchasers or homeowners and to the agents of such purchasers or homeowners.
+Listed providers are authorized to disclose balances owed to the homeowners.
 
 The general contractor shall not be liable for any error, inaccuracy or omission of any information delivered pursuant to this section if the error, inaccuracy or omission was not within the personal knowledge of the general contractor.
 
 Signed: ___________________________  Date: ___________
-Splitrock Construction, General Contractor
-By: Kipp Archibald
-Its: Owner / Authorized Agent
+Split Rock Construction LLC
+By: Kipp Archibald, Member
 
----
-
-*Note: Fill in all subcontractors/suppliers with direct contracts over $500 before final payment or closing. Leave blank rows if none.*
+*Fill all direct contracts over $500 before Draw 6. Leave blank rows if none.*
