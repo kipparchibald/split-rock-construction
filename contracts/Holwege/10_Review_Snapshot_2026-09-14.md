@@ -6,8 +6,8 @@
 ## Parties
 - Contractor: Split Rock Construction LLC · Idaho contractor 6481622 · Kipp Archibald · (208) 200-0605 · Kipp@splitrockconst.com
 - Owners: Lauren Holwege and Cindy Holwege
-- Field supervisor (not a party): Kyle Christensen
 - Archibald-Bagley Real Estate and its broker are not parties and are not in this loop.
+- Field supervisor / subcontractor is not a party and cannot change price, scope, or schedule.
 
 ## Property (legal description only)
 Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho (Deed Instrument No. 501245)
@@ -42,7 +42,6 @@ Plans: River Bend Drafting — *Lauren and Cindy Holwege 8-31-2026b* (Elise Shur
 09 Permit field sheet (not a filed permit)
 
 ## Still needed before send
-- [ ] Kyle prices or Excludes every thin / Estimate line
 - [ ] Convert HVAC, well, septic, cabinets, floors toward Bid or Allowance
 - [ ] Owners initial dual-capacity and allowance caps
 - [ ] Title told: construction contract only; do not advance contingency on Draws 1–5

@@ -9,7 +9,7 @@ This Construction Agreement ("Agreement") is entered into as of _______________,
 
 These two parties are the only parties to this Agreement.
 
-Kyle Christensen is field supervisor / subcontractor. He is **not** a party and has no authority to change price, scope, or schedule.
+Any field supervisor or subcontractor is **not** a party and has no authority to change price, scope, or schedule.
 
 Archibald-Bagley Real Estate and its broker are **not** parties to this Agreement and do not represent Owner in connection with this construction work.
 

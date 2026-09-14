@@ -1,7 +1,7 @@
 # EXHIBIT B — COST BREAKDOWN AND CONTINGENCY
 
 Holwege residence · Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho
-Source workbook dated 4 September 2026 · Kyle 8/26 lines + Split Rock 10% + 5% reserve
+Source workbook dated 4 September 2026 · 8/26 field lines + Split Rock 10% + 5% reserve
 
 ## 1. Stack
 
@@ -32,6 +32,6 @@ Natural gas, power (transformer set), and fiber are to the Property. House later
 
 ## 4. Contingency
 
-Owner contingency is $29,969.55. Not profit, not Kyle's $32,000, not cabinet upgrades, not Bid misses.
+Owner contingency is $29,969.55. Not profit, not cabinet upgrades, not Bid misses.
 
 Draws 1–5 use $659,330.10 (cost + P&O). Contingency moves only on a signed change order. Unused credits Draw 6. P&O of 10% applies only when the reserve is used.

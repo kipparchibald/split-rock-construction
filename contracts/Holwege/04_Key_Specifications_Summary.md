@@ -3,7 +3,7 @@
 
 **Project:** Lauren and Cindy Holwege — Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho
 **Drafter:** Elise Shurtliff, River Bend Drafting and Design (208-557-3621)
-**Builder:** Splitrock Construction — Kip Archibald (208-200-0605), Kyle Christensen (208-589-7812)
+**Builder:** Split Rock Construction LLC — Kipp Archibald (208-200-0605)
 
 ## Dimensions & Layout
 - Overall footprint: approximately 77'-6" x 57'-1"

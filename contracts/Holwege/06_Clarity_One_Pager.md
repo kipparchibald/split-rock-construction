@@ -2,7 +2,7 @@
 
 Split Rock Construction LLC · 6481622 · 14 September 2026
 
-Lauren and Cindy pay **Split Rock Construction LLC** only. Kyle Christensen is field, not a signer.
+Lauren and Cindy pay **Split Rock Construction LLC** only.
 
 **Property:** Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho.
 
