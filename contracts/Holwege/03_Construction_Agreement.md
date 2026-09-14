@@ -31,6 +31,8 @@ Excluded unless Change Order: landscaping, fencing, mailbox, window coverings, p
 
 Work will be performed in accordance with applicable building codes and the issued building permit. Contractor shall post its contractor registration number at the jobsite as required by Idaho Code § 54-5209.
 
+Labor on this job will be performed by independent, Idaho-registered subcontractors under contract with Contractor. Contractor currently has no employees.
+
 ## 3. CONTRACT PRICE
 **$689,299.65** = cost of work $599,391.00 + owner contingency $29,969.55 + P&O $59,939.10.
 
@@ -49,11 +51,15 @@ Payee is Split Rock Construction LLC only. Draw base for Draws 1–5 is **$659,3
 ## 5. IDAHO § 45-525 AND INSURANCE
 Before signing this Agreement, Owner received and signed the Idaho Code § 45-525(2) initial disclosure. Contractor shall retain the signed receipt.
 
-Contractor shall maintain general liability insurance including completed operations, and worker's compensation insurance for employees as required by Idaho law. Upon request, Contractor shall furnish proof of those policies. Owner may, at Owner's expense, require lien waivers, an extended title policy covering certain unfiled liens, and/or a surety bond up to project value, as disclosed in the § 45-525(2) statement.
+Contractor shall maintain general liability insurance including completed operations. Upon request, Contractor shall furnish its GL certificate.
+
+Contractor currently has no employees. Working members of an LLC are not required to carry worker's compensation on themselves. Idaho requires WC only when Contractor has employees. Contractor therefore has no WC certificate to deliver at signing. If Contractor later hires any employee, Contractor shall obtain WC before that person starts work and shall furnish the certificate on request.
+
+Contractor shall require each subcontractor to be Idaho-registered where registration is required, and to carry its own worker's compensation or a lawful exemption. Contractor shall engage only Idaho-registered contractors where registration is required (Idaho Code § 54-5204(2)).
+
+Owner may, at Owner's expense, require lien waivers, an extended title policy covering certain unfiled liens, and/or a surety bond up to project value, as disclosed in the § 45-525(2) statement.
 
 Before Draw 6 / final payment, Contractor shall deliver the Idaho Code § 45-525(3) subcontractor, materialman, and rental-equipment list for direct contracts over $500.
-
-Contractor shall engage only Idaho-registered contractors where registration is required (Idaho Code § 54-5204(2)).
 
 ## 6. CHANGE ORDERS AND CONTINGENCY
 Written Change Order before changed work, except documented emergency then signature within 48 hours. Contingency $29,969.55 is for unknown site, weather, and code. Not upgrades. Not Bid misses. Unused credits Draw 6.
