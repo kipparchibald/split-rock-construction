@@ -1,13 +1,13 @@
 # Holwege Contract Package — Review Snapshot
 **Date:** 14 September 2026
-**Status:** DRAFT FOR COUNSEL — NOT A SIGNATURE SET
-**Do not email Lauren or Cindy Holwege.**
+**Status:** DRAFT — NOT A SIGNATURE SET
+**Do not email Lauren or Cindy Holwege until Kipp says send.**
 
 ## Parties
 - Contractor: Split Rock Construction LLC · Idaho contractor 6481622 · Kipp Archibald · (208) 200-0605 · Kipp@splitrockconst.com
 - Owners: Lauren Holwege and Cindy Holwege
 - Field supervisor (not a party): Kyle Christensen
-- Brokerage is not a party.
+- Archibald-Bagley Real Estate and its broker are not parties and are not in this loop.
 
 ## Property (legal description only)
 Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho (Deed Instrument No. 501245)
@@ -45,13 +45,12 @@ Plans: River Bend Drafting — *Lauren and Cindy Holwege 8-31-2026b* (Elise Shur
 - [ ] Kyle prices or Excludes every thin / Estimate line
 - [ ] Convert HVAC, well, septic, cabinets, floors toward Bid or Allowance
 - [ ] Owners initial dual-capacity and allowance caps
-- [ ] Don initials dual-capacity + contingency paragraph
 - [ ] Title told: construction contract only; do not advance contingency on Draws 1–5
 - [ ] Change Order form attached
-- [ ] No owner email until Don initials
+- [ ] No owner email until Kipp says send
 
 ## Locations
 - Drive Holwege folder: https://drive.google.com/drive/folders/1JB0_Em4wtz1NF7l-oZrQp6425Qlq2dFO
 - Continuity _PACKETS
-- GitHub: https://github.com/kipparchibald/split-rock-construction/tree/holwege-legal-desc-only/contracts/Holwege
+- GitHub: https://github.com/kipparchibald/split-rock-construction/tree/main/contracts/Holwege
 - Operator packet (login): https://splitrockconst.com/app/packet
