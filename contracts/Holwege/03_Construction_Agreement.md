@@ -11,7 +11,7 @@ These two parties are the only parties to this Agreement.
 
 Kyle Christensen is field supervisor / subcontractor. He is **not** a party and has no authority to change price, scope, or schedule.
 
-Archibald-Bagley Real Estate and its broker are **not** parties to this Agreement.
+Archibald-Bagley Real Estate and its broker are **not** parties to this Agreement and do not represent Owner in connection with this construction work.
 
 ## 1. PROPERTY
 The work is to be performed on:
@@ -46,7 +46,15 @@ Payee is Split Rock Construction LLC only. Draw base for Draws 1–5 is **$659,3
 Written Change Order before changed work, except documented emergency then signature within 48 hours. Contingency $29,969.55 is for unknown site, weather, and code. Not upgrades. Not Bid misses. Unused credits Draw 6.
 
 ## 13. DUAL-CAPACITY DISCLOSURE
-Kipp Archibald is principal of Contractor and a real-estate licensee with Archibald-Bagley Real Estate who previously represented Owner in a brokerage capacity as to the Property. That brokerage relationship is finished. This Agreement is a construction contract with Split Rock Construction LLC only. It is not an Archibald-Bagley contract. Owner acknowledges that dual role.
+Owner acknowledges the following:
+
+(a) **Prior brokerage role.** Kipp Archibald, an Idaho real-estate licensee associated with Archibald-Bagley Real Estate, previously represented Owner as their real-estate agent in the purchase of the Property described in Section 1. That brokerage representation ended when the lot purchase closed. It does not continue into this construction job.
+
+(b) **Current role.** On this Agreement, Kipp Archibald is acting solely as an owner / member of Split Rock Construction LLC, the Contractor. He is not acting as Owner’s real-estate agent.
+
+(c) **Archibald-Bagley is not in this contract.** Archibald-Bagley Real Estate, its broker, and its agents are not parties to this Agreement. They do not represent Owner on this construction work. They have no authority over price, scope, draws, or schedule. This is not an Archibald-Bagley listing, purchase-and-sale, or agency agreement.
+
+(d) **No construction agency.** Owner is not relying on Archibald-Bagley Real Estate for advice, advocacy, or representation in connection with this Agreement. Owner may obtain independent legal or other professional advice before signing.
 
 Owner initials: __________ Lauren Holwege    __________ Cindy Holwege
 
