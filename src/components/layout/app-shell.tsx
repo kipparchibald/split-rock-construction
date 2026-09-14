@@ -44,6 +44,7 @@ type NavGroup = { label: string; items: NavItem[] };
 const primaryNav: NavItem[] = [
   { to: "/app", label: "Today", icon: LayoutDashboard, exact: true },
   { to: "/app/projects", label: "Jobs", icon: Building2 },
+  { to: "/app/packet", label: "Packet", icon: FileSignature },
   { to: "/app/estimator", label: "Estimate", icon: Sparkles },
   { to: "/app/site-plan", label: "Site plan", icon: MapPinned },
   { to: "/app/bids", label: "Bids", icon: ClipboardList },
@@ -102,8 +103,8 @@ const moreGroups: NavGroup[] = [
 /** Phone bar — four work tools + More. */
 const bottomNav: NavItem[] = [
   { to: "/app/projects", label: "Jobs", icon: Building2 },
+  { to: "/app/packet", label: "Packet", icon: FileSignature },
   { to: "/app/estimator", label: "Estimate", icon: Sparkles },
-  { to: "/app/site-plan", label: "Site", icon: MapPinned },
   { to: "/app/field", label: "Field", icon: Radio },
 ];
 
