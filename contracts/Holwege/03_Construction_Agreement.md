@@ -11,22 +11,26 @@ These two parties are the only parties to this Agreement.
 
 Kyle Christensen is field supervisor / subcontractor. He is **not** a party and has no authority to change price, scope, or schedule.
 
-Archibald-Bagley Real Estate and its broker are **not** parties to this Agreement. The lot purchase closed separately on 24 August 2026.
+Archibald-Bagley Real Estate and its broker are **not** parties to this Agreement.
 
 ## 1. PROPERTY
-Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho. Deed Instrument No. 501245. Alliance 1100920 closed 24 August 2026. Owner already owns the Property. Lot price $98,000.00 is paid and is not part of the Contract Price.
+The work is to be performed on:
+
+**Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho** (Deed Instrument No. 501245).
+
+Owner already owns the Property. This Agreement is for construction of the residence on that Property only.
 
 ## 2. SCOPE OF WORK
 Residence per River Bend plans dated 31 August 2026, file *Lauren and Cindy Holwege 8-31-2026b*, Exhibit A and Exhibit B.
 
-Already at the lot: natural gas, electrical with transformer set, and fiber. Remaining utility work is house laterals only.
+Already at the Property: natural gas, electrical with transformer set, and fiber. Remaining utility work is house laterals only.
 
 Excluded unless Change Order: landscaping, fencing, mailbox, window coverings, propane tank, a new transformer or primary power run, and any Exhibit B Excluded line.
 
 ## 3. CONTRACT PRICE
 **$689,299.65** = cost of work $599,391.00 + owner contingency $29,969.55 + P&O $59,939.10.
 
-Lot not included. Talk number $787,299.65 is not payable. P&O is not charged on the lot or on unspent contingency.
+This Contract Price is construction only. P&O is not charged on unspent contingency.
 
 ## 4. PAYMENT SCHEDULE
 Payee is Split Rock Construction LLC only. Draw base for Draws 1–5 is **$659,330.10**. Contingency is not advanced in Draws 1–5.
@@ -42,7 +46,7 @@ Payee is Split Rock Construction LLC only. Draw base for Draws 1–5 is **$659,3
 Written Change Order before changed work, except documented emergency then signature within 48 hours. Contingency $29,969.55 is for unknown site, weather, and code. Not upgrades. Not Bid misses. Unused credits Draw 6.
 
 ## 13. DUAL-CAPACITY DISCLOSURE
-Kipp Archibald is principal of Contractor and a real-estate licensee with Archibald-Bagley Real Estate who represented Owner on the already-closed lot. That brokerage relationship is finished. This Agreement is a construction contract with Split Rock Construction LLC only. It is not an Archibald-Bagley contract. Owner acknowledges that dual role.
+Kipp Archibald is principal of Contractor and a real-estate licensee with Archibald-Bagley Real Estate who previously represented Owner in a brokerage capacity as to the Property. That brokerage relationship is finished. This Agreement is a construction contract with Split Rock Construction LLC only. It is not an Archibald-Bagley contract. Owner acknowledges that dual role.
 
 Owner initials: __________ Lauren Holwege    __________ Cindy Holwege
 
