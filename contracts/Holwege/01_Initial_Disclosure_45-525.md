@@ -11,7 +11,7 @@ Owner is informed of the following:
 
 (a) Owner has the right, at Owner's reasonable expense, to require the General Contractor to obtain lien waivers from any subcontractors providing services or materials to the General Contractor;
 
-(b) Owner has the right to receive from the General Contractor proof that the General Contractor has a general liability insurance policy including completed operations in effect, and proof that the General Contractor has worker's compensation insurance for employees as required by Idaho law;
+(b) Owner has the right to receive from the General Contractor proof that the General Contractor has a general liability insurance policy including completed operations in effect, and proof that the General Contractor has worker's compensation insurance for employees as required by Idaho law. Contractor currently has no employees. Labor on this job will be performed by independent registered subcontractors. Contractor is not required to carry worker's compensation on members of the LLC or on persons it does not employ. Upon request Contractor will provide its GL certificate and, if and when it has employees, its WC certificate. Contractor will require subcontractors to be Idaho-registered and to carry their own WC or a lawful exemption;
 
 (c) Owner is informed of the opportunity to purchase an extended policy of title insurance covering certain unfiled or unrecorded liens; and
 
