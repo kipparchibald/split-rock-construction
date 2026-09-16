@@ -59,7 +59,7 @@ function f(
   return { id, group, label, value, confidence, source };
 }
 
-export function fillRigbySfdFromPlans(jobName = HOLWEGE_PERMIT.jobName): CityworksField[] {
+export function fillRigbySfdFromPlans(jobName: string = HOLWEGE_PERMIT.jobName): CityworksField[] {
   const H = HOLWEGE_PERMIT;
   const P = RIVER_BEND_HOLWEGE;
   return [
