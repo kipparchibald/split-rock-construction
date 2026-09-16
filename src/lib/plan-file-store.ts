@@ -53,24 +53,46 @@ export async function savePlanFile(
   id: string = DEFAULT_PLAN_FILE_ID,
 ): Promise<StoredPlanFile> {
   const kind = planKindFromFile(file);
+  // Copy bytes so the stored Blob is not a live File handle (Safari / large PDF).
+  const bytes = await file.arrayBuffer();
+  const blob = new Blob([bytes], { type: file.type || "application/octet-stream" });
   const record: StoredPlanFile = {
     id,
     name: file.name,
     type: file.type || "application/octet-stream",
-    size: file.size,
+    size: blob.size,
     uploadedAt: new Date().toISOString(),
     kind,
-    blob: file,
+    blob,
   };
   const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error("IDB write failed"));
-    tx.objectStore(STORE).put(record);
-  });
-  db.close();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error("IDB write failed"));
+      tx.onabort = () =>
+        reject(tx.error ?? new Error("IDB write aborted (quota or private mode?)"));
+      tx.objectStore(STORE).put(record);
+    });
+  } finally {
+    db.close();
+  }
   return record;
+}
+
+/** Fetch a same-origin plan asset (e.g. Holwege P-8) into IndexedDB. */
+export async function savePlanFileFromUrl(
+  url: string,
+  name: string,
+  id: string = DEFAULT_PLAN_FILE_ID,
+): Promise<StoredPlanFile> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not fetch plan (${res.status})`);
+  const blob = await res.blob();
+  const type = blob.type || (name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
+  const file = new File([blob], name, { type });
+  return savePlanFile(file, id);
 }
 
 export async function loadPlanFile(id: string = DEFAULT_PLAN_FILE_ID): Promise<StoredPlanFile | null> {
