@@ -116,7 +116,7 @@ function securityHeadersPlugin(): Plugin {
     "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=()",
 
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' blob: https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
   };
   return {
     name: "app-builder:security-headers",
@@ -138,7 +138,7 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=()",
 
   "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; frame-src 'self' blob: https://my.matterport.com https://*.matterport.com; frame-ancestors *; base-uri 'self'; form-action 'self'; object-src 'none'",
 };
 
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
