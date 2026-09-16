@@ -22,6 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const Z = 18;
+const VIEW_W = 640;
+const VIEW_H = 420;
 
 type Props = {
   projectId?: string;
@@ -32,7 +34,10 @@ type Props = {
   className?: string;
 };
 
-/** Holwege: River Bend P-8 plot plan over Jefferson County GIS aerial. No invented schematic. */
+/**
+ * Holwege site view: River Bend PLOT PLAN (P-8) over Jefferson County GIS aerial.
+ * Does not invent building / septic schematic geometry.
+ */
 export function PlotPlanGisOverlay({
   projectId = HOLWEGE_PROJECT_ID,
   projectName = "Holwege Residence — Lot 16",
@@ -53,7 +58,7 @@ export function PlotPlanGisOverlay({
 
   const tiles = useMemo(() => {
     const centerM = projectMercator(center.lat, center.lng, Z);
-    const origin = { x: centerM.x - 320, y: centerM.y - 210 };
+    const origin = { x: centerM.x - VIEW_W / 2, y: centerM.y - VIEW_H / 2 };
     const corners = [
       { lat: center.lat + 0.0011, lng: center.lng - 0.0016 },
       { lat: center.lat - 0.0011, lng: center.lng + 0.0016 },
@@ -88,10 +93,16 @@ export function PlotPlanGisOverlay({
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-3 py-3 sm:px-4">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.08em] text-fg-subtle">Plot plan + county aerial</p>
-          <p className="mt-1 text-[13px] font-medium text-fg">{projectName} · Lot {lotNumber}</p>
+          <p className="text-[10px] uppercase tracking-[0.08em] text-fg-subtle">
+            Plot plan + county aerial
+          </p>
+          <p className="mt-1 text-[13px] font-medium text-fg">
+            {projectName} · Lot {lotNumber}
+          </p>
           <p className="mt-0.5 text-[11px] text-fg-subtle">{HOLWEGE_LEGAL}</p>
-          <p className="mt-0.5 text-[11px] text-fg-muted">{HOLWEGE_PLAN_SET_LABEL} · sheet P-8</p>
+          <p className="mt-0.5 text-[11px] text-fg-muted">
+            {HOLWEGE_PLAN_SET_LABEL} · sheet P-8
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">River Bend P-8</Badge>
@@ -108,13 +119,22 @@ export function PlotPlanGisOverlay({
           </Button>
         </div>
       </div>
+
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-3 py-2 text-[12px]">
         <label className="flex min-h-10 items-center gap-2">
-          <input type="checkbox" checked={showAerial} onChange={(e) => setShowAerial(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={showAerial}
+            onChange={(e) => setShowAerial(e.target.checked)}
+          />
           GIS aerial
         </label>
         <label className="flex min-h-10 items-center gap-2">
-          <input type="checkbox" checked={showPlot} onChange={(e) => setShowPlot(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={showPlot}
+            onChange={(e) => setShowPlot(e.target.checked)}
+          />
           Plot plan overlay
         </label>
         <label className="flex min-h-10 flex-1 items-center gap-2 sm:max-w-xs">
@@ -130,7 +150,11 @@ export function PlotPlanGisOverlay({
           />
         </label>
       </div>
-      <div className="relative w-full overflow-hidden bg-[#1a1f18]" style={{ aspectRatio: "16 / 10", minHeight: 280 }}>
+
+      <div
+        className="relative w-full overflow-hidden bg-[#1a1f18]"
+        style={{ aspectRatio: "16 / 10", minHeight: 280 }}
+      >
         {showAerial ? (
           <div className="absolute inset-0">
             {tiles.map((tile) => (
@@ -148,6 +172,7 @@ export function PlotPlanGisOverlay({
         ) : (
           <div className="absolute inset-0 bg-[#2a3028]" />
         )}
+
         {showPlot ? (
           <img
             src={plotPlanImageUrl}
@@ -157,9 +182,10 @@ export function PlotPlanGisOverlay({
             draggable={false}
           />
         ) : null}
+
         <div className="pointer-events-none absolute bottom-2 left-2 max-w-[92%] bg-black/55 px-2 py-1 text-[9px] leading-snug text-white/85">
-          Aerial: Jefferson County GIS · Plot: River Bend P-8 (authoritative — not invented schematic).
-          Confirm recorded plat / PLS before staking. No county APN in SoR.
+          Aerial: Jefferson County GIS · Plot: River Bend P-8 (authoritative sheet — not invented
+          schematic). Confirm recorded plat / PLS before staking. No county APN in SoR.
         </div>
       </div>
     </div>
