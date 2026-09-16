@@ -15,11 +15,14 @@ import { cn } from "@/lib/utils";
 export function PlanSheetViewer({
   className,
   reloadKey,
+  planFileId = DEFAULT_PLAN_FILE_ID,
   onLoaded,
 }: {
   className?: string;
   /** Bump when a new file is saved so the viewer reloads. */
   reloadKey?: string | number;
+  /** IndexedDB key — Holwege Design Center uses a job-scoped id. */
+  planFileId?: string;
   onLoaded?: (file: StoredPlanFile | null) => void;
 }) {
   const [file, setFile] = useState<StoredPlanFile | null>(null);
@@ -32,7 +35,7 @@ export function PlanSheetViewer({
 
     (async () => {
       setStatus("loading");
-      const stored = await loadPlanFile(DEFAULT_PLAN_FILE_ID);
+      const stored = await loadPlanFile(planFileId);
       if (cancelled) return;
       if (!stored) {
         setFile(null);
@@ -58,7 +61,7 @@ export function PlanSheetViewer({
       cancelled = true;
       if (revoked) URL.revokeObjectURL(revoked);
     };
-  }, [reloadKey, onLoaded]);
+  }, [reloadKey, planFileId, onLoaded]);
 
   if (status === "loading") {
     return (
@@ -100,7 +103,7 @@ export function PlanSheetViewer({
           className,
         )}
       >
-        Could not open plan file. Re-upload from the Plans tab.
+        Could not open plan file. Re-upload from the Plans tab. PDF preview needs blob: in CSP frame-src.
       </div>
     );
   }
