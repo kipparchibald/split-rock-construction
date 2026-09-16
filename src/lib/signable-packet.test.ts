@@ -33,7 +33,8 @@ describe("Holwege signable packet (SoT bodies)", () => {
   });
 
   it("wires main SoT paths and non-empty bodies; required docs are ready_for_sign", () => {
-    const docs = holwegeSignablePacket().docs;
+    const pkt = holwegeSignablePacket();
+    const docs = pkt.docs;
     const paths = docs.map((d) => d.sourcePath);
     expect(paths).toContain("contracts/Holwege/03_Construction_Agreement.md");
     expect(paths).toContain("contracts/Holwege/01_Initial_Disclosure_45-525.md");
@@ -49,8 +50,10 @@ describe("Holwege signable packet (SoT bodies)", () => {
     const agreement = docs.find((d) => d.kind === "construction_agreement")!;
     expect(agreement.body).toMatch(/\$689,299\.65/);
     expect(agreement.body).toMatch(/\$659,330\.10/);
-    expect(agreement.body).toMatch(/\$98,000/);
+    // Legal-desc-only fence: lot dollars live in brokerageNote / closing file, not the construction agreement body.
+    expect(agreement.body).not.toMatch(/\$98,000/);
     expect(agreement.body.toLowerCase()).toMatch(/not.*part of the contract price|not included/);
+    expect(pkt.brokerageNote).toMatch(/\$98,000/);
   });
 
   it("marks ready when required docs are signed or uploaded", () => {
