@@ -1,0 +1,53 @@
+                            alt={`Field photo ${i + 1} from ${formatDate(l.date)}`}
+                            className="h-20 w-20 border border-border object-cover"
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="mt-6 text-center text-[11px] text-fg-subtle">
+        Split Rock Construction · Rigby & Jefferson County · Built well. Documented clearly.
+      </p>
+    </div>
+  );
+}
+
+function Snapshot({
+  label,
+  value,
+  hint,
+  tone,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  tone: "default" | "warn" | "ok";
+  onClick?: () => void;
+}) {
+  const Comp = onClick ? "button" : "div";
+  return (
+    <Comp
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={cn(
+        "border border-border bg-bg-elevated p-3 text-left",
+        onClick && "transition-colors hover:bg-bg-subtle",
+        tone === "warn" && "border-warning/40 bg-warning/5",
+        tone === "ok" && "border-success/25",
+      )}
+    >
+      <p className="label-caps">{label}</p>
+      <p className="mt-1 truncate text-[15px] font-medium tabular-nums text-fg">{value}</p>
+      <p className="mt-0.5 truncate text-[10px] text-fg-subtle">{hint}</p>
+    </Comp>
+  );
+}
