@@ -1,0 +1,95 @@
+
+
+const PLAYBOOK = [
+  {
+    title: "Owner portal",
+    body: "One private household login for decisions, schedule, documents, money, and field updates.",
+  },
+  {
+    title: "Transparent cost-plus",
+    body: "Published cost of work, owner contingency, and P&O — contingency moves only on a signed change order.",
+  },
+  {
+    title: "Milestone draws",
+    body: "Draw schedule tied to real construction gates, with a clear signing deposit separate from progress draws.",
+  },
+  {
+    title: "Written decisions",
+    body: "Selections and change orders are recorded in writing with status you can see — not buried in email threads.",
+  },
+] as const;
+
+const APPROACH = [
+  "Land already closed — construction contract covers the home only.",
+  "River Bend Drafting plan set (8-31-2026b).",
+  "Cost-plus / no GMP with the published money stack below.",
+  "Owner portal for decisions, schedule, money, and field updates.",
+] as const;
+
+function HolwegeCaseStudyPage() {
+  return (
+    <div className="min-h-dvh bg-bg-elevated" data-testid="holwege-case-study">
+      <header className="sticky top-0 z-40 border-b border-border bg-bg-elevated/95 pt-[env(safe-area-inset-top)] backdrop-blur-sm">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Logo />
+          <nav className="hidden items-center gap-6 text-[13px] font-medium text-fg-muted md:flex">
+            <Link to="/" className="hover:text-forest">
+              Home
+            </Link>
+            <Link to="/work/holwege" className="text-forest">
+              Work
+            </Link>
+            <a href="#money" className="hover:text-forest">
+              Money
+            </a>
+            <a href="#timeline" className="hover:text-forest">
+              Timeline
+            </a>
+            <a href="#experience" className="hover:text-forest">
+              Experience
+            </a>
+            <a href="#cta" className="hover:text-forest">
+              Contact
+            </a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+              <Link to="/portal/login">Client portal</Link>
+            </Button>
+            <Button size="sm" asChild className={cn(marketingBtnPrimary)}>
+              <a href="/#contact">Start a build conversation</a>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="border-b border-sand">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12">
+          <div>
+            <p className="label-caps-accent mb-4 inline-flex items-center gap-2 rounded-sm bg-forest-light px-2.5 py-1">
+              Featured build · Lot 16
+            </p>
+            <h1 className="text-3xl font-medium tracking-[-0.03em] text-fg sm:text-4xl">
+              Custom one-level on Lot 16 — designed for how you live.
+            </h1>
+            <p className="mt-4 text-[14px] leading-relaxed text-fg-muted">
+              Flagship client experience on Lot 16, Teton Heights Div 6 — Jefferson County,
+              Idaho. Built by {COMPANY.legalName} · Idaho Contractor Registration{" "}
+              {COMPANY.idahoContractorRegistration}.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {BADGES.map((b) => (
+                <span
+                  key={b}
+                  className="rounded-sm border border-sand bg-bg px-2.5 py-1 text-[11px] font-medium text-fg-muted"
+                >
+                  {b}
+                </span>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button size="lg" asChild className={cn("min-h-11", marketingBtnPrimary)}>
+                <a href="/#contact">
+                  Start a build conversation
+                  <ArrowRigh
