@@ -1,0 +1,49 @@
+th={1.75} />
+                  {COMPANY.emailKipp}
+                </a>
+                <span className="inline-flex items-center gap-2 text-forest-fg/70">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Rigby · Jefferson County, Idaho
+                </span>
+                <span className="text-[12px] text-forest-fg/65">
+                  {COMPANY.idahoContractorRegistrationLabel}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="min-h-11 bg-bg-elevated text-forest hover:bg-earth-light"
+                asChild
+              >
+                <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
+                  View Teton Heights lots
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </a>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="min-h-11 border-forest-fg/35 text-forest-fg hover:bg-forest-fg/10"
+                asChild
+              >
+                <Link to="/estimate">Lot + build estimate</Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="min-h-11 border-forest-fg/35 text-forest-fg hover:bg-forest-fg/10"
+                asChild
+              >
+                <Link to="/portal/login">Client portal</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <MarketingFooter />
+    </div>
+  );
+}
