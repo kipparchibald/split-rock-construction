@@ -1,0 +1,113 @@
+t isHolwege = project ? isHolwegeProject(project) : false;
+  const nextMilestone = project?.milestones?.find((m) => !m.done);
+  const projectDocs = useMemo(() => {
+    if (!project) return [];
+    return documents
+      .filter((d) => d.projectId === project.id)
+      .filter((d) => d.id !== "doc-holwege-45525-completion") // closeout stub — hide until needed
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [documents, project]);
+
+
+  const [choiceDraft, setChoiceDraft] = useState<Record<string, string>>({});
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pendingCOs[0]) {
+      setFlashId(pendingCOs[0].id);
+      const t = window.setTimeout(() => setFlashId(null), 4000);
+      return () => window.clearTimeout(t);
+    }
+  }, [pendingCOs[0]?.id]);
+
+  useEffect(() => {
+    if (!lastAction) return;
+    const t = window.setTimeout(() => setLastAction(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [lastAction]);
+
+  const nextAction: NextAction = useMemo(() => {
+    if (!project) {
+      return {
+        severity: "clear",
+        title: "No project in your account",
+        detail: isClientUser
+          ? "When Split Rock links a job to your account, it appears here."
+          : "Pick a home build or sign in as a client.",
+      };
+    }
+    if (pendingCOs[0]) {
+      return {
+        severity: "high",
+        title: `Decision needed · ${pendingCOs[0].number}`,
+        detail: `${pendingCOs[0].title} · ${formatCurrency(pendingCOs[0].amount)}`,
+        cta: "Review change order",
+        to: "/app/portal",
+        search: { project: project.id },
+      };
+    }
+    if (pendingSel[0]) {
+      return {
+        severity: "med",
+        title: `Selection waiting · ${pendingSel[0].category}`,
+        detail: `${pendingSel[0].room} — allowance ${formatCurrency(pendingSel[0].allowance)}`,
+        cta: "Choose finishes",
+        to: "/app/portal",
+        search: { project: project.id },
+      };
+    }
+    return {
+      severity: "clear",
+      title: "You're caught up",
+      detail: "No open change orders or selections. Check money and field updates anytime.",
+    };
+  }, [project, pendingCOs, pendingSel, isClientUser]);
+
+  function approveCo(id: string, number: string, title: string) {
+    // Isolation: only mutate COs for visible project
+    const co = changeOrders.find((c) => c.id === id);
+    if (!co || !project || co.projectId !== project.id) {
+      toast.error("That change order is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
+    setChangeOrderStatus(id, "approved");
+    setLastAction(`Approved ${number} · ${title}`);
+    toast.success("Change order approved", {
+      description: `${number} is locked in. Your contract total updates automatically.`,
+    });
+  }
+
+  function declineCo(id: string, number: string) {
+    const co = changeOrders.find((c) => c.id === id);
+    if (!co || !project || co.projectId !== project.id) {
+      toast.error("That change order is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
+    setChangeOrderStatus(id, "rejected");
+    setLastAction(`Declined ${number}`);
+    toast.message("Change order declined", {
+      description: "Split Rock will follow up with options if you want to revise scope.",
+    });
+  }
+
+  function approveSelection(id: string, label: string, choice: string) {
+    const sel = selections.find((s) => s.id === id);
+    if (!sel || !project || sel.projectId !== project.id) {
+      toast.error("That selection is not part of your project.");
+      return;
+    }
+    if (portalClient && project.clientId !== portalClient.id) {
+      toast.error("Access denied.");
+      return;
+    }
+    setSelectionSt
