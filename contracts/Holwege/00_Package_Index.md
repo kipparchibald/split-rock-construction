@@ -39,3 +39,5 @@ Any field supervisor or subcontractor is not a party and cannot change price, sc
 ## Packet UI
 
 Ops `/app/packet` shows short-form agreement + §45-525(2) + agreement **§13 dual-capacity** as ready-for-sign (package still draft). Dollars locked: contract **$689,299.65** · draw base **$659,330.10**. Long-form (12) is parallel counsel SoT until UI migration is intentional.
+
+- `17_Construction_Agreement_Letterhead_2026-09-16.pdf` — letterhead signature PDF (owner-facing; Exhibit B one-page double-column)
