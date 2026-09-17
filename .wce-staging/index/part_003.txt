@@ -1,0 +1,83 @@
+a
+                  href={p.href}
+                  {...(p.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-forest hover:underline"
+                >
+                  {p.cta}
+                  <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Teton Heights Div 6 */}
+      <section id="lots" className="border-b border-border">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-14">
+            <div>
+              <p className="label-caps-accent">Available now</p>
+              <h2 className="mt-2 text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+                Teton Heights Division #6
+              </h2>
+              <p className="mt-1 text-[13px] text-fg-muted">Rigby, Idaho · Jefferson County</p>
+              <p className="mt-4 max-w-md text-[14px] leading-relaxed text-fg-muted">
+                Spacious residential lots priced at <strong className="text-fg">$99,500</strong> —
+                minimum 0.6 acres, many larger. Roads, power, gas, and fiber are in. Pre-approved well
+                sites and straightforward septic keep the path to a building permit clear.
+              </p>
+              <figure className="mt-6 overflow-hidden rounded-md border border-sand lg:hidden">
+                <div className="aspect-[16/10] w-full">
+                  <img
+                    src={SITE_PHOTOS.aerial2}
+                    alt="Top-down aerial of Teton Heights lot layout and paved roads"
+                    className="marketing-photo"
+                    width={800}
+                    height={500}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </figure>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button asChild className={marketingBtnPrimary}>
+                  <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
+                    Open rigbylots.com
+                    <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </a>
+                </Button>
+                <Button variant="outline" asChild className="border-earth/40 hover:bg-earth-light">
+                  <a href="#contact">Reserve a lot · talk build</a>
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <figure className="hidden overflow-hidden rounded-md border border-sand lg:block">
+                <div className="aspect-[16/10] w-full">
+                  <img
+                    src={SITE_PHOTOS.aerial2}
+                    alt="Top-down aerial of Teton Heights lot layout and paved roads"
+                    className="marketing-photo"
+                    width={800}
+                    height={500}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </figure>
+              <div className="rounded-md border border-sand bg-earth-light/30 p-5 sm:p-6">
+                <p className="label-caps-accent mb-4">What each lot includes</p>
+                <ul className="space-y-2.5">
+                  {lotHighlights.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-[13px] text-fg-muted">
+                      <CheckCircle2
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest"
+                        strokeWidth={1.75}
+                      />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-5 border-t border-sand pt-4 text-[11px] leading-relaxed text-fg-subtle">
+                  Live inven
