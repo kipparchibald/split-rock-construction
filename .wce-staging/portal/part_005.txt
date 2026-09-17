@@ -1,0 +1,97 @@
+"
+          value={formatCurrency(cash.paid)}
+          hint="Draws received"
+          tone="default"
+        />
+        <Snapshot
+          label="Contract"
+          value={formatCurrencyExact(project.budget)}
+          hint={approvedCoTotal ? `+${formatCurrency(approvedCoTotal)} COs` : "Incl. approved COs"}
+          tone="default"
+        />
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() =>
+          document.getElementById("decisions")?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            document
+              .getElementById("decisions")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }}
+      >
+        <NextActionBanner action={nextAction} className="mb-4" />
+      </div>
+
+      {lastAction ? (
+        <div
+          className="mb-4 flex items-start gap-2 border border-success/30 bg-success/5 px-3 py-2.5 text-[13px]"
+          data-testid="portal-last-action"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.75} />
+          <div>
+            <p className="font-medium text-fg">{lastAction}</p>
+            <p className="mt-0.5 text-[12px] text-fg-muted">
+              Split Rock is notified. You can keep reviewing money and field notes below.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Welcome + contact */}
+      <div className="mb-6 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="border border-border bg-bg-elevated p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-border bg-bg-subtle">
+              <Home className="h-4 w-4 text-fg-muted" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0">
+              <p className="label-caps">{isHolwege ? "Status" : "Welcome"}</p>
+              <h2 className="mt-1 text-lg font-medium tracking-[-0.02em]">
+                {isHolwege ? "Holwege Residence · Lot 16" : (client?.name ?? "Owner")}
+              </h2>
+              <p className="mt-0.5 text-[13px] text-fg-muted">
+                {isHolwege
+                  ? `${project.phase} · ${project.progress}% · next: ${nextMilestone?.name ?? "TBD"}`
+                  : `${project.name} · ${project.address}`}
+              </p>
+              {!isHolwege ? (
+                <p className="mt-0.5 text-[12px] text-fg-subtle">{client?.name}</p>
+              ) : (
+                <p className="mt-0.5 text-[12px] text-fg-subtle">
+                  {client?.name?.split("&")[0]?.trim() ?? "Owners"} · private household portal
+                </p>
+              )}
+              <Progress value={project.progress} className="mt-4" />
+              <p className="mt-2 text-[12px] tabular-nums text-fg-subtle">
+                {project.progress}% complete · phase: {project.phase}
+                {nextMilestone ? ` · next milestone: ${nextMilestone.name}` : ""}
+              </p>
+            </div>
+          </div>
+          {project.matterportId ? (
+            <Button size="sm" variant="outline" className="mt-4" asChild>
+              <a
+                href={`https://my.matterport.com/show/?m=${project.matterportId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open 3D tour
+              </a>
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="border border-border bg-bg-elevated p-5">
+          <p className="label-caps mb-2">Your builder team</p>
+          <p className="text-[13px] font-medium text-fg">{superName}</p>
+          <p className="mt-0.5 text-[12px] text-fg-muted">
+            Questions on change orders, draws, or schedule? Reach out anytime.
+          </p>
+          <div className="mt-3 space-y-2 text-[12px]">
