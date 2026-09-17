@@ -1,0 +1,85 @@
+ate of occupancy is not claimed until achieved. Journey shown
+            at Site (pre-start).
+          </p>
+          <div className="mt-6">
+            <BuildJourneyRail
+              phases={[...DEFAULT_RESIDENTIAL_PHASES]}
+              current="Site"
+              variant="marketing"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Owner experience */}
+      <section className="border-b border-border bg-bg" id="experience">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">Owner experience</p>
+          <h2 className="mt-2 max-w-2xl text-2xl font-medium tracking-[-0.02em]">
+            Week-to-week clarity — not a black box.
+          </h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-fg-muted">
+            Holwege owners get the same operating rhythm we design for every residential job:
+            written decisions, field notes, and money that matches the contract.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {OWNER_MOMENTS.map((m, i) => (
+              <div
+                key={m.title}
+                className="rounded-md border border-sand bg-bg-elevated p-5"
+              >
+                <p className="label-caps text-forest">Moment {i + 1}</p>
+                <h3 className="mt-2 text-[14px] font-medium text-fg">{m.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">{m.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Same playbook */}
+      <section className="border-b border-border" id="playbook">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">Same playbook for every client</p>
+          <h2 className="mt-2 max-w-2xl text-2xl font-medium tracking-[-0.02em]">
+            Holwege is the flagship template — not a one-off.
+          </h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-fg-muted">
+            Future builds inherit the same OS: portal, transparent cost-plus stack, milestone
+            draws, and written decisions. Your lot changes; the experience pattern does not.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PLAYBOOK.map((p) => (
+              <div key={p.title} className="rounded-md border border-sand bg-bg-elevated p-5">
+                <div className="mb-3 h-0.5 w-8 rounded-full bg-forest/70" />
+                <h3 className="text-[13px] font-medium">{p.title}</h3>
+                <p className="mt-2 text-[12px] leading-relaxed text-fg-muted">{p.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Process / trust */}
+      <section className="border-b border-border bg-bg" id="trust">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">Process & trust</p>
+          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-[-0.02em]">
+            Written budgets. Milestone draws. Weekly field notes.
+          </h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                title: "Owner portal",
+                body: "Decisions, schedule, money, and field updates in one private household login.",
+              },
+              {
+                title: "Idaho §45-525",
+                body: "Initial and completion disclosures as part of our compliance posture — details in your contract package.",
+              },
+              {
+                title: "Dual-capacity disclosed",
+                body: "Builder role and any prior lot representation are disclosed in writing. This page is construction marketing only.",
+              },
+            ].map((card) => (
+              <div key={card.title} className="rounded-md border border-sand bg-bg-e
