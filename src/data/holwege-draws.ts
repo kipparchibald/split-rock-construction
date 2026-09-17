@@ -66,13 +66,13 @@ export const holwegeDraws: ProgressDraw[] = [
 export const holwegeDocuments: DocumentItem[] = [
   {
     id: "doc-holwege-contract",
-    title: "Construction Agreement - Holwege Lot 16",
+    title: "Construction Agreement - Holwege Lot 16 (letterhead)",
     type: "contract",
     projectId: HOLWEGE_PROJECT_ID,
     status: "pending",
-    updatedAt: "2026-09-10",
+    updatedAt: "2026-09-17",
     author: "Kipp Archibald",
-    reference: "contracts/Holwege/03_Construction_Agreement.md",
+    reference: "/holwege/Holwege_Construction_Agreement_Letterhead.pdf",
     dueDate: "2026-09-20",
   },
   {

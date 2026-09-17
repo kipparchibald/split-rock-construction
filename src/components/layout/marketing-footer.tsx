@@ -23,6 +23,9 @@ export function MarketingFooter() {
           <a href={COMPANY.phoneHref} className="text-[11px] text-fg-subtle hover:text-fg">
             {COMPANY.phone}
           </a>
+          <Link to="/work/holwege" className="text-[11px] text-fg-subtle hover:text-fg">
+            Featured build
+          </Link>
           <Link to="/estimate" className="text-[11px] text-fg-subtle hover:text-fg">
             Lot + build estimate
           </Link>
