@@ -1,0 +1,29 @@
+arties are released from further performance. Mutual termination is not a default by either party and shall not be described as such to a lender, the county, or a third party.
+
+**14.5** Termination for convenience. Either party may terminate this Agreement for convenience by written notice delivered at least fourteen (14) days before the effective date. The settlement is the same as Section 14.4(a)–(f). A convenience termination is not a default. If Owner terminates for convenience after Contractor has ordered long-lead items in good faith, those items are part of the settlement under 14.4(b). If Contractor terminates for convenience, Contractor shall cooperate in an orderly handoff to Owner or a successor contractor and shall not remove materials already paid for by Owner.
+
+## Article 15. Insurance
+
+**15.1** Contractor shall maintain commercial general liability insurance including products and completed operations with a per-occurrence limit of not less than Three Hundred Thousand Dollars ($300,000), which is the statutory minimum associated with Idaho contractor registration (Idaho Code § 54-5210). Upon request Contractor shall furnish a certificate naming Owner as certificate holder.
+
+**15.2** Contractor currently has no employees. Working members of an LLC are not required to carry worker’s compensation on themselves. Idaho requires worker’s compensation when Contractor has employees. Contractor therefore has no worker’s compensation certificate to deliver at signing. If Contractor later hires any employee, Contractor shall obtain worker’s compensation before that person starts work and shall furnish the certificate on request.
+
+**15.3** Contractor shall require each subcontractor to carry its own worker’s compensation or a lawful exemption, and general liability appropriate to the trade.
+
+**15.4** Builder’s risk / course-of-construction insurance in an amount not less than the Contract Price shall be maintained from mobilization through Substantial Completion. Unless Owner’s lender requires Owner to purchase it, Contractor shall purchase it (budgeted as the Exhibit B builders-risk line) and shall name Owner as loss payee as their interests appear. Deductible shall not exceed $2,500 without Owner’s written consent.
+
+**15.5** Owner notice (16 September 2026). Owner has advised Contractor that Owner obtained course-of-construction coverage through State Farm (Rigby office / Darrin Thurman), reference **552MB1RC**, for the Property, and that a Beehive appraisal is completed. If that Owner-purchased policy remains in force in the amount required by Section 15.4 and names the parties as their interests appear, Contractor need not duplicate builder’s risk. Contractor shall receive a certificate of insurance on request. If Owner’s course-of-construction policy remains in force as required by Section 15.4, Contractor need not duplicate builder’s risk.
+
+## Article 16. Indemnification (Idaho Code § 29-114)
+
+**16.1** Contractor shall indemnify and hold Owner harmless from third-party claims for bodily injury or property damage to the extent caused by the negligent acts or omissions of Contractor or its subcontractors in performing the Work.
+
+**16.2** Owner shall indemnify and hold Contractor harmless from third-party claims to the extent caused by Owner’s negligent acts or omissions, including site visitors Owner invites.
+
+**16.3** Idaho Code § 29-114 voids any construction-contract clause that requires a party to indemnify another person for loss caused by the indemnitee’s sole negligence. Nothing in this Agreement requires that indemnity. Each party’s indemnity is limited to its own proportionate fault.
+
+## Article 17. Liens
+
+**17.1** Contractor shall keep the Property free of liens arising from Contractor’s failure to pay subcontractors or suppliers for Work for which Owner has paid Contractor, provided Owner is not in payment default.
+
+**17.2** Owner acknowledges that unpaid subcontractors and suppliers may have lien rights agai
