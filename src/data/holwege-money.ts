@@ -15,6 +15,8 @@ export const HOLWEGE_COST_OF_WORK = 599_391.0;
 export const HOLWEGE_OWNER_CONTINGENCY = 29_969.55;
 export const HOLWEGE_PO = 59_939.1;
 export const HOLWEGE_CONTRACT = 689_299.65;
+/** Signing deposit credited against Draw 1 — public + portal safe */
+export const HOLWEGE_SIGNING_DEPOSIT = 10_000;
 /** Draws 1-5 base = cost + P&O (contingency not advanced) */
 export const HOLWEGE_DRAW_BASE = 659_330.1;
 /** Lot closed separately - never add to project.budget */

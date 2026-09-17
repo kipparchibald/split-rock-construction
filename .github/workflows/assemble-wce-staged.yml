@@ -1,0 +1,80 @@
+name: assemble-wce-staged
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/holwege-world-class-experience]
+    paths:
+      - ".wce-staging/**"
+      - ".github/workflows/assemble-wce-staged.yml"
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/holwege-world-class-experience
+      - name: Assemble staged WCE files
+        run: |
+          python3 <<'PY'
+          import json, pathlib, hashlib, subprocess, shutil
+          root = pathlib.Path(".wce-staging")
+          if not root.exists():
+              print("no staging; skip")
+              raise SystemExit(0)
+          changed = False
+          for name in ["work", "portal", "index", "template"]:
+              d = root / name
+              meta_path = d / "META.json"
+              if not meta_path.exists():
+                  print("skip", name, "no META")
+                  continue
+              meta = json.loads(meta_path.read_text())
+              if not meta.get("ready"):
+                  print("skip", name, "not ready")
+                  continue
+              parts = []
+              missing = False
+              for p in meta["parts"]:
+                  fp = d / p
+                  if not fp.exists():
+                      print("missing", name, p)
+                      missing = True
+                      break
+                  parts.append(fp.read_text())
+              if missing:
+                  continue
+              content = "".join(parts)
+              raw = content.encode()
+              blob = hashlib.sha1(("blob %d" % len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest()
+              if blob != meta["blob"]:
+                  raise SystemExit(f"blob mismatch {name}: got {blob} want {meta['blob']}")
+              target = pathlib.Path(meta["target_path"])
+              target.parent.mkdir(parents=True, exist_ok=True)
+              if target.exists() and target.read_text() == content:
+                  print(name, "already up to date")
+                  shutil.rmtree(d, ignore_errors=True)
+                  continue
+              target.write_text(content)
+              print("wrote", target, "bytes", len(raw), "blob", blob)
+              shutil.rmtree(d, ignore_errors=True)
+              changed = True
+          # remove empty staging root
+          if root.exists() and not any(root.iterdir()):
+              shutil.rmtree(root, ignore_errors=True)
+          # remove workflow only when staging fully gone
+          if not root.exists():
+              wf = pathlib.Path(".github/workflows/assemble-wce-staged.yml")
+              if wf.exists():
+                  wf.unlink()
+                  print("removed assemble workflow")
+          if not changed:
+              print("nothing to commit")
+              raise SystemExit(0)
+          subprocess.check_call(["git", "config", "user.name", "github-actions[bot]"])
+          subprocess.check_call(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
+          subprocess.check_call(["git", "add", "-A"])
+          subprocess.check_call(["git", "commit", "-m", "feat(holwege): assemble staged world-class experience text files"])
+          subprocess.check_call(["git", "push", "origin", "HEAD:feat/holwege-world-class-experience"])
+          PY

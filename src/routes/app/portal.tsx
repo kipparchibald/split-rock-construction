@@ -5,12 +5,14 @@ import {
   CalendarRange,
   CheckCircle2,
   ClipboardList,
+  FileText,
   HardHat,
   Home,
   LogOut,
   MessageSquare,
   Phone,
 } from "lucide-react";
+import { BuildJourneyRail } from "@/components/build-journey-rail";
 import { PageHeader } from "@/components/layout/page-header";
 import { NextActionBanner, type NextAction } from "@/components/layout/next-action-banner";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAppStore } from "@/data/store";
 import type { ChangeOrder } from "@/data/types";
 import { projectsForClient, scrubDrawTriggerForOwner } from "@/lib/client-portal";
+import {
+  DEFAULT_RESIDENTIAL_PHASES,
+  mapToDefaultPhase,
+} from "@/lib/build-journey";
+import { isHolwegeProject } from "@/lib/holwege-pricing";
+import { HOLWEGE_SIGNING_DEPOSIT } from "@/data/holwege-money";
 import { COMPANY } from "@/lib/company";
 import { drawBadgeVariant, drawStatusLabel, summarizeDraws } from "@/lib/draws";
 import { isDemoDataEnabled } from "@/lib/runtime-config";
@@ -46,6 +54,63 @@ function coBadgeVariant(
   return "outline";
 }
 
+
+const OWNER_DOC_TITLES: Record<string, string> = {
+  "doc-holwege-contract": "Construction Agreement (letterhead PDF)",
+  "doc-holwege-45525-initial": "Idaho §45-525 initial disclosure",
+  "doc-holwege-dual-capacity": "Dual-capacity disclosure",
+  "doc-holwege-exhibit-b": "Exhibit B — cost breakdown",
+  "doc-holwege-plans": "River Bend plans",
+};
+
+function ownerSafeDocTitle(id: string, fallback: string): string {
+  return OWNER_DOC_TITLES[id] ?? fallback.replace(/\s*-\s*Lauren and Cindy Holwege\b/i, "").trim();
+}
+
+function ownerDocStatusChip(
+  status: string,
+): { label: string; variant: "warning" | "success" | "secondary" | "outline" } {
+  if (status === "approved" || status === "passed") return { label: "approved", variant: "success" };
+  if (status === "pending") return { label: "ready to sign", variant: "warning" };
+  if (status === "rejected" || status === "failed") return { label: "needs revision", variant: "outline" };
+  return { label: "pending", variant: "secondary" };
+}
+
+function thisWeekOwnerPrompt(args: {
+  isHolwege: boolean;
+  decisionCount: number;
+  nextMilestoneName?: string;
+  nextDrawReady: boolean;
+}): { headline: string; action: string } {
+  const milestone = args.nextMilestoneName ?? "the next milestone";
+  if (args.decisionCount > 0) {
+    return {
+      headline: `Next: ${milestone}`,
+      action:
+        args.decisionCount === 1
+          ? "One decision is waiting on you in Decisions — approve or request a change."
+          : `${args.decisionCount} decisions are waiting on you in Decisions — clear them so the crew can stay on schedule.`,
+    };
+  }
+  if (args.nextDrawReady) {
+    return {
+      headline: `Next: ${milestone}`,
+      action: "Review the ready draw under Money — confirm the trigger matches the field before remittance.",
+    };
+  }
+  if (args.isHolwege) {
+    return {
+      headline: `Next: ${milestone}`,
+      action:
+        "Nothing required from you this week — watch for the weekly field note and keep an eye on Documents for signature packets.",
+    };
+  }
+  return {
+    headline: `Next: ${milestone}`,
+    action: "Nothing required from you right now — check Field updates for the latest crew note.",
+  };
+}
+
 function PortalPage() {
   const { project: searchProject } = Route.useSearch();
   const navigate = useNavigate({ from: "/app/portal" });
@@ -56,6 +121,7 @@ function PortalPage() {
     changeOrders,
     selections,
     dailyLogs,
+    documents,
     setChangeOrderStatus,
     setSelectionStatus,
   } = useAppStore();
@@ -160,6 +226,18 @@ function PortalPage() {
   );
 
   const decisionCount = pendingCOs.length + pendingSel.length;
+
+  const isHolwege = project ? isHolwegeProject(project) : false;
+  const nextMilestone = project?.milestones?.find((m) => !m.done);
+  const projectDocs = useMemo(() => {
+    if (!project) return [];
+    return documents
+      .filter((d) => d.projectId === project.id)
+      .filter((d) => d.id !== "doc-holwege-45525-completion") // closeout stub — hide until needed
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [documents, project]);
+
 
   const [choiceDraft, setChoiceDraft] = useState<Record<string, string>>({});
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -516,14 +594,26 @@ function PortalPage() {
               <Home className="h-4 w-4 text-fg-muted" strokeWidth={1.75} />
             </div>
             <div className="min-w-0">
-              <p className="label-caps">Welcome</p>
-              <h2 className="mt-1 text-lg font-medium tracking-[-0.02em]">{client?.name ?? "Owner"}</h2>
+              <p className="label-caps">{isHolwege ? "Status" : "Welcome"}</p>
+              <h2 className="mt-1 text-lg font-medium tracking-[-0.02em]">
+                {isHolwege ? "Holwege Residence · Lot 16" : (client?.name ?? "Owner")}
+              </h2>
               <p className="mt-0.5 text-[13px] text-fg-muted">
-                {project.name} · {project.address}
+                {isHolwege
+                  ? `${project.phase} · ${project.progress}% · next: ${nextMilestone?.name ?? "TBD"}`
+                  : `${project.name} · ${project.address}`}
               </p>
+              {!isHolwege ? (
+                <p className="mt-0.5 text-[12px] text-fg-subtle">{client?.name}</p>
+              ) : (
+                <p className="mt-0.5 text-[12px] text-fg-subtle">
+                  {client?.name?.split("&")[0]?.trim() ?? "Owners"} · private household portal
+                </p>
+              )}
               <Progress value={project.progress} className="mt-4" />
               <p className="mt-2 text-[12px] tabular-nums text-fg-subtle">
                 {project.progress}% complete · phase: {project.phase}
+                {nextMilestone ? ` · next milestone: ${nextMilestone.name}` : ""}
               </p>
             </div>
           </div>
@@ -565,25 +655,69 @@ function PortalPage() {
         </div>
       </div>
 
-      {/* Section jump */}
-      <nav className="mb-4 flex flex-wrap gap-2" aria-label="Portal sections">
+      {/* Build journey + This week */}
+      <div className="mb-6 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]" data-testid="portal-journey-week">
+        <div className="border border-border bg-bg-elevated p-5">
+          <p className="label-caps mb-3">Build journey</p>
+          <BuildJourneyRail
+            phases={[...DEFAULT_RESIDENTIAL_PHASES]}
+            current={
+              mapToDefaultPhase(project.phase) ??
+              project.schedule.find((s) => s.pct < 100)?.phase ??
+              project.phase
+            }
+            variant="portal"
+          />
+          <p className="mt-3 text-[11px] text-fg-subtle">
+            Same phase rail as the public case study — updated from your job status.
+          </p>
+        </div>
+        <div
+          className="border border-forest/25 bg-forest-light/30 p-5"
+          data-testid="portal-this-week"
+        >
+          <p className="label-caps text-forest">This week</p>
+          {(() => {
+            const week = thisWeekOwnerPrompt({
+              isHolwege,
+              decisionCount,
+              nextMilestoneName: nextMilestone?.name,
+              nextDrawReady: pDraws.some((d) => d.status === "ready"),
+            });
+            return (
+              <>
+                <h3 className="mt-2 text-[14px] font-medium text-fg">{week.headline}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">{week.action}</p>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Section jump — sticky on mobile */}
+      <nav
+        className="sticky top-0 z-20 -mx-1 mb-4 flex flex-wrap gap-2 bg-bg/95 px-1 py-2 backdrop-blur-sm supports-[backdrop-filter]:bg-bg/80"
+        aria-label="Portal sections"
+        data-testid="portal-section-chips"
+      >
         {[
           { id: "decisions", label: "Decisions", icon: ClipboardList, count: decisionCount },
           { id: "schedule", label: "Schedule", icon: CalendarRange },
+          { id: "documents", label: "Documents", icon: FileText },
           { id: "money", label: "Money", icon: Banknote },
           { id: "field", label: "Field updates", icon: HardHat },
         ].map((s) => (
           <button
             key={s.id}
             type="button"
-            className="inline-flex min-h-10 items-center gap-1.5 border border-border bg-bg-elevated px-3 text-[12px] font-medium text-fg-muted transition-colors hover:bg-bg-subtle hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1.5 border border-border bg-bg-elevated px-3 text-[12px] font-medium text-fg-muted transition-colors hover:bg-bg-subtle hover:text-fg"
             onClick={() =>
               document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
           >
             <s.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
             {s.label}
-            {s.count ? (
+            {"count" in s && s.count ? (
               <Badge variant="warning" className="ml-0.5">
                 {s.count}
               </Badge>
@@ -672,8 +806,8 @@ function PortalPage() {
               <div className="flex items-start gap-2 py-2 text-[13px] text-fg-muted">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.75} />
                 <p>
-                  Nothing waiting. When Split Rock sends a change order or finish choice, it appears
-                  here for approve or decline.
+                  Nothing needs you today. When Split Rock sends a change order or finish choice, it
+                  appears here for approve or decline.
                 </p>
               </div>
             ) : null}
@@ -831,6 +965,58 @@ function PortalPage() {
           </CardContent>
         </Card>
 
+
+        <Card id="documents" data-testid="portal-documents" className="lg:col-span-2">
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>Documents</CardTitle>
+            <Badge variant="secondary">{projectDocs.length}</Badge>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {projectDocs.length === 0 ? (
+              <p className="text-[13px] text-fg-muted">
+                Agreement, disclosures, and plans will appear here when Split Rock shares them.
+              </p>
+            ) : (
+              projectDocs.map((d) => {
+                const chip = ownerDocStatusChip(d.status);
+                const openHref =
+                  d.reference && d.reference.startsWith("/") ? d.reference : undefined;
+                const row = (
+                  <>
+                    <div className="min-w-0">
+                      <p className="font-medium text-fg">{ownerSafeDocTitle(d.id, d.title)}</p>
+                      <p className="text-fg-subtle">
+                        Updated {formatDate(d.updatedAt)}
+                        {d.dueDate ? ` · due ${formatDate(d.dueDate)}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant={chip.variant}>{chip.label}</Badge>
+                  </>
+                );
+                return openHref ? (
+                  <a
+                    key={d.id}
+                    href={openHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-2 border border-border px-3 py-2.5 text-[12px] transition-colors hover:border-forest/40 hover:bg-forest-light/20"
+                    data-testid={`portal-doc-${d.id}`}
+                  >
+                    {row}
+                  </a>
+                ) : (
+                  <div
+                    key={d.id}
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-2 border border-border px-3 py-2.5 text-[12px]"
+                  >
+                    {row}
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
         <Card id="money" data-testid="portal-money">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Money</CardTitle>
@@ -847,6 +1033,21 @@ function PortalPage() {
             ) : null}
           </CardHeader>
           <CardContent className="space-y-3">
+            {isHolwege ? (
+              <div
+                className="flex flex-wrap items-center justify-between gap-2 border border-forest/25 bg-forest-light/40 px-3 py-3"
+                data-testid="portal-signing-deposit"
+              >
+                <div>
+                  <p className="label-caps">Signing deposit</p>
+                  <p className="mt-1 text-[16px] font-medium tabular-nums">
+                    {formatCurrencyExact(HOLWEGE_SIGNING_DEPOSIT)}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-fg-subtle">Due on signing · credited to Draw 1</p>
+                </div>
+                <Badge variant="secondary">Due on signing</Badge>
+              </div>
+            ) : null}
             <div className="grid grid-cols-2 gap-2">
               <div className="border border-border p-3">
                 <p className="label-caps">Contract</p>
@@ -894,6 +1095,13 @@ function PortalPage() {
                 <span className="font-medium tabular-nums">{formatCurrency(pendingCoTotal)}</span> not
                 yet in contract
               </p>
+            ) : null}
+            {isHolwege && isClientUser ? (
+              <Button size="sm" variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+                <Link to="/portal/cost-report" data-testid="portal-cost-report-link">
+                  View live cost rollup
+                </Link>
+              </Button>
             ) : null}
             <div className="space-y-1.5">
               <p className="label-caps">Draw schedule</p>
