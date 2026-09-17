@@ -1,0 +1,100 @@
+
+            <a
+              href="tel:+12082000605"
+              className="flex min-h-11 items-center gap-2 border border-border px-3 text-fg transition-colors hover:bg-bg-subtle"
+            >
+              <Phone className="h-3.5 w-3.5 text-fg-subtle" strokeWidth={1.75} />
+              (208) 200-0605
+            </a>
+            <a
+              href="mailto:Kipp@splitrockconst.com"
+              className="flex min-h-11 items-center gap-2 border border-border px-3 text-fg transition-colors hover:bg-bg-subtle"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-fg-subtle" strokeWidth={1.75} />
+              Kipp@splitrockconst.com
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Build journey + This week */}
+      <div className="mb-6 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]" data-testid="portal-journey-week">
+        <div className="border border-border bg-bg-elevated p-5">
+          <p className="label-caps mb-3">Build journey</p>
+          <BuildJourneyRail
+            phases={[...DEFAULT_RESIDENTIAL_PHASES]}
+            current={
+              mapToDefaultPhase(project.phase) ??
+              project.schedule.find((s) => s.pct < 100)?.phase ??
+              project.phase
+            }
+            variant="portal"
+          />
+          <p className="mt-3 text-[11px] text-fg-subtle">
+            Same phase rail as the public case study — updated from your job status.
+          </p>
+        </div>
+        <div
+          className="border border-forest/25 bg-forest-light/30 p-5"
+          data-testid="portal-this-week"
+        >
+          <p className="label-caps text-forest">This week</p>
+          {(() => {
+            const week = thisWeekOwnerPrompt({
+              isHolwege,
+              decisionCount,
+              nextMilestoneName: nextMilestone?.name,
+              nextDrawReady: pDraws.some((d) => d.status === "ready"),
+            });
+            return (
+              <>
+                <h3 className="mt-2 text-[14px] font-medium text-fg">{week.headline}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">{week.action}</p>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Section jump — sticky on mobile */}
+      <nav
+        className="sticky top-0 z-20 -mx-1 mb-4 flex flex-wrap gap-2 bg-bg/95 px-1 py-2 backdrop-blur-sm supports-[backdrop-filter]:bg-bg/80"
+        aria-label="Portal sections"
+        data-testid="portal-section-chips"
+      >
+        {[
+          { id: "decisions", label: "Decisions", icon: ClipboardList, count: decisionCount },
+          { id: "schedule", label: "Schedule", icon: CalendarRange },
+          { id: "documents", label: "Documents", icon: FileText },
+          { id: "money", label: "Money", icon: Banknote },
+          { id: "field", label: "Field updates", icon: HardHat },
+        ].map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1.5 border border-border bg-bg-elevated px-3 text-[12px] font-medium text-fg-muted transition-colors hover:bg-bg-subtle hover:text-fg"
+            onClick={() =>
+              document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+          >
+            <s.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+            {s.label}
+            {"count" in s && s.count ? (
+              <Badge variant="warning" className="ml-0.5">
+                {s.count}
+              </Badge>
+            ) : null}
+          </button>
+        ))}
+      </nav>
+
+      {project.matterportId ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>3D tour</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="aspect-video w-full overflow-hidden border border-border bg-bg-subtle">
+              <iframe
+                title="Matterport 3D tour"
+                src={`https://
