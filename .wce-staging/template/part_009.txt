@@ -1,0 +1,79 @@
+ass="i">Trusses</td><td class="a">$20,257</td></tr><tr><td class="n">37</td><td class="i">Trim material</td><td class="a">$15,458</td></tr><tr><td class="n">38</td><td class="i">Trim labor</td><td class="a">$7,200</td></tr><tr><td class="n">39</td><td class="i">Well</td><td class="a">$20,000</td></tr><tr><td class="n">40</td><td class="i">Windows</td><td class="a">$13,007</td></tr></tbody></table></div>
+</div>
+
+<div class="exhibit-b-totals">
+
+| | |
+|---|---:|
+| **SECTION A TOTAL (Cost of Work)** | **$599,391.00** |
+| Owner contingency 5% | $29,969.55 |
+| P&O 10% of Cost of Work | $59,939.10 |
+| **CONTRACT PRICE** | **$689,299.65** |
+
+</div>
+
+Excluded unless Change Order: landscaping, sod, irrigation, fencing, mailbox, window coverings, propane, existing gas service to lot, gas main, new transformer/primary power. Supervision/field is Contractor cost of work (not extra beyond 10% P&O).
+
+
+## Exhibit C — Draw Schedule
+
+Payee: **Split Rock Construction LLC** only.
+
+| Step | When | What | Amount |
+|---|---|---|---|
+| Signing deposit | At execution of this Agreement | Mobilization and permitting deposit (credit against Contract Price) | **$10,000.00** |
+| Monthly draws | Each month after signing, while Work is in progress | Cost of Work to date + 10% P&O − prior payments (incl. deposit). Contingency not advanced except by signed Change Order | Variable (see Art. 5.3) |
+| Final payment | After CO / county final, punch list, § 45-525(3) list, final waivers | Earned balance; unused contingency credited | Balance |
+
+**Budget reference (not a fixed draw table):** Cost of Work + P&O budget target for progress billing = **$659,330.10**. Owner contingency **$29,969.55** is outside monthly draws until used. Contract budget target remains **$689,299.65**.
+
+After the $10,000.00 signing deposit, about **$649,330.10** of the progress-billing base remains to be earned through monthly draws and final payment (subject to actual Cost of Work, Change Orders, and contingency use).
+
+
+## Exhibit D — Change Order Form
+
+Project: Holwege residence, Lot 16 Block 8, Teton Heights Division 6. Change Order No. ______  Date: __________
+
+Description of change: ________________________________________________________________
+
+_____________________________________________________________________________________
+
+Add / Deduct to Cost of Work: $______________     Paid from contingency?  Yes / No
+
+P&O 10% on added cost (not on unused contingency): $______________
+
+New Contract Price: $______________     Time extension: ______ calendar days
+
+Reason (site / weather / code / Owner selection / other): ________________________________
+
+### Execution — signatures required
+
+**Contractor — Split Rock Construction LLC** (Reg. 6481622)  
+Signature: ____________________________________________  
+Printed name: Kipp Archibald, Member  
+Date: ____________________  
+
+**Owner — Lauren Holwege**  
+Signature: ____________________________________________  
+Printed name: Lauren Holwege  
+Date: ____________________  
+
+**Owner — Cindy Holwege**  
+Signature: ____________________________________________  
+Printed name: Cindy Holwege  
+Date: ____________________  
+
+
+## Exhibit E — Idaho Code § 45-525(2) Initial Disclosure
+
+This disclosure is given BEFORE Owner enters the construction contract.
+
+Split Rock Construction LLC, Idaho contractor registration 6481622 (“General Contractor”) provides to Lauren Holwege and Cindy Holwege (“Owner”) this disclosure under Idaho Code § 45-525(2).
+
+Property: Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho (Deed Instrument No. 501245).
+
+Owner is informed of the following:
+
+(a) Owner has the right, at Owner’s reasonable expense, to require the General Contractor to obtain lien waivers from any subcontractors providing services or materials to the General Contractor;
+
+(b) Owner has the right to receive from the General Contractor proof that the General Contractor has a general liability insurance policy including completed operations in effe
