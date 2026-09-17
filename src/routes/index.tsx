@@ -30,9 +30,13 @@ const SITE_PHOTOS = {
   lifestyle: "/site-photos/rigby-lifestyle.webp",
 } as const;
 
-const NAV_LINKS = [
+const NAV_LINKS: Array<
+  | { href: string; label: string; to?: undefined }
+  | { to: "/work/holwege"; label: string; href?: undefined }
+> = [
   { href: "#lots", label: "Lots" },
   { href: "#build", label: "Build" },
+  { to: "/work/holwege", label: "Work" },
   { href: "#coming", label: "Coming soon" },
   { href: "#why", label: "Why us" },
   { href: "#contact", label: "Contact" },
@@ -101,11 +105,17 @@ function LandingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-6 text-[13px] font-medium text-fg-muted md:flex">
-            {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="hover:text-forest">
-                {l.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((l) =>
+              l.to ? (
+                <Link key={l.to} to={l.to} className="hover:text-forest">
+                  {l.label}
+                </Link>
+              ) : (
+                <a key={l.href} href={l.href} className="hover:text-forest">
+                  {l.label}
+                </a>
+              ),
+            )}
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
@@ -145,16 +155,27 @@ function LandingPage() {
             data-testid="marketing-mobile-nav"
           >
             <nav className="flex flex-col gap-0.5">
-              {NAV_LINKS.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {l.label}
-                </a>
-              ))}
+              {NAV_LINKS.map((l) =>
+                l.to ? (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    className="flex min-h-11 items-center px-2 text-[14px] font-medium text-fg"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {l.label}
+                  </a>
+                ),
+              )}
               <a
                 href={COMPANY.lotsUrl}
                 target="_blank"
@@ -416,6 +437,59 @@ function LandingPage() {
                     <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </a>
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* Featured build */}
+      <section className="border-b border-border bg-bg" id="work">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">Work</p>
+          <h2 className="mt-2 text-2xl font-medium tracking-[-0.02em]">Featured build</h2>
+          <p className="mt-2 max-w-xl text-[13px] text-fg-muted">
+            Flagship client experience — the pattern we use on every job.
+          </p>
+          <div
+            className="mt-6 overflow-hidden rounded-md border border-sand bg-bg-elevated"
+            data-testid="featured-build-holwege"
+          >
+            <div className="grid md:grid-cols-[1.05fr_0.95fr] md:items-stretch">
+              <div className="relative min-h-[220px] bg-earth-light md:min-h-full">
+                <img
+                  src={SITE_PHOTOS.aerial1}
+                  alt="Aerial view of Teton Heights near Rigby — Holwege Lot 16 context"
+                  className="marketing-photo absolute inset-0 h-full w-full object-cover"
+                  width={800}
+                  height={600}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="flex flex-col justify-center p-5 sm:p-6 md:p-8">
+                <span className="inline-flex w-fit items-center rounded-sm border border-forest/30 bg-forest-light px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-forest">
+                  Case study
+                </span>
+                <h3 className="mt-3 text-xl font-medium tracking-[-0.02em]">
+                  Holwege Residence · Lot 16
+                </h3>
+                <p className="mt-1 text-[13px] text-fg-muted">
+                  Teton Heights Div 6 · one-level · ~2,602 sf · target Sep 30, 2026 – May 30, 2027
+                </p>
+                <p className="mt-3 text-[14px] leading-relaxed text-fg-muted">
+                  Custom crawl-space home with transparent cost-plus math and an owner portal for
+                  decisions, schedule, and money — land closed separately; construction only.
+                </p>
+                <div className="mt-5">
+                  <Button size="lg" asChild className={marketingBtnPrimary}>
+                    <Link to="/work/holwege">
+                      View case study
+                      <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
