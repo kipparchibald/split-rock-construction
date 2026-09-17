@@ -18,7 +18,7 @@ jobs:
       - name: Assemble staged WCE files
         run: |
           python3 <<'PY'
-          import json, pathlib, hashlib, subprocess
+          import json, pathlib, hashlib, subprocess, shutil
           root = pathlib.Path(".wce-staging")
           if not root.exists():
               print("no staging; skip")
@@ -44,7 +44,7 @@ jobs:
                   continue
               content = "".join(parts)
               raw = content.encode()
-              blob = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+              blob = hashlib.sha1(("blob %d" % len(raw)).encode("ascii") + bytes([0]) + raw).hexdigest()
               if blob != meta["blob"]:
                   raise SystemExit(f"blob mismatch {name}: got {blob} want {meta['blob']}")
               target = pathlib.Path(meta["target_path"])
@@ -55,6 +55,11 @@ jobs:
               target.write_text(content)
               print("wrote", target, "bytes", len(raw), "blob", blob)
               changed = True
+          if changed:
+              shutil.rmtree(root, ignore_errors=True)
+              wf = pathlib.Path(".github/workflows/assemble-wce-staged.yml")
+              if wf.exists():
+                  wf.unlink()
           if not changed:
               print("nothing to commit")
               raise SystemExit(0)
