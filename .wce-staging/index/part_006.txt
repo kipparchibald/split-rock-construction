@@ -1,0 +1,75 @@
+:py-16">
+          <div className="grid gap-8 overflow-hidden rounded-md border border-forest/20 bg-forest px-6 py-10 text-forest-fg sm:px-10 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
+            <div>
+              <h2 className="text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+                Ready to pick a lot or plan a build?
+              </h2>
+              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-forest-fg/80">
+                Tell us whether you want land only, a land-home package, or a custom build-to-suit.
+                We respond within one business day.
+              </p>
+              <div className="mt-6 flex flex-col gap-2 text-[13px]">
+                <a
+                  href={COMPANY.phoneHref}
+                  className="inline-flex items-center gap-2 text-forest-fg/90 hover:text-forest-fg"
+                >
+                  <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {COMPANY.phone}
+                </a>
+                <a
+                  href={`mailto:${COMPANY.emailKipp}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  className="inline-flex items-center gap-2 text-forest-fg/90 hover:text-forest-fg"
+                >
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {COMPANY.emailKipp}
+                </a>
+                <a
+                  href={`mailto:${COMPANY.emailKyle}?subject=Split%20Rock%20—%20lot%20or%20build%20inquiry`}
+                  className="inline-flex items-center gap-2 text-forest-fg/90 hover:text-forest-fg"
+                >
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {COMPANY.emailKyle}
+                </a>
+                <span className="inline-flex items-center gap-2 text-forest-fg/70">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {MARKETING_LOCATION}
+                </span>
+                <span className="text-[12px] text-forest-fg/65">
+                  {COMPANY.idahoContractorRegistrationLabel}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-bg-elevated text-forest hover:bg-earth-light"
+                asChild
+              >
+                <a href={COMPANY.lotsUrl} target="_blank" rel="noreferrer">
+                  See lots at rigbylots.com
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </a>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-forest-fg/35 text-forest-fg hover:bg-forest-fg/10"
+                asChild
+              >
+                <a href={`mailto:${COMPANY.emailKipp}?subject=Hunter%20Chase%20interest%20list`}>
+                  Hunter Chase interest list
+                </a>
+              </Button>
+              <p className="text-[11px] text-forest-fg/60">
+                Kipp Archibald · Kyle · land, lots & build conversations
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <MarketingFooter />
+    </div>
+  );
+}
