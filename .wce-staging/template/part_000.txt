@@ -1,0 +1,52 @@
+SPLIT ROCK CONSTRUCTION LLC
+
+Idaho Contractor Registration 6481622
+
+RESIDENTIAL CONSTRUCTION AGREEMENT
+
+AND STATUTORY DISCLOSURE PACKET
+
+Lauren Holwege and Cindy Holwege
+
+Lot 16, Block 8, Teton Heights Division 6
+
+Jefferson County, Idaho  ·  Deed Instrument No. 501245
+
+Construction Contract Price:  $689,299.65
+
+Signing deposit: $10,000.00 · then monthly draws · Progress base: $659,330.10
+
+Land is already owned by Owner and is not part of this Contract Price.
+
+Packet date: 14 September 2026  ·  Version: Long-form Idaho residential (boilerplate expansion of GitHub contracts/Holwege/03)
+
+This Construction Agreement (“Agreement”) is entered into as of _________________, 2026 (the “Effective Date”), by and between:
+
+*(Schedule locked for this draft: Work commencement target **September 30, 2026**; Substantial Completion target **May 30, 2027** — an eight (8) month construction period. See Article 6.)*
+
+CONTRACTOR: Split Rock Construction LLC, an Idaho limited liability company, Idaho contractor registration 6481622, 527 Rigby Town Square, Rigby, Idaho 83442; telephone (208) 200-0605; email Kipp@splitrockconst.com (“Contractor”).
+
+OWNER: Lauren Holwege and Cindy Holwege, jointly and severally (“Owner”).
+
+Contractor and Owner are the only parties to this Agreement. Any field supervisor, superintendent, or subcontractor is not a party and has no authority to change price, scope, schedule, or payment terms.
+
+Archibald-Bagley Real Estate and its designated broker and agents are not parties to this Agreement and do not represent Owner in connection with this construction work. This Agreement is a construction contract. It is not a regulated real estate transaction, listing, purchase-and-sale agreement, or brokerage representation agreement.
+
+In consideration of the mutual covenants below, the parties agree as follows.
+
+## Article 1. Property
+
+**1.1** The Work will be performed on Lot 16, Block 8, Teton Heights Division 6, Jefferson County, Idaho, as described in Deed Instrument No. 501245 (the “Property”).
+
+**1.2** Owner represents that Owner already owns the Property in fee simple, free of any construction-contract claim by Contractor against the lot purchase. This Agreement is for construction of the residence on that Property only. No lot purchase price is included in the Contract Price. Title companies and lenders shall not collect a lot payment under this Agreement.
+
+## Article 2. The Work and Contract Documents
+
+**2.1** Contractor shall furnish all labor, materials, equipment, supervision, and services reasonably required to construct the residence shown on the River Bend Drafting and Design plans dated 31 August 2026, file name “Lauren and Cindy Holwege 8-31-2026b,” prepared by Elise Shurtliff (the “Plans”), as summarized in Exhibit A and priced in Exhibit B.
+
+**2.2** The Contract Documents are this Agreement, the Plans, Exhibit A (Key Specifications), Exhibit B (Cost of Work), Exhibit C (Draw Schedule), Exhibit D (Change Order form), the signed Idaho Code § 45-525(2) Initial Disclosure attached as Exhibit E, and all written Change Orders. If documents conflict, this Agreement controls over exhibits, and the Plans control over the specification summary except as to exclusions and allowances stated here.
+
+**2.3** **Already at the Property (Owner-confirmed):** natural gas service is on the Property, electrical service with transformer is set, and fiber is to the lot. Those existing services are **not** part of Cost of Work and are **not** charged under this Agreement. Remaining utility work under this Agreement is house laterals, meter bases, and yard lines from those existing services to the residence only. Contractor shall not install a propane tank, a new transformer, a primary power run, or a natural-gas main extension unless the parties sign a Change Order.
+
+
+**2.4** Excluded from the Work unless added by Change Order: landscaping, sod, irrigation, fencing, mailbox, window coverings, a propane tank and first fill, a new transfo
