@@ -255,6 +255,125 @@ function HolwegeCaseStudyPage() {
         </div>
       </section>
 
+      {/* Challenge */}
+      <section className="border-b border-border" id="challenge">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">The challenge</p>
+          <h2 className="mt-2 max-w-2xl text-2xl font-medium tracking-[-0.02em] sm:text-[1.75rem]">
+            One-level living on a rural lot — with cost clarity from day one.
+          </h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-md border border-sand bg-bg p-5">
+              <h3 className="text-[13px] font-medium">ADA-forward layout</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">
+                One-level plan with a zero-entry path from garage into the house. Crawl space, well,
+                septic, and laterals to existing gas, power, and fiber at the lot.
+              </p>
+            </div>
+            <div className="rounded-md border border-sand bg-bg p-5">
+              <h3 className="text-[13px] font-medium">One accountable team</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">
+                Owners wanted clarity on cost-plus math and a single builder — not a land agent plus
+                a separate GC. Land closed separately; this case study is construction only.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Approach */}
+      <section className="border-b border-border bg-bg" id="approach">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">The approach</p>
+          <h2 className="mt-2 max-w-2xl text-2xl font-medium tracking-[-0.02em]">
+            Published stack. Owner portal. Plans you can walk.
+          </h2>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {APPROACH.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-[13px] text-fg-muted">
+                <CheckCircle2
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest"
+                  strokeWidth={1.75}
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Timeline */}
+      <section className="border-b border-border" id="timeline">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">Timeline</p>
+          <h2 className="mt-2 text-2xl font-medium tracking-[-0.02em]">
+            Target construction window
+          </h2>
+          <p className="mt-3 text-[15px] font-medium text-fg">
+            September 30, 2026 – May 30, 2027
+          </p>
+          <p className="mt-1 text-[12px] text-fg-subtle">
+            Target dates — certificate of occupancy is not claimed until achieved. Journey shown
+            at Site (pre-start).
+          </p>
+          <div className="mt-6">
+            <BuildJourneyRail
+              phases={[...DEFAULT_RESIDENTIAL_PHASES]}
+              current="Site"
+              variant="marketing"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Money */}
+      <section className="border-b border-border bg-bg" id="money">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="label-caps-accent">How the money works</p>
+          <h2 className="mt-2 text-2xl font-medium tracking-[-0.02em]">
+            Transparent, bounded construction stack
+          </h2>
+          <div className="mt-6 max-w-xl overflow-hidden rounded-md border border-sand bg-bg-elevated">
+            <div className="divide-y divide-border">
+              {MONEY_ROWS.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-baseline justify-between gap-4 px-4 py-3 text-[13px]"
+                >
+                  <span className="text-fg-muted">{row.label}</span>
+                  <span className="shrink-0 font-medium tabular-nums text-fg">
+                    {formatCurrencyExact(row.amount)}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-baseline justify-between gap-4 bg-forest-light/40 px-4 py-3.5 text-[14px]">
+                <span className="font-medium text-fg">Construction contract</span>
+                <span className="shrink-0 font-medium tabular-nums text-fg">
+                  {formatCurrencyExact(HOLWEGE_CONTRACT)}
+                </span>
+              </div>
+            </div>
+          </div>
+          <ul className="mt-5 max-w-2xl space-y-2 text-[13px] leading-relaxed text-fg-muted">
+            <li>
+              Signing deposit:{" "}
+              <span className="font-medium tabular-nums text-fg">
+                {formatCurrencyExact(HOLWEGE_SIGNING_DEPOSIT)}
+              </span>
+              .
+            </li>
+            <li>
+              Progress draws after deposit against construction milestones (permit/mobilization,
+              foundation, dried-in, MEP/insulation, finishes, CO/closeout).
+            </li>
+            <li>
+              Contingency is owner reserve — not profit and not finish upgrades; it moves only on a
+              signed change order.
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <MarketingFooter />
     </div>
   );
