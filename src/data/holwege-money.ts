@@ -4,6 +4,10 @@
  * Money figures are verified from contracts/Holwege/ only.
  * Land $98,000 (closed 8/24/2026 · Alliance 1100920 · deed 501245) is NOT in project.budget.
  *
+ * Construction agreement EXECUTED wet-ink Art. 24 on 2026-09-17
+ * (Lauren Holwege · Cindy Holwege · Kipp Archibald Member).
+ * Drive scan: https://drive.google.com/file/d/17DR8OPrNXYgosEuoQHTEG2fqj0K1TnhG/view
+ *
  * Do not invent lot/build dollars. Do not email portal credentials to owners.
  * Live invite: HOLWEGE_PORTAL_INVITE env (server) - never ship invite in client bundle.
  */
@@ -32,7 +36,7 @@ export const holwegeClient: Client = {
   phone: "",
   type: "homeowner",
   address: "Lot 16 Block 8, Teton Heights Div 6, Jefferson County, ID",
-  notes: `${HOLWEGE_LAND_NOTE} Owners: Lauren Holwege and Cindy Holwege. Live portal invite is server env only - do not email credentials to owners.`,
+  notes: `${HOLWEGE_LAND_NOTE} Owners: Lauren Holwege and Cindy Holwege. Construction agreement executed 2026-09-17 (Art. 24 wet-ink). Live portal invite is server env only - do not email credentials to owners.`,
   portalStatus: "none",
 };
 
@@ -42,7 +46,7 @@ export const holwegeProject: Project = {
   address: "Lot 16 Block 8, Teton Heights Div 6, Rigby ID",
   clientId: HOLWEGE_CLIENT_ID,
   type: "residential",
-  status: "planning",
+  status: "in_progress",
   phase: "Site Work",
   progress: 0,
   budget: HOLWEGE_CONTRACT,
@@ -54,13 +58,13 @@ export const holwegeProject: Project = {
   beds: 3,
   baths: 2,
   description:
-    "Custom ADA one-level on crawl (~2602 sf), well + septic + 3-car. River Bend Drafting - Lauren and Cindy Holwege 8-31-2026b (Elise Shurtliff). GC: Split Rock Construction LLC · Idaho 6481622 · Kipp Archibald. Field supervisor Kyle Christensen is not a contract party. Pre-contract: awaiting signed construction agreement, Idaho 45-525 disclosures, and dual-capacity acknowledgment. Land closed separately - not in budget.",
+    "Custom ADA one-level on crawl (~2602 sf), well + septic + 3-car. River Bend Drafting - Lauren and Cindy Holwege 8-31-2026b (Elise Shurtliff). GC: Split Rock Construction LLC · Idaho 6481622 · Kipp Archibald. Field supervisor Kyle Christensen is not a contract party. Construction agreement EXECUTED wet-ink Art. 24 on 2026-09-17 (Lauren Holwege · Cindy Holwege · Kipp Archibald Member). Drive scan: https://drive.google.com/file/d/17DR8OPrNXYgosEuoQHTEG2fqj0K1TnhG/view. Land closed separately - not in budget.",
   milestones: [
     { name: "Lot closed (deed 501245)", date: "2026-08-24", done: true },
     { name: "Plans issued (River Bend 8-31-2026b)", date: "2026-08-31", done: true },
-    { name: "Construction agreement signed", date: "2026-09-15", done: false },
-    { name: "Idaho 45-525 initial disclosure signed", date: "2026-09-15", done: false },
-    { name: "Dual-capacity disclosure acknowledged", date: "2026-09-15", done: false },
+    { name: "Construction agreement signed", date: "2026-09-17", done: true },
+    { name: "Idaho 45-525 initial disclosure signed", date: "2026-09-17", done: true },
+    { name: "Dual-capacity disclosure acknowledged", date: "2026-09-17", done: true },
     { name: "Permit / mobilization (Draw 1)", date: "2026-10-01", done: false },
     { name: "Certificate of occupancy", date: "2027-06-30", done: false },
   ],
