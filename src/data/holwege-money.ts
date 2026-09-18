@@ -70,7 +70,7 @@ export const holwegeProject: Project = {
   ],
   schedule: [
     { phase: "Site Work", start: "2026-09-15", end: "2026-10-15", pct: 0 },
-    { phase: "Foundation", start: "2026-10-16", end: "2027-11-30", pct: 0 },
+    { phase: "Foundation", start: "2026-10-16", end: "2026-11-30", pct: 0 },
     { phase: "Framing", start: "2026-12-01", end: "2027-02-15", pct: 0 },
     { phase: "MEP Rough-In", start: "2027-02-16", end: "2027-03-31", pct: 0 },
     { phase: "Insulation", start: "2027-03-20", end: "2027-04-10", pct: 0 },
